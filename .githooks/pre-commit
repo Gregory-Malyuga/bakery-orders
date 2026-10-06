@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+if docker compose exec -T php true >/dev/null 2>&1; then
+    docker compose exec -T php composer pre-commit
+else
+    docker compose run --rm --no-deps php composer pre-commit
+fi
+
+# Stage regenerated OpenAPI files so they are included in the commit
+git add app/Domains/*/Http/OpenApi/*.php 2>/dev/null || true
+
+# Regenerate l5-swagger api-docs.json
+if docker compose exec -T php true >/dev/null 2>&1; then
+    docker compose exec -T php sh -c "cd /var/www/app && php artisan l5-swagger:generate"
+else
+    docker compose run --rm --no-deps php sh -c "cd /var/www/app && php artisan l5-swagger:generate"
+fi
+
+# Regenerate l5-swagger api-docs.json
+if docker compose exec -T php true >/dev/null 2>&1; then
+    docker compose exec -T php sh -c "cd /var/www/app && composer cs:fix"
+else
+    docker compose run --rm --no-deps php sh -c "cd /var/www/app && composer cs:fix"
+fi
+
+git add storage/api-docs/api-docs.json storage/api-docs/api-docs.yaml 2>/dev/null || true

@@ -1,0 +1,174 @@
+name: laravel-app
+
+x-php-env: &php-env
+  APP_ENV: dev
+  APP_DEBUG: "1"
+  APP_KEY: base64:0NdLjkpPsUUhx8JhGOAsyEqoc67I6OZAl4FpHzSIR14=
+  DEFAULT_URI: http://laravel-app.localhost
+  REDIS_URL: redis://redis:6379
+  ELASTICSEARCH_URL: http://elasticsearch:9200
+  OCTANE_SERVER: frankenphp
+  CACHE_STORE: redis
+  QUEUE_CONNECTION: redis
+  SESSION_DRIVER: redis
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_DATABASE: laravel-database
+  DB_USERNAME: laravel-database-user
+  DB_PASSWORD: laravel-database-secret
+  MAIL_MAILER: smtp
+  MAIL_SCHEME: null
+  MAIL_HOST: mailpit
+  MAIL_PORT: "1025"
+  MAIL_USERNAME: null
+  MAIL_PASSWORD: null
+  MAIL_FROM_ADDRESS: hello@example.com
+  MAIL_FROM_NAME: Laravel
+
+x-php-depends: &php-depends
+  redis:
+    condition: service_healthy
+  elasticsearch:
+    condition: service_healthy
+  postgres:
+    condition: service_healthy
+  mailpit:
+    condition: service_healthy
+
+x-php-build: &php-build
+  context: .
+  target: dev
+  args:
+    BASE_IMAGE: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - php
+    ports:
+      - "8088:80"
+    volumes:
+      - ./:/var/www/app:ro
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - backend
+
+  php:
+    build: *php-build
+    platform: linux/amd64
+    environment:
+      <<: *php-env
+    depends_on:
+      <<: *php-depends
+    volumes:
+      - ./:/var/www/app
+      - ./vendor:/var/www/app/vendor
+    networks:
+      - backend
+
+  worker:
+    build: *php-build
+    platform: linux/amd64
+    command: ["php", "artisan", "queue:work", "imports", "--queue=imports", "--tries=3", "--timeout=600"]
+    environment:
+      <<: *php-env
+    depends_on:
+      <<: *php-depends
+    healthcheck:
+      disable: true
+    volumes:
+      - ./:/var/www/app
+      - ./vendor:/var/www/app/vendor
+    networks:
+      - backend
+    restart: unless-stopped
+
+  scheduler:
+    build: *php-build
+    platform: linux/amd64
+    command: ["php", "artisan", "schedule:work"]
+    environment:
+      <<: *php-env
+    depends_on:
+      <<: *php-depends
+    healthcheck:
+      disable: true
+    volumes:
+      - ./:/var/www/app
+      - ./vendor:/var/www/app/vendor
+    networks:
+      - backend
+    restart: unless-stopped
+
+  elasticsearch:
+    image: elasticsearch:8.13.4
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\\|yellow\"'"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: laravel-database
+      POSTGRES_USER: laravel-database-user
+      POSTGRES_PASSWORD: laravel-database-secret
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U laravel-database-user -d laravel-database"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - backend
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  postgres_data:
+  redis_data:
+  elasticsearch_data:

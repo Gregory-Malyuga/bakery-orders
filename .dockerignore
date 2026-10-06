@@ -1,0 +1,9 @@
+docs
+.claude
+.idea
+.git
+.gitignore
+.dockerignore
+.gitlab-ci.yml
+README.md
+CLAUDE.md

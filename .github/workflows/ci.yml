@@ -1,0 +1,447 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write
+
+env:
+  BASE_IMAGE: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Граф зависимостей:
+#
+#   install
+#     ├── lint-* (параллельно)      ─┐
+#     ├── analyze-* (параллельно)    ├── build → security-image ─┐
+#     └── test (параллельно с analyze)─┘         smoke          ─┴── release-*
+#   security-fs (независимо, на каждой ветке)
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+# ─── PREPARE ─────────────────────────────────────────────────────────────────
+# Устанавливает vendor и кладёт в кеш. Последующие джобы восстанавливают кеш
+# без повторного composer install (~instant при cache hit).
+# ─────────────────────────────────────────────────────────────────────────────
+  install:
+    name: Composer Install
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-dl-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-dl-
+
+      - name: Cache vendor
+        id: vendor-cache
+        uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+
+      - name: Composer install
+        if: steps.vendor-cache.outputs.cache-hit != 'true'
+        run: composer install --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+# ─── LINT ────────────────────────────────────────────────────────────────────
+
+  lint-php-syntax:
+    name: Lint / PHP Syntax
+    needs: install
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: find app routes tests database -name '*.php' -print0 | xargs -0 -n1 php -l
+
+  lint-code-style:
+    name: Lint / Code Style (Pint)
+    needs: install
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: php vendor/bin/pint --test
+
+  lint-composer-normalize:
+    name: Lint / Composer Normalize
+    needs: install
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: composer normalize --dry-run --diff
+
+  lint-doc-links:
+    name: Lint / Doc Links
+    needs: install
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: php bin/check-doc-links.php
+
+# ─── ANALYZE ─────────────────────────────────────────────────────────────────
+# Запускается параллельно с test — не блокирует тесты.
+# ─────────────────────────────────────────────────────────────────────────────
+
+  analyze-phpstan:
+    name: Analyze / PHPStan
+    needs: [lint-php-syntax, lint-code-style]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: php vendor/bin/phpstan analyse --memory-limit=512M
+
+  analyze-deptrac:
+    name: Analyze / Deptrac
+    needs: [lint-php-syntax, lint-code-style]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+      - run: php vendor/bin/deptrac analyse --config-file=deptrac.yaml --fail-on-uncovered
+
+# ─── SECURITY / FS ───────────────────────────────────────────────────────────
+# Независимый джоб — запускается на каждой ветке без ожидания остальных.
+# ─────────────────────────────────────────────────────────────────────────────
+
+  security-fs:
+    name: Security / Trivy FS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan filesystem (report)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret,vuln
+          exit-code: '0'
+          format: sarif
+          output: trivy-fs.sarif
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Fail on secrets
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: secret
+          exit-code: '1'
+
+# ─── TEST ─────────────────────────────────────────────────────────────────────
+# Стартует сразу после lint — не ждёт analyze.
+# GitHub-hosted runner: 2 CPU → processes=2.
+# APP_KEY берётся из repository variable (Settings → Variables → Actions).
+# ─────────────────────────────────────────────────────────────────────────────
+
+  test:
+    name: Test Suite
+    needs: [lint-php-syntax, lint-code-style]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+      options: --user root
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: laravel-database-test
+          POSTGRES_USER: laravel-database-user
+          POSTGRES_PASSWORD: laravel-database-secret
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      elasticsearch:
+        image: elasticsearch:8.13.4
+        env:
+          discovery.type: single-node
+          xpack.security.enabled: "false"
+          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+        options: >-
+          --health-cmd "curl -sf http://localhost:9200/_cluster/health"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 30
+      mailpit:
+        image: axllent/mailpit:latest
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_KEY: ${{ vars.APP_KEY_TESTING }}
+      APP_ENV: testing
+      APP_DEBUG: "1"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: laravel-database-test
+      DB_USERNAME: laravel-database-user
+      DB_PASSWORD: laravel-database-secret
+      REDIS_URL: redis://redis:6379
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      CACHE_STORE: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      MAIL_FROM_ADDRESS: hello@example.com
+      MAIL_FROM_NAME: Laravel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: vendor/
+          key: vendor-${{ hashFiles('composer.lock') }}
+
+      - run: chmod +x vendor/bin/*
+      - run: php artisan config:clear
+      - run: php artisan migrate --force
+      - run: php vendor/bin/paratest --processes=2 --runner=WrapperRunner --log-junit=report.xml
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: report.xml
+          retention-days: 7
+
+# ─── BUILD ───────────────────────────────────────────────────────────────────
+
+  build:
+    name: Build & Push Image
+    needs:
+      - lint-php-syntax
+      - lint-code-style
+      - lint-composer-normalize
+      - lint-doc-links
+      - analyze-phpstan
+      - analyze-deptrac
+      - test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    outputs:
+      image: ${{ steps.image-name.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute lowercase image name
+        id: image-name
+        run: |
+          echo "value=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+          echo "IMAGE=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: prod
+          build-args: BASE_IMAGE=${{ env.BASE_IMAGE }}
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ github.sha }}
+            ${{ env.IMAGE }}:${{ github.ref_name }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+# ─── SECURITY / IMAGE ────────────────────────────────────────────────────────
+
+  security-image:
+    name: Security / Trivy Image
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      TRIVY_USERNAME: ${{ github.actor }}
+      TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Scan image (report)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ needs.build.outputs.image }}:${{ github.sha }}
+          exit-code: '0'
+          format: sarif
+          output: trivy-image.sarif
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Fail on fixable CRITICAL
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ needs.build.outputs.image }}:${{ github.sha }}
+          exit-code: '1'
+          severity: CRITICAL
+          ignore-unfixed: true
+
+# ─── SMOKE ───────────────────────────────────────────────────────────────────
+# Один docker run — три команды в одном контейнере.
+# ─────────────────────────────────────────────────────────────────────────────
+
+  smoke:
+    name: Smoke Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Boot & verify
+        run: |
+          docker run --rm \
+            -e APP_KEY=${{ vars.APP_KEY_TESTING }} \
+            -e APP_ENV=production -e APP_DEBUG=0 \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=":memory:" \
+            -e CACHE_STORE=array -e QUEUE_CONNECTION=sync -e SESSION_DRIVER=array \
+            -e ELASTICSEARCH_URL=http://localhost:9200 \
+            ${{ needs.build.outputs.image }}:${{ github.sha }} \
+            sh -c "php artisan about --ansi && php artisan route:list --ansi && php artisan optimize --ansi"
+
+# ─── RELEASE ─────────────────────────────────────────────────────────────────
+
+  release-latest:
+    name: Release / latest
+    needs: [build, security-image, smoke]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          IMAGE=${{ needs.build.outputs.image }}
+          docker pull $IMAGE:${{ github.sha }}
+          docker tag  $IMAGE:${{ github.sha }} $IMAGE:latest
+          docker push $IMAGE:latest
+
+  release-semver:
+    name: Release / semver tag
+    needs: [build, security-image, smoke]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: |
+          IMAGE=${{ needs.build.outputs.image }}
+          docker pull $IMAGE:${{ github.sha }}
+          docker tag  $IMAGE:${{ github.sha }} $IMAGE:${{ github.ref_name }}
+          docker push $IMAGE:${{ github.ref_name }}

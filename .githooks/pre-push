@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+if docker compose exec -T php true >/dev/null 2>&1; then
+    docker compose exec -T php composer pre-push
+else
+    docker compose run --rm --no-deps php composer pre-push
+fi

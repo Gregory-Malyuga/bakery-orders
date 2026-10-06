@@ -1,0 +1,15 @@
+﻿{
+    auto_https off
+}
+
+:80 {
+    encode zstd gzip
+    root * /var/www/app/public
+    @static file
+    handle @static {
+        file_server
+    }
+    handle {
+        reverse_proxy php:8000
+    }
+}

@@ -1,0 +1,6 @@
+#!/bin/sh
+# Regenerate IDE helper files after merging so PHPStorm stays in sync.
+set -eu
+if docker compose exec -T php true >/dev/null 2>&1; then
+    docker compose exec -T php sh -c "cd /var/www/app && php artisan ide-helper:generate && php artisan ide-helper:models --nowrite"
+fi
