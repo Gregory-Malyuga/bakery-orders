@@ -1,0 +1,128 @@
+deptrac:
+  paths:
+    - ./app/Shared
+    - ./app/Domains
+  layers:
+    # DDD layers — Domains\*\{Layer}\*
+    - name: DomainLayer
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Domain\\.*#'
+    - name: ApplicationLayer
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Application\\.*#'
+    - name: InfrastructureLayer
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Infrastructure\\.*#'
+    - name: PresentationLayer
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Presentation\\.*#'
+    - name: DomainProvider
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Providers\\.*#'
+    - name: DomainTest
+      collectors:
+        - type: classNameRegex
+          value: '#^Domains\\[^\\]+\\Tests\\.*#'
+    # External vendors
+    - name: Laravel
+      collectors:
+        - type: classNameRegex
+          value: '#^Illuminate\\.*#'
+        - type: classNameRegex
+          value: '#^Laravel\\.*#'
+        - type: classNameRegex
+          value: '#^Carbon\\.*#'
+        - type: classNameRegex
+          value: '#^Symfony\\.*#'
+    - name: Elastic
+      collectors:
+        - type: classNameRegex
+          value: '#^Elastic\\.*#'
+    - name: OpenApi
+      collectors:
+        - type: classNameRegex
+          value: '#^OpenApi\\.*#'
+    - name: Spatie
+      collectors:
+        - type: classNameRegex
+          value: '#^Spatie\\.*#'
+    - name: Shared
+      collectors:
+        - type: classNameRegex
+          value: '#^Shared\\(?!Testing\\).*#'
+    - name: TestSupport
+      collectors:
+        - type: classNameRegex
+          value: '#^Shared\\Testing\\.*#'
+    - name: PHPUnit
+      collectors:
+        - type: classNameRegex
+          value: '#^PHPUnit\\.*#'
+    - name: Mockery
+      collectors:
+        - type: classNameRegex
+          value: '#^Mockery.*#'
+  ruleset:
+    DomainLayer:
+      - Laravel
+      - Spatie
+    ApplicationLayer:
+      - DomainLayer
+      - Shared
+      - Laravel
+      - Spatie
+    InfrastructureLayer:
+      - DomainLayer
+      - ApplicationLayer
+      - Shared
+      - Laravel
+      - Elastic
+      - Spatie
+    PresentationLayer:
+      - ApplicationLayer
+      - DomainLayer
+      - Shared
+      - Laravel
+      - Spatie
+      - OpenApi
+    DomainProvider:
+      - DomainLayer
+      - ApplicationLayer
+      - InfrastructureLayer
+      - PresentationLayer
+      - Shared
+      - Laravel
+    DomainTest:
+      - DomainLayer
+      - ApplicationLayer
+      - InfrastructureLayer
+      - PresentationLayer
+      - DomainProvider
+      - Shared
+      - TestSupport
+      - Laravel
+      - Spatie
+      - Elastic
+      - PHPUnit
+      - Mockery
+    Laravel: []
+    Elastic: []
+    OpenApi: []
+    Spatie: []
+    Shared:
+      - Laravel
+      - Elastic
+      - Spatie
+      - OpenApi
+    PHPUnit: []
+    TestSupport:
+      - Shared
+      - Laravel
+      - Elastic
+      - Spatie
+      - PHPUnit
