@@ -17,10 +17,10 @@ class HealthController extends Controller
     public function __invoke(): JsonResponse
     {
         $db = $this->checkDb();
-        $es = $this->checkEs();
-        $redis = $this->checkRedis();
+        $es = config('health.elasticsearch') ? $this->checkEs() : null;
+        $redis = config('health.redis') ? $this->checkRedis() : null;
 
-        $allHealthy = $db && $es && $redis;
+        $allHealthy = $db && $es !== false && $redis !== false;
 
         return response()->json([
             'status' => $allHealthy ? 'ok' : 'degraded',

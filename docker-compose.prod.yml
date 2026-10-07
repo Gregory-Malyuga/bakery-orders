@@ -5,6 +5,11 @@ x-prod-php-env: &prod-php-env
   APP_URL: ${APP_URL:?Set APP_URL in .env}
   DEFAULT_URI: ${APP_URL:?Set APP_URL in .env}
   DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+  SESSION_DRIVER: database
+  CACHE_STORE: database
+  QUEUE_CONNECTION: sync
+  HEALTH_CHECK_ELASTICSEARCH: "false"
+  HEALTH_CHECK_REDIS: "false"
   MAIL_MAILER: log
   LOG_LEVEL: warning
 
@@ -21,9 +26,13 @@ services:
       target: prod
     environment:
       <<: *prod-php-env
+    depends_on: !override
+      postgres:
+        condition: service_healthy
     volumes: !override []
 
   worker:
+    profiles: [full-stack]
     build:
       target: prod
     environment:
@@ -31,6 +40,7 @@ services:
     volumes: !override []
 
   scheduler:
+    profiles: [full-stack]
     build:
       target: prod
     environment:
@@ -42,10 +52,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
 
   redis:
+    profiles: [full-stack]
     ports: !override []
 
   elasticsearch:
+    profiles: [full-stack]
     ports: !override []
 
   mailpit:
+    profiles: [full-stack]
     ports: !override []

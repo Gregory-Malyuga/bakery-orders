@@ -41,4 +41,12 @@ class HealthCheckTest extends TestCase
         $this->assertIsBool($response->json('es'));
         $this->assertIsBool($response->json('redis'));
     }
+
+    public function test_health_skips_disabled_services(): void
+    {
+        config()->set('health.elasticsearch', false);
+        config()->set('health.redis', false);
+
+        $this->getJson('/health')->assertOk()->assertJsonPath('status', 'ok')->assertJsonPath('es', null)->assertJsonPath('redis', null);
+    }
 }
