@@ -54,7 +54,7 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 
 ### Развёртывание и резервное копирование
 
-Для рабочего окружения используйте `docker-compose.prod.yml` вместе с основным Compose-файлом. Он запускает PHP из образа с установленными зависимостями, не монтирует пустой каталог `vendor`, закрывает внешние порты PostgreSQL, Redis, Elasticsearch и Mailpit и по умолчанию привязывает HTTP только к `127.0.0.1:8099`. Задайте уникальные `APP_KEY`, `DB_PASSWORD` и `APP_URL` в закрытом для посторонних `.env`; пароль роли PostgreSQL должен совпадать с `DB_PASSWORD`. После настройки HTTPS и домена измените публикацию Caddy. Не размещайте форму входа в открытом интернете по HTTP.
+Для рабочего окружения используйте `docker-compose.prod.yml` вместе с основным Compose-файлом. Он запускает только Caddy, PHP и PostgreSQL: сессии и кеш хранятся в PostgreSQL, очередь работает синхронно. Зависимости находятся внутри PHP-образа, каталог `vendor` с хоста не монтируется. По умолчанию HTTP привязан только к `127.0.0.1:8099`. Задайте уникальные `APP_KEY`, `DB_PASSWORD` и `APP_URL` в закрытом для посторонних `.env`; пароль роли PostgreSQL должен совпадать с `DB_PASSWORD`. После настройки HTTPS и домена измените публикацию Caddy. Не размещайте форму входа в открытом интернете по HTTP.
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
