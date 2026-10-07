@@ -54,7 +54,16 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 
 ### Развёртывание и резервное копирование
 
-Для рабочего окружения задайте отдельные `APP_KEY`, пароли БД и HTTPS-адрес, уберите демоданные, сохраните PostgreSQL и Redis в постоянных томах. После обновления кода выполните `php artisan migrate --force` внутри PHP-контейнера; проверьте `/health`, вход, оформление и печать. Приложение здесь никуда не опубликовано.
+Для рабочего окружения используйте `docker-compose.prod.yml` вместе с основным Compose-файлом. Он запускает PHP из образа с установленными зависимостями, не монтирует пустой каталог `vendor`, закрывает внешние порты PostgreSQL, Redis, Elasticsearch и Mailpit и по умолчанию привязывает HTTP только к `127.0.0.1:8099`. Задайте уникальные `APP_KEY`, `DB_PASSWORD` и `APP_URL` в закрытом для посторонних `.env`; пароль роли PostgreSQL должен совпадать с `DB_PASSWORD`. После настройки HTTPS и домена измените публикацию Caddy. Не размещайте форму входа в открытом интернете по HTTP.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T php php artisan migrate --force
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T php php artisan bakery:seed-reference
+docker compose -f docker-compose.yml -f docker-compose.prod.yml exec php php artisan bakery:create-admin admin@backery.com
+```
+
+Приложение использует постоянные тома PostgreSQL, Redis и Elasticsearch. После запуска проверьте `/health`, вход, оформление и печать.
 
 Для резервной копии остановка приложения не требуется. Пример для локального Compose:
 
