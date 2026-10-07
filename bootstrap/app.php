@@ -1,5 +1,6 @@
 <?php
 
+use Domains\Bakery\Presentation\Http\Middleware\EnsureBakeryRole;
 use Domains\User\Domain\Exceptions\InvalidCredentialsException;
 use Domains\User\Domain\Exceptions\UserForbiddenException;
 use Domains\User\Domain\Exceptions\UserInsufficientRoleException;
@@ -15,6 +16,7 @@ use Shared\Http\Middleware\AddEsSearchTruncatedHeader;
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         api: __DIR__.'/../routes/api.php',
+        web: __DIR__.'/../routes/web.php',
         then: function (): void {
             Route::middleware('api')
                 ->get('/health', HealthController::class);
@@ -23,7 +25,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->redirectGuestsTo('/login');
         $middleware->appendToGroup('api', AddEsSearchTruncatedHeader::class);
+        $middleware->alias(['bakery.role' => EnsureBakeryRole::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->render(function (UserInsufficientRoleException $e) {
