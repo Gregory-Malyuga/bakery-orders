@@ -67,7 +67,7 @@ class SeedReferenceCatalogCommand extends Command
                     $email = sprintf('store-%03d@bakery.test', $index + 1);
                     $account = User::query()->where('email', $email)->first();
                     if ($account === null) {
-                        User::query()->create([
+                        $account = User::query()->create([
                             'name' => $name,
                             'email' => $email,
                             'password' => Hash::make('changeme'),
@@ -79,11 +79,13 @@ class SeedReferenceCatalogCommand extends Command
                     } elseif ($account->role !== UserRole::User || (int) $account->bakery_id !== $store->id) {
                         throw new RuntimeException("Почта {$email} уже принадлежит другому аккаунту или магазину.");
                     }
+                    DB::table('bakery_account_stores')->updateOrInsert(['user_id' => $account->id, 'bakery_id' => $store->id]);
                 }
                 $productIds = [];
                 foreach ($data['products'] as $index => $name) {
                     $key = $reader->key($name);
-                    $product = $productsByName[$key] ?? Product::query()->create(['name' => $name, 'sort_order' => $index + 1, 'minimum_quantity' => 1, 'is_active' => true]);
+                    $mode = in_array($key, ['пицца', 'ватрушка', 'хачапури', 'лепёшка', 'лепешка'], true) ? 'single' : (in_array($key, ['мак', 'изюм', 'косичка с маком'], true) ? 'pair' : 'mixed');
+                    $product = $productsByName[$key] ?? Product::query()->create(['name' => $name, 'sort_order' => $index + 1, 'minimum_quantity' => 1, 'packaging_mode' => $mode, 'is_active' => true]);
                     $product->update(['sort_order' => $index + 1, 'is_active' => true]);
                     $productIds[] = $product->id;
                 }

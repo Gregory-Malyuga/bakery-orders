@@ -3,16 +3,31 @@
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Bakery\Application\OrderManagementService;
+use Domains\Bakery\Application\PackagingPlanner;
+use Domains\Bakery\Application\PeriodReportService;
+use Domains\Bakery\Application\ProductionCalculator;
 use Domains\Bakery\Application\Repositories\AdminRepositoryInterface;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Bakery\Infrastructure\Exports\PeriodReportWorkbook;
+use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook) {}
+
+    private function adminId(Request $request): int
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 401);
+
+        return (int) $user->id;
+    }
 
     private function date(Request $request): string
     {
@@ -25,34 +40,84 @@ class AdminWebController
     public function index(Request $request): View
     {
         $date = $this->date($request);
+        /** @var array{tab?:string,page?:int|string} $input */
+        $input = $request->validate(['tab' => ['nullable', 'in:orders,production,packaging,labels,prep'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $tab = $input['tab'] ?? 'orders';
         $orders = $this->orders->orders($date);
         $stores = $this->orders->stores();
         $products = $this->orders->products();
         $quantities = [];
         $totals = [];
+        $packaging = [];
+        $labelRows = [];
+        $labelTotal = 0;
+        $productsById = $products->keyBy('id');
+        $storesById = $stores->keyBy('id');
         foreach ($orders as $order) {
             foreach ($order->items as $item) {
                 $quantities[$item->product_id][$order->bakery_id] = ($quantities[$item->product_id][$order->bakery_id] ?? 0) + $item->quantity;
                 $totals[$item->product_id] = ($totals[$item->product_id] ?? 0) + $item->quantity;
             }
         }
+        foreach ($quantities as $productId => $byStore) {
+            $product = $productsById->get($productId);
+            if ($product === null) {
+                continue;
+            }
+            $packaging[$productId] = ['one' => 0, 'two' => 0, 'three' => 0, 'five' => 0, 'loose' => 0];
+            foreach ($byStore as $storeId => $quantity) {
+                $store = $storesById->get($storeId);
+                if ($store === null) {
+                    continue;
+                }
+                $plan = $this->packaging->plan($quantity, $product->packaging_mode);
+                foreach ($plan as $size => $count) {
+                    $packaging[$productId][$size] += $count;
+                    if ($count > 0 && $size !== 'loose') {
+                        $labelRows[] = ['store' => $store->name, 'product' => $product->name, 'size' => $size, 'count' => $count];
+                        $labelTotal += $count;
+                    }
+                }
+            }
+        }
+        $productionQuantities = [];
+        foreach ($totals as $productId => $quantity) {
+            $product = $productsById->get($productId);
+            if ($product === null) {
+                continue;
+            }
+            $name = $product->name;
+            $productionQuantities[$name] = ($productionQuantities[$name] ?? 0) + $quantity;
+        }
+        $production = $this->production->calculate($productionQuantities);
         $orderedStoreIds = $orders->pluck('bakery_id')->all();
         $activeStores = $stores->where('is_active', true);
         $matrixStores = $stores->filter(fn ($store): bool => $store->is_active || in_array($store->id, $orderedStoreIds, true));
+        $pageCount = max(1, (int) ceil($orders->count() / 20));
+        $page = min((int) ($input['page'] ?? 1), $pageCount);
+        $visibleOrders = $orders->forPage($page, 20);
 
-        return view('bakery.admin', compact('date', 'orders', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'orderedStoreIds'));
+        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labelRows', 'labelTotal', 'production', 'orderedStoreIds'));
     }
 
     public function catalog(Request $request): View
     {
         $stores = $this->orders->stores();
         $products = $this->orders->products();
-        /** @var array{store?:int|string} $input */
-        $input = $request->validate(['store' => ['nullable', 'integer']]);
+        /** @var array{store?:int|string,tab?:string,page?:int|string} $input */
+        $input = $request->validate(['store' => ['nullable', 'integer'], 'tab' => ['nullable', 'in:stores,products,prices,accounts'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $tab = $input['tab'] ?? 'stores';
         $selectedStore = (int) ($input['store'] ?? $stores->first()?->id);
         abort_if($selectedStore && $this->orders->store($selectedStore) === null, 404);
+        $accounts = $this->admin->accounts();
+        $perPage = $tab === 'accounts' ? 8 : 20;
+        $count = $tab === 'accounts' ? count($accounts) : $stores->count();
+        $pageCount = max(1, (int) ceil($count / $perPage));
+        $page = min((int) ($input['page'] ?? 1), $pageCount);
+        $visibleStores = $stores->forPage($page, $perPage);
+        $visibleAccounts = array_slice($accounts, ($page - 1) * $perPage, $perPage);
 
-        return view('bakery.catalog', ['stores' => $stores, 'products' => $products, 'selectedStore' => $selectedStore, 'prices' => $selectedStore ? $this->orders->prices($selectedStore) : [], 'accounts' => $this->admin->accounts()]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore) : []]);
     }
 
     public function saveStore(Request $request): RedirectResponse
@@ -66,9 +131,13 @@ class AdminWebController
 
     public function saveProduct(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,name:string,sort_order:int|string,minimum_quantity:int|string,is_active:bool|int|string} $data */
-        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakery_products,id'], 'name' => ['required', 'string', 'max:255'], 'sort_order' => ['required', 'integer', 'min:0'], 'minimum_quantity' => ['required', 'integer', 'min:1', 'max:100000'], 'is_active' => ['required', 'boolean']]);
-        $this->admin->saveProduct(isset($data['id']) ? (int) $data['id'] : null, ['name' => $data['name'], 'sort_order' => (int) $data['sort_order'], 'minimum_quantity' => (int) $data['minimum_quantity'], 'is_active' => (bool) $data['is_active']]);
+        /** @var array{id?:int|string,name:string,sort_order:int|string,minimum_quantity:int|string,packaging_mode?:string,is_active:bool|int|string} $data */
+        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakery_products,id'], 'name' => ['required', 'string', 'max:255'], 'sort_order' => ['required', 'integer', 'min:0'], 'minimum_quantity' => ['required', 'integer', 'min:1', 'max:100000'], 'packaging_mode' => ['nullable', 'in:single,pair,mixed'], 'is_active' => ['required', 'boolean']]);
+        $changes = ['name' => $data['name'], 'sort_order' => (int) $data['sort_order'], 'minimum_quantity' => (int) $data['minimum_quantity'], 'is_active' => (bool) $data['is_active']];
+        if (isset($data['packaging_mode'])) {
+            $changes['packaging_mode'] = $data['packaging_mode'];
+        }
+        $this->admin->saveProduct(isset($data['id']) ? (int) $data['id'] : null, $changes);
 
         return back()->with('success', 'Товар сохранён.');
     }
@@ -81,14 +150,14 @@ class AdminWebController
         $amount = ((int) $rubles * 100) + (int) str_pad($kopecks, 2, '0');
         $this->admin->savePrice((int) $data['store'], (int) $data['product'], $amount);
 
-        return redirect()->route('bakery.catalog', ['store' => $data['store']])->with('success', 'Цена сохранена.');
+        return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Цена сохранена.');
     }
 
     public function saveAccount(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,store:int|string,name:string,email:string,password?:string,is_active:bool|int|string} $data */
-        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:users,id'], 'store' => ['required', 'integer', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'max:255', 'unique:users,email,'.(is_scalar($request->input('id')) ? $request->input('id') : 'NULL')], 'password' => ['nullable', 'string', 'min:10'], 'is_active' => ['required', 'boolean']]);
-        $this->admin->saveAccount(isset($data['id']) ? (int) $data['id'] : null, (int) $data['store'], $data['name'], $data['email'], $data['password'] ?? null, (bool) $data['is_active']);
+        /** @var array{id?:int|string,stores:list<int|string>,name:string,email:string,password?:string,is_active:bool|int|string} $data */
+        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:users,id'], 'stores' => ['required', 'array', 'min:1'], 'stores.*' => ['required', 'integer', 'distinct', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'max:255', 'unique:users,email,'.(is_scalar($request->input('id')) ? $request->input('id') : 'NULL')], 'password' => ['nullable', 'string', 'min:10'], 'is_active' => ['required', 'boolean']]);
+        $this->admin->saveAccount(isset($data['id']) ? (int) $data['id'] : null, array_map('intval', $data['stores']), $data['name'], $data['email'], $data['password'] ?? null, (bool) $data['is_active']);
 
         return back()->with('success', 'Аккаунт сохранён.');
     }
@@ -98,7 +167,69 @@ class AdminWebController
         $record = $this->orders->order($order);
         abort_if($record === null, 404);
 
-        return view('bakery.admin-order', ['order' => $record]);
+        $returns = DB::table('bakery_returns')->where('order_id', $order)->orderByDesc('id')->get();
+        $adjustments = DB::table('bakery_order_adjustments')->where('order_id', $order)->orderByDesc('id')->get();
+
+        return view('bakery.admin-order', ['order' => $record, 'returns' => $returns, 'adjustments' => $adjustments]);
+    }
+
+    public function editOrder(int $order): View
+    {
+        $record = $this->orders->order($order);
+        abort_unless($record !== null && $record->status === 'accepted', 404);
+        $prices = $this->orders->prices((int) $record->bakery_id);
+        $products = $this->orders->products()->filter(fn ($product): bool => $record->items->contains('product_id', $product->id) || ($product->is_active && isset($prices[$product->id])));
+
+        return view('bakery.edit-order', ['order' => $record, 'products' => $products, 'prices' => $prices]);
+    }
+
+    public function updateOrder(Request $request, int $order): RedirectResponse
+    {
+        /** @var array{quantities:array<int|string,int|string>,reason:string,admin_note?:string} $data */
+        $data = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'reason' => ['required', 'string', 'max:500'], 'admin_note' => ['nullable', 'string', 'max:1000']]);
+        $this->management->adjust($order, $this->adminId($request), $data['quantities'], trim($data['reason']), isset($data['admin_note']) ? trim($data['admin_note']) : null);
+
+        return redirect()->route('bakery.admin-order', $order)->with('success', 'Заявка скорректирована.');
+    }
+
+    public function recordReturn(Request $request, int $order): RedirectResponse
+    {
+        /** @var array{product:int|string,quantity:int|string,reason?:string} $data */
+        $data = $request->validate(['product' => ['required', 'integer', 'exists:bakery_products,id'], 'quantity' => ['required', 'integer', 'min:1', 'max:100000'], 'reason' => ['nullable', 'string', 'max:500']]);
+        $this->management->recordReturn($order, $this->adminId($request), (int) $data['product'], (int) $data['quantity'], isset($data['reason']) ? trim($data['reason']) : null);
+
+        return back()->with('success', 'Возврат зафиксирован.');
+    }
+
+    /** @return array{from:string,to:string} */
+    private function period(Request $request): array
+    {
+        /** @var array{from?:string,to?:string} $input */
+        $input = $request->validate(['from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from']]);
+        $today = now('Europe/Moscow');
+        $from = $input['from'] ?? $today->copy()->startOfMonth()->toDateString();
+        $to = $input['to'] ?? $today->toDateString();
+        abort_if($from > $to, 422, 'Начало периода позже конца.');
+
+        return ['from' => $from, 'to' => $to];
+    }
+
+    public function report(Request $request): View
+    {
+        $period = $this->period($request);
+        $report = $this->periods->build($period['from'], $period['to']);
+
+        return view('bakery.period-report', ['from' => $period['from'], 'to' => $period['to'], 'report' => $report]);
+    }
+
+    public function downloadReport(Request $request): BinaryFileResponse
+    {
+        $period = $this->period($request);
+        $report = $this->periods->build($period['from'], $period['to']);
+
+        return response()->download($this->periodWorkbook->create($report), 'otchet-'.$period['from'].'-'.$period['to'].'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function printOne(int $order): View
@@ -106,14 +237,14 @@ class AdminWebController
         $record = $this->orders->order($order);
         abort_unless($record !== null && $record->status === 'accepted', 404);
 
-        return view('bakery.print', ['orders' => collect([$record])]);
+        return view('bakery.print', ['orders' => collect([$record]), 'downloadUrl' => route('bakery.xlsx-one', $record->id)]);
     }
 
     public function printBatch(Request $request): View
     {
         $date = $this->date($request);
 
-        return view('bakery.print', ['orders' => $this->orders->orders($date)]);
+        return view('bakery.print', ['orders' => $this->orders->orders($date), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse

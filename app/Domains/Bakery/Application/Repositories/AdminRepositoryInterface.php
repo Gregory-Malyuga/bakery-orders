@@ -12,7 +12,8 @@ interface AdminRepositoryInterface
 
     public function savePrice(int $storeId, int $productId, int $kopecks): void;
 
-    public function saveAccount(?int $id, int $storeId, string $name, string $email, ?string $password, bool $active): void;
+    /** @param list<int> $storeIds */
+    public function saveAccount(?int $id, array $storeIds, string $name, string $email, ?string $password, bool $active): void;
 
     /** @return list<array{id:int,bakery_id:int,name:string,email:string,status:string}> */
     public function accounts(): array;

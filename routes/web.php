@@ -33,6 +33,11 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');
     Route::post('/accounts', [AdminWebController::class, 'saveAccount'])->name('bakery.save-account');
     Route::get('/orders/{order}', [AdminWebController::class, 'order'])->name('bakery.admin-order');
+    Route::get('/orders/{order}/edit', [AdminWebController::class, 'editOrder'])->name('bakery.admin-order-edit');
+    Route::post('/orders/{order}/edit', [AdminWebController::class, 'updateOrder'])->name('bakery.admin-order-update');
+    Route::post('/orders/{order}/returns', [AdminWebController::class, 'recordReturn'])->name('bakery.admin-order-return');
+    Route::get('/report', [AdminWebController::class, 'report'])->name('bakery.report');
+    Route::get('/report/xlsx', [AdminWebController::class, 'downloadReport'])->name('bakery.report-xlsx');
     Route::get('/orders/{order}/print', [AdminWebController::class, 'printOne'])->name('bakery.print-one');
     Route::get('/orders/{order}/xlsx', [AdminWebController::class, 'downloadOne'])->name('bakery.xlsx-one');
     Route::get('/print', [AdminWebController::class, 'printBatch'])->name('bakery.print-batch');
