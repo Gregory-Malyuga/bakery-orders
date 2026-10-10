@@ -12,6 +12,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 
@@ -61,6 +62,22 @@ class User extends Authenticatable
 
     /** @var list<string> */
     protected $hidden = ['password', 'remember_token', 'status'];
+
+    /** @return list<int> */
+    public function accessibleStoreIds(): array
+    {
+        $ids = [];
+        foreach (DB::table('bakery_account_stores')->where('user_id', $this->id)->pluck('bakery_id') as $storeId) {
+            if (is_int($storeId) || is_string($storeId)) {
+                $ids[] = (int) $storeId;
+            }
+        }
+        if ($this->bakery_id !== null && ! in_array((int) $this->bakery_id, $ids, true)) {
+            $ids[] = (int) $this->bakery_id;
+        }
+
+        return $ids;
+    }
 
     protected static function newFactory(): UserFactory
     {

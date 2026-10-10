@@ -60,14 +60,14 @@ class OrderingService
     /** @param array<int|string, int|string> $quantities
      * @return array{order:Order|null,quote:array{date:string,items:list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>,total:int,hash:string}|null}
      */
-    public function place(int $storeId, string $key, array $quantities, string $expectedHash): array
+    public function place(int $storeId, string $key, array $quantities, string $expectedHash, ?string $comment = null): array
     {
         $previous = $this->repository->request($storeId, $key);
         if ($previous !== null) {
             return ['order' => $previous, 'quote' => null];
         }
 
-        $result = $this->repository->lockedStore($storeId, function () use ($storeId, $key, $quantities, $expectedHash): array {
+        $result = $this->repository->lockedStore($storeId, function () use ($storeId, $key, $quantities, $expectedHash, $comment): array {
             $previous = $this->repository->request($storeId, $key);
             if ($previous !== null) {
                 return ['order' => $previous, 'quote' => null];
@@ -88,7 +88,7 @@ class OrderingService
                 return ['order' => null, 'quote' => $quote];
             }
 
-            return ['order' => $this->repository->createOrder($store, $quote['date'], $key, $quote['items'], $quote['total']), 'quote' => null];
+            return ['order' => $this->repository->createOrder($store, $quote['date'], $key, $quote['items'], $quote['total'], $comment), 'quote' => null];
         });
         /** @var array{order:Order|null,quote:array{date:string,items:list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>,total:int,hash:string}|null} $result */
 
