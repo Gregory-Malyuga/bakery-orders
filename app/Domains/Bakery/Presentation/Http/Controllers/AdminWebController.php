@@ -112,8 +112,11 @@ class AdminWebController
         $page = min((int) ($input['page'] ?? 1), $pageCount);
         $visibleStores = $stores->forPage($page, $perPage);
         $visibleAccounts = array_slice($accounts, ($page - 1) * $perPage, $perPage);
+        $unavailableProducts = $selectedStore && $tab === 'prices'
+            ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => [(int) $id => true])->all()
+            : [];
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : []]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : []]);
     }
 
     public function saveStore(Request $request): RedirectResponse
@@ -161,6 +164,23 @@ class AdminWebController
         }
 
         return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Минимум для магазина сохранён.');
+    }
+
+    public function saveAvailability(Request $request): RedirectResponse
+    {
+        /** @var array{store:int|string,product:int|string,is_available:bool|int|string} $data */
+        $data = $request->validate(['store' => ['required', 'integer', 'exists:bakeries,id'], 'product' => ['required', 'integer', 'exists:bakery_products,id'], 'is_available' => ['required', 'boolean']]);
+        $storeId = (int) $data['store'];
+        $productId = (int) $data['product'];
+        $key = ['bakery_id' => $storeId, 'product_id' => $productId];
+        if ((bool) $data['is_available']) {
+            abort_unless(isset($this->orders->prices($storeId, true)[$productId]), 422, 'Сначала назначьте цену товара.');
+            DB::table('bakery_store_product_exclusions')->where($key)->delete();
+        } else {
+            DB::table('bakery_store_product_exclusions')->updateOrInsert($key);
+        }
+
+        return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $storeId])->with('success', 'Ассортимент магазина сохранён.');
     }
 
     public function saveAccount(Request $request): RedirectResponse

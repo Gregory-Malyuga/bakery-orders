@@ -15,7 +15,7 @@ interface OrderingRepositoryInterface
     public function products(): Collection;
 
     /** @return array<int, int> */
-    public function prices(int $storeId): array;
+    public function prices(int $storeId, bool $includeUnavailable = false): array;
 
     /** @return array<int, int> Store overrides only. */
     public function minimums(int $storeId): array;
