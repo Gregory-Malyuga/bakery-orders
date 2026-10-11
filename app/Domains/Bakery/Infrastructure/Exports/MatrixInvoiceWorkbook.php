@@ -84,7 +84,11 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             }
             $this->put($cells, 1, $this->label($start + 3, 1, 'Дата поставки'));
             $this->put($cells, 1, $this->label($start + 4, 1, $order->delivery_date->format('d.m.Y')));
-            $this->put($cells, 2, $this->label($start + 1, 2, 'Накладная №'.$order->id, 1));
+            $this->put($cells, 2, $this->blank($start, 2, 9));
+            $this->put($cells, 2, $this->label($start + 1, 2, 'Накладная №'.$order->id, 9));
+            for ($offset = 2; $offset <= 6; $offset++) {
+                $this->put($cells, 2, $this->blank($start + $offset, 2, 9));
+            }
             if ($order->comment !== null && $order->comment !== '') {
                 $this->put($cells, 3, $this->label($start + 1, 3, 'Комментарий: '.$order->comment));
             }
@@ -92,22 +96,26 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, 4, $this->label($start + 1, 4, $order->store_name, 1));
             $this->put($cells, 5, $this->label($start + 1, 5, $order->store_address));
             foreach (['№', 'Товар', 'Заказано', 'Возврат', 'Цена, ₽', 'Сумма, ₽', 'После возврата, ₽'] as $offset => $title) {
-                $this->put($cells, 6, $this->label($start + $offset, 6, $title, 2));
+                $this->put($cells, 6, $this->label($start + $offset, 6, $title, 5));
             }
             $items = $order->items->keyBy('product_id');
             $position = 1;
             foreach ($catalog as $productId => $name) {
                 $row = 6 + $position;
                 $item = $items->get($productId);
-                $this->put($cells, $row, $this->number($start, $row, (string) $position));
-                $this->put($cells, $row, $this->label($start + 1, $row, $item === null ? $name : $item->product_name));
-                $this->put($cells, $row, $this->number($start + 2, $row, (string) ($item === null ? 0 : $item->quantity)));
+                $this->put($cells, $row, $this->number($start, $row, (string) $position, 4));
+                $this->put($cells, $row, $this->label($start + 1, $row, $item === null ? $name : $item->product_name, 4));
+                $this->put($cells, $row, $this->number($start + 2, $row, (string) ($item === null ? 0 : $item->quantity), 4));
                 $returned = $returns[$order->id][$productId] ?? 0;
-                $this->put($cells, $row, $this->number($start + 3, $row, (string) $returned));
+                $this->put($cells, $row, $this->number($start + 3, $row, (string) $returned, 4));
                 if ($item !== null) {
-                    $this->put($cells, $row, $this->number($start + 4, $row, $this->rubles($item->unit_kopecks), 3));
-                    $this->put($cells, $row, $this->formula($start + 5, $row, $this->ref($start + 2, $row).'*'.$this->ref($start + 4, $row), $this->rubles($item->total_kopecks), 3));
-                    $this->put($cells, $row, $this->formula($start + 6, $row, '('.$this->ref($start + 2, $row).'-'.$this->ref($start + 3, $row).')*'.$this->ref($start + 4, $row), $this->rubles(($item->quantity - $returned) * $item->unit_kopecks), 3));
+                    $this->put($cells, $row, $this->number($start + 4, $row, $this->rubles($item->unit_kopecks), 6));
+                    $this->put($cells, $row, $this->formula($start + 5, $row, $this->ref($start + 2, $row).'*'.$this->ref($start + 4, $row), $this->rubles($item->total_kopecks), 6));
+                    $this->put($cells, $row, $this->formula($start + 6, $row, '('.$this->ref($start + 2, $row).'-'.$this->ref($start + 3, $row).')*'.$this->ref($start + 4, $row), $this->rubles(($item->quantity - $returned) * $item->unit_kopecks), 6));
+                } else {
+                    for ($offset = 4; $offset <= 6; $offset++) {
+                        $this->put($cells, $row, $this->blank($start + $offset, $row, 6));
+                    }
                 }
                 $position++;
             }
@@ -118,11 +126,13 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $netColumn = $this->column($start + 6);
             $returnedQuantity = array_sum($returns[$order->id] ?? []);
             $returnedKopecks = $order->items->sum(fn ($item): int => ($returns[$order->id][$item->product_id] ?? 0) * $item->unit_kopecks);
-            $this->put($cells, $totalRow, $this->label($start + 1, $totalRow, 'Итого', 2));
-            $this->put($cells, $totalRow, $this->formula($start + 2, $totalRow, "SUM({$quantityColumn}7:{$quantityColumn}{$lastProductRow})", (string) $this->quantity($order)));
-            $this->put($cells, $totalRow, $this->formula($start + 3, $totalRow, "SUM({$returnColumn}7:{$returnColumn}{$lastProductRow})", (string) $returnedQuantity));
-            $this->put($cells, $totalRow, $this->formula($start + 5, $totalRow, "SUM({$sumColumn}7:{$sumColumn}{$lastProductRow})", $this->rubles($order->total_kopecks), 3));
-            $this->put($cells, $totalRow, $this->formula($start + 6, $totalRow, "SUM({$netColumn}7:{$netColumn}{$lastProductRow})", $this->rubles($order->total_kopecks - $returnedKopecks), 3));
+            $this->put($cells, $totalRow, $this->blank($start, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->label($start + 1, $totalRow, 'Итого', 7));
+            $this->put($cells, $totalRow, $this->formula($start + 2, $totalRow, "SUM({$quantityColumn}7:{$quantityColumn}{$lastProductRow})", (string) $this->quantity($order), 7));
+            $this->put($cells, $totalRow, $this->formula($start + 3, $totalRow, "SUM({$returnColumn}7:{$returnColumn}{$lastProductRow})", (string) $returnedQuantity, 7));
+            $this->put($cells, $totalRow, $this->blank($start + 4, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->formula($start + 5, $totalRow, "SUM({$sumColumn}7:{$sumColumn}{$lastProductRow})", $this->rubles($order->total_kopecks), 8));
+            $this->put($cells, $totalRow, $this->formula($start + 6, $totalRow, "SUM({$netColumn}7:{$netColumn}{$lastProductRow})", $this->rubles($order->total_kopecks - $returnedKopecks), 8));
         }
         if ($orders === []) {
             $this->put($cells, 1, $this->label(1, 1, 'На выбранную дату принятых заказов нет.'));
@@ -140,48 +150,50 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         $cells = [];
         $widths = ['<col min="1" max="1" width="43" customWidth="1"/>'];
         $date = $orders !== [] ? $orders[0]->delivery_date->format('d.m.Y') : '';
-        $this->put($cells, 1, $this->label(1, 1, 'Заказ на '.$date, 1));
-        $this->put($cells, 3, $this->label(1, 3, 'Продукция', 2));
+        $this->put($cells, 1, $this->label(1, 1, 'Заказ на '.$date, 9));
+        $this->put($cells, 3, $this->label(1, 3, 'Продукция', 5));
         foreach ($orders as $index => $order) {
             $column = $index + 2;
             $widths[] = '<col min="'.$column.'" max="'.$column.'" width="24" customWidth="1"/>';
-            $this->put($cells, 3, $this->label($column, 3, $order->store_name, 2));
+            $this->put($cells, 1, $this->blank($column, 1, 9));
+            $this->put($cells, 3, $this->label($column, 3, $order->store_name, 5));
         }
         $totalColumn = count($orders) + 2;
         $widths[] = '<col min="'.$totalColumn.'" max="'.$totalColumn.'" width="18" customWidth="1"/>';
-        $this->put($cells, 3, $this->label($totalColumn, 3, 'Итого, шт.', 2));
+        $this->put($cells, 1, $this->blank($totalColumn, 1, 9));
+        $this->put($cells, 3, $this->label($totalColumn, 3, 'Итого, шт.', 5));
         $position = 0;
         foreach ($catalog as $productId => $name) {
             $row = 4 + $position++;
-            $this->put($cells, $row, $this->label(1, $row, $name));
+            $this->put($cells, $row, $this->label(1, $row, $name, 4));
             $total = 0;
             foreach ($orders as $index => $order) {
                 $quantity = $this->productQuantity($order, $productId);
                 $total += $quantity;
-                $this->put($cells, $row, $this->number($index + 2, $row, (string) $quantity));
+                $this->put($cells, $row, $this->number($index + 2, $row, (string) $quantity, 4));
             }
             $this->put($cells, $row, $orders === []
-                ? $this->number($totalColumn, $row, '0')
-                : $this->formula($totalColumn, $row, 'SUM(B'.$row.':'.$this->ref($totalColumn - 1, $row).')', (string) $total));
+                ? $this->number($totalColumn, $row, '0', 4)
+                : $this->formula($totalColumn, $row, 'SUM(B'.$row.':'.$this->ref($totalColumn - 1, $row).')', (string) $total, 4));
         }
         $quantityRow = 4 + count($catalog);
         $moneyRow = $quantityRow + 1;
-        $this->put($cells, $quantityRow, $this->label(1, $quantityRow, 'Всего, шт.', 2));
-        $this->put($cells, $moneyRow, $this->label(1, $moneyRow, 'Итого, ₽', 2));
+        $this->put($cells, $quantityRow, $this->label(1, $quantityRow, 'Всего, шт.', 7));
+        $this->put($cells, $moneyRow, $this->label(1, $moneyRow, 'Итого, ₽', 7));
         foreach ($orders as $index => $order) {
             $column = $index + 2;
             $letter = $this->column($column);
-            $this->put($cells, $quantityRow, $this->formula($column, $quantityRow, "SUM({$letter}4:{$letter}".($quantityRow - 1).')', (string) $this->quantity($order)));
-            $this->put($cells, $moneyRow, $this->number($column, $moneyRow, $this->rubles($order->total_kopecks), 3));
+            $this->put($cells, $quantityRow, $this->formula($column, $quantityRow, "SUM({$letter}4:{$letter}".($quantityRow - 1).')', (string) $this->quantity($order), 7));
+            $this->put($cells, $moneyRow, $this->number($column, $moneyRow, $this->rubles($order->total_kopecks), 8));
         }
         $totalQuantity = array_sum(array_map(fn (Order $order): int => $this->quantity($order), $orders));
         $totalMoney = array_sum(array_map(fn (Order $order): int => $order->total_kopecks, $orders));
         $this->put($cells, $quantityRow, $orders === []
-            ? $this->number($totalColumn, $quantityRow, '0')
-            : $this->formula($totalColumn, $quantityRow, 'SUM('.$this->column($totalColumn).'4:'.$this->ref($totalColumn, $quantityRow - 1).')', (string) $totalQuantity));
+            ? $this->number($totalColumn, $quantityRow, '0', 7)
+            : $this->formula($totalColumn, $quantityRow, 'SUM('.$this->column($totalColumn).'4:'.$this->ref($totalColumn, $quantityRow - 1).')', (string) $totalQuantity, 7));
         $this->put($cells, $moneyRow, $orders === []
-            ? $this->number($totalColumn, $moneyRow, '0.00', 3)
-            : $this->formula($totalColumn, $moneyRow, 'SUM(B'.$moneyRow.':'.$this->ref($totalColumn - 1, $moneyRow).')', $this->rubles($totalMoney), 3));
+            ? $this->number($totalColumn, $moneyRow, '0.00', 8)
+            : $this->formula($totalColumn, $moneyRow, 'SUM(B'.$moneyRow.':'.$this->ref($totalColumn - 1, $moneyRow).')', $this->rubles($totalMoney), 8));
 
         return $this->sheet($cells, implode('', $widths), true);
     }
@@ -192,7 +204,8 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         ksort($cells);
         $rows = '';
         foreach ($cells as $number => $content) {
-            $rows .= '<row r="'.$number.'">'.implode('', $content).'</row>';
+            $height = $freeze ? ($number === 1 ? 26 : ($number === 3 ? 36 : 0)) : ($number === 2 ? 26 : ($number === 6 ? 32 : 0));
+            $rows .= '<row r="'.$number.'"'.($height ? ' ht="'.$height.'" customHeight="1"' : '').'>'.implode('', $content).'</row>';
         }
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
@@ -213,6 +226,11 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     {
         return '<c r="'.$this->ref($column, $row).'" s="'.$style.'" t="inlineStr"><is><t xml:space="preserve">'
             .htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8').'</t></is></c>';
+    }
+
+    private function blank(int $column, int $row, int $style): string
+    {
+        return '<c r="'.$this->ref($column, $row).'" s="'.$style.'"/>';
     }
 
     private function number(int $column, int $row, string $value, int $style = 0): string
@@ -311,14 +329,24 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     {
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-            .'<fonts count="2"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font></fonts>'
-            .'<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>'
-            .'<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+            .'<fonts count="3"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="11"/><name val="Arial"/></font><font><b/><sz val="13"/><name val="Arial"/></font></fonts>'
+            .'<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
+            .'<fill><patternFill patternType="solid"><fgColor rgb="FFFFFF00"/><bgColor indexed="64"/></patternFill></fill>'
+            .'<fill><patternFill patternType="solid"><fgColor rgb="FFE2F0D9"/><bgColor indexed="64"/></patternFill></fill></fills>'
+            .'<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'
+            .'<border><left style="thin"><color rgb="FF727D72"/></left><right style="thin"><color rgb="FF727D72"/></right>'
+            .'<top style="thin"><color rgb="FF727D72"/></top><bottom style="thin"><color rgb="FF727D72"/></bottom><diagonal/></border></borders>'
             .'<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-            .'<cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+            .'<cellXfs count="10"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
             .'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
             .'<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
             .'<xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/>'
+            .'<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>'
+            .'<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+            .'<xf numFmtId="4" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1"/>'
+            .'<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/>'
+            .'<xf numFmtId="4" fontId="1" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1"/>'
+            .'<xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>'
             .'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
             .'</styleSheet>';
     }
