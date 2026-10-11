@@ -7,3 +7,4 @@
 label textarea{display:block;width:100%;padding:12px 14px;margin-top:7px;margin-bottom:18px;border:1px solid #cfd8ce;border-radius:9px;background:#fff;color:var(--ink);font:inherit;resize:vertical}.form-grid label textarea{margin-bottom:0}
 .history-row{grid-template-columns:minmax(0,1fr) auto auto auto}.history-row>a:first-child{color:var(--green-dark)}.history-row .button{padding:8px 12px}
 @media(max-width:700px){.history-row{grid-template-columns:1fr auto}.history-row strong{text-align:left}.history-row .button{justify-self:end}}
+details summary{cursor:pointer;color:var(--green-dark);font-weight:700;font-size:13px;margin-top:8px}details[open] select{min-width:280px;margin-top:10px}
