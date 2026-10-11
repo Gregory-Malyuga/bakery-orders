@@ -152,6 +152,39 @@ class MultiStoreOrderingTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_store_can_be_unassigned_and_then_assigned_to_another_account(): void
+    {
+        $store = Bakery::query()->create(['name' => 'Тестовый свободный магазин', 'address' => 'Адрес', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $first = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
+        DB::table('bakery_account_stores')->insert(['user_id' => $first->id, 'bakery_id' => $store->id]);
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'stores' => [$store->id], 'name' => 'Второй аккаунт', 'email' => 'second-store@example.test',
+            'password' => 'StrongPassword123!', 'is_active' => 1,
+        ])->assertSessionHasErrors('stores');
+        $this->assertDatabaseMissing('users', ['email' => 'second-store@example.test']);
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'id' => $first->id, 'name' => $first->name, 'email' => $first->email, 'is_active' => 1,
+        ])->assertRedirect()->assertSessionHas('success');
+        $first->refresh();
+        $this->assertNull($first->bakery_id);
+        $this->assertSame([], $first->accessibleStoreIds());
+        $this->actingAs($first)->get('/orders')->assertOk()->assertSee('Нет назначенных магазинов');
+        $this->actingAs($first)->get('/orders?store='.$store->id)->assertForbidden();
+        $this->actingAs($admin)->get('/admin/catalog?tab=accounts')->assertOk()->assertSee('Нет магазинов');
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'stores' => [$store->id], 'name' => 'Второй аккаунт', 'email' => 'second-store@example.test',
+            'password' => 'StrongPassword123!', 'is_active' => 1,
+        ])->assertRedirect()->assertSessionHas('success');
+        $second = User::query()->where('email', 'second-store@example.test')->firstOrFail();
+        $this->assertSame([$store->id], $second->accessibleStoreIds());
+        $this->assertDatabaseHas('bakery_account_stores', ['user_id' => $second->id, 'bakery_id' => $store->id]);
+        $this->actingAs($second)->get('/orders')->assertOk();
+    }
+
     public function test_admin_tabs_show_only_selected_section_and_keep_date(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);

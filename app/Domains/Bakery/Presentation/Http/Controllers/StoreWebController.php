@@ -26,14 +26,19 @@ class StoreWebController
     {
         /** @var array{store?:int|string|null} $input */
         $input = $request->validate(['store' => ['nullable', 'integer']]);
-        $id = (int) ($input['store'] ?? $this->user($request)->bakery_id);
-        abort_unless(in_array($id, $this->user($request)->accessibleStoreIds(), true), 403);
+        $accessibleStoreIds = $this->user($request)->accessibleStoreIds();
+        $id = (int) ($input['store'] ?? ($accessibleStoreIds[0] ?? 0));
+        abort_unless(in_array($id, $accessibleStoreIds, true), 403);
 
         return $id;
     }
 
     public function index(Request $request): View
     {
+        if ($this->user($request)->accessibleStoreIds() === []) {
+            abort_if($request->has('store'), 403);
+            return view('bakery.no-stores');
+        }
         $id = $this->storeId($request);
         $store = $this->repository->store($id);
         abort_unless($store !== null && $store->is_active, 403);

@@ -105,6 +105,7 @@ class AdminWebController
         $selectedStore = (int) ($input['store'] ?? $stores->first()?->id);
         abort_if($selectedStore && $this->orders->store($selectedStore) === null, 404);
         $accounts = $this->admin->accounts();
+        $storeOwners = $tab === 'accounts' ? DB::table('bakery_account_stores')->pluck('user_id', 'bakery_id')->all() : [];
         $perPage = $tab === 'accounts' ? 8 : 20;
         $count = $tab === 'accounts' ? count($accounts) : $stores->count();
         $pageCount = max(1, (int) ceil($count / $perPage));
@@ -112,7 +113,7 @@ class AdminWebController
         $visibleStores = $stores->forPage($page, $perPage);
         $visibleAccounts = array_slice($accounts, ($page - 1) * $perPage, $perPage);
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : []]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : []]);
     }
 
     public function saveStore(Request $request): RedirectResponse
@@ -164,9 +165,9 @@ class AdminWebController
 
     public function saveAccount(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,stores:list<int|string>,name:string,email:string,password?:string,is_active:bool|int|string} $data */
-        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:users,id'], 'stores' => ['required', 'array', 'min:1'], 'stores.*' => ['required', 'integer', 'distinct', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'max:255', 'unique:users,email,'.(is_scalar($request->input('id')) ? $request->input('id') : 'NULL')], 'password' => ['nullable', 'string', 'min:10'], 'is_active' => ['required', 'boolean']]);
-        $this->admin->saveAccount(isset($data['id']) ? (int) $data['id'] : null, array_map('intval', $data['stores']), $data['name'], $data['email'], $data['password'] ?? null, (bool) $data['is_active']);
+        /** @var array{id?:int|string,stores?:list<int|string>,name:string,email:string,password?:string,is_active:bool|int|string} $data */
+        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:users,id'], 'stores' => ['sometimes', 'array'], 'stores.*' => ['required', 'integer', 'distinct', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'email' => ['required', 'email', 'max:255', 'unique:users,email,'.(is_scalar($request->input('id')) ? $request->input('id') : 'NULL')], 'password' => ['nullable', 'string', 'min:10'], 'is_active' => ['required', 'boolean']]);
+        $this->admin->saveAccount(isset($data['id']) ? (int) $data['id'] : null, array_map('intval', $data['stores'] ?? []), $data['name'], $data['email'], $data['password'] ?? null, (bool) $data['is_active']);
 
         return back()->with('success', 'Аккаунт сохранён.');
     }
