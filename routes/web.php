@@ -33,6 +33,7 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/products', [AdminWebController::class, 'saveProduct'])->name('bakery.save-product');
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');
     Route::post('/minimums', [AdminWebController::class, 'saveMinimum'])->name('bakery.save-minimum');
+    Route::post('/availability', [AdminWebController::class, 'saveAvailability'])->name('bakery.save-availability');
     Route::post('/accounts', [AdminWebController::class, 'saveAccount'])->name('bakery.save-account');
     Route::get('/orders/{order}', [AdminWebController::class, 'order'])->name('bakery.admin-order');
     Route::get('/orders/{order}/edit', [AdminWebController::class, 'editOrder'])->name('bakery.admin-order-edit');
