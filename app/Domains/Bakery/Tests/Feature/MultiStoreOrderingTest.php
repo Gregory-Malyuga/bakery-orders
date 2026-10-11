@@ -85,7 +85,10 @@ class MultiStoreOrderingTest extends TestCase
 
         $account = User::query()->where('email', 'baltiyskaya@example.test')->firstOrFail();
         $this->assertSame([$first->id, $second->id], $account->accessibleStoreIds());
-        $this->actingAs($admin)->get('/admin/catalog')->assertOk()->assertSee('Балтийская 26');
+        $this->actingAs($admin)->get('/admin/catalog?tab=accounts')->assertOk()
+            ->assertSee('Балтийская 26, Балтийская 35')
+            ->assertSee('Изменить привязку')
+            ->assertSee('form="account-'.$account->id.'"', false);
         $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
 
         $this->actingAs($admin)->post('/admin/accounts', [
