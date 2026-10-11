@@ -15,6 +15,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use PharData;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -137,6 +138,32 @@ class OrderingFlowTest extends TestCase
         $this->assertNotNull($service->place($store->id, (string) Str::uuid(), [$product->id => 3], $newQuote['hash'])['order']);
     }
 
+    public function test_store_minimum_override_and_repeat_prefill_respect_access_and_current_price(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Повтор', 3000);
+        [$other, $otherUser] = $this->shop('Другой', 4000);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 2, 'is_active' => 1])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => 3])->assertRedirect();
+        $this->assertSame(3, DB::table('bakery_store_product_minimums')->where('bakery_id', $store->id)->where('product_id', $product->id)->value('minimum_quantity'));
+        $this->actingAs($user)->get('/orders')->assertOk()->assertSee('минимум 3 шт.');
+        $this->actingAs($otherUser)->get('/orders')->assertOk()->assertSee('минимум 2 шт.');
+        $this->actingAs($user)->post('/orders/preview', ['request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 2]])->assertSessionHasErrors('quantities');
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 3]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 3], $quote['hash'])['order'];
+        $this->assertNotNull($order);
+        $this->actingAs($otherUser)->get('/orders/'.$order->id.'/repeat')->assertNotFound();
+        Carbon::setTestNow(Carbon::parse('2026-10-07 12:00:00', 'Europe/Moscow'));
+        Price::query()->where('bakery_id', $store->id)->where('product_id', $product->id)->update(['kopecks' => 3500]);
+        $this->actingAs($user)->get('/orders/'.$order->id.'/repeat')->assertOk()->assertSee('value="3"', false)->assertSee('35,00 ₽');
+        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders('2026-10-08'));
+        $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => ''])->assertRedirect();
+        $this->actingAs($user)->get('/orders')->assertOk()->assertSee('минимум 2 шт.');
+    }
+
     public function test_client_clock_cannot_bypass_server_cutoff(): void
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
@@ -184,7 +211,7 @@ class OrderingFlowTest extends TestCase
         $summary = $archive['xl/worksheets/sheet2.xml']->getContent();
         $this->assertStringContainsString('Седьмой', $sheet);
         $this->assertStringContainsString('Девятый', $sheet);
-        $this->assertStringContainsString('r="H4"', $sheet);
+        $this->assertStringContainsString('r="J4"', $sheet);
         $this->assertStringContainsString('<v>31.50</v>', $sheet);
         $this->assertStringContainsString('<v>34.00</v>', $sheet);
         $this->assertStringNotContainsString('Восьмой', $sheet);

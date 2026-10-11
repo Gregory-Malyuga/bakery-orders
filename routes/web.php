@@ -19,6 +19,7 @@ Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')
 
 Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
     Route::get('/orders', [StoreWebController::class, 'index'])->name('bakery.store');
+    Route::get('/orders/{order}/repeat', [StoreWebController::class, 'repeat'])->name('bakery.repeat');
     Route::post('/orders/preview', [StoreWebController::class, 'preview'])->name('bakery.preview');
     Route::post('/orders', [StoreWebController::class, 'place'])->name('bakery.place');
     Route::get('/orders/{order}', [StoreWebController::class, 'show'])->name('bakery.order');
@@ -31,6 +32,7 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/stores', [AdminWebController::class, 'saveStore'])->name('bakery.save-store');
     Route::post('/products', [AdminWebController::class, 'saveProduct'])->name('bakery.save-product');
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');
+    Route::post('/minimums', [AdminWebController::class, 'saveMinimum'])->name('bakery.save-minimum');
     Route::post('/accounts', [AdminWebController::class, 'saveAccount'])->name('bakery.save-account');
     Route::get('/orders/{order}', [AdminWebController::class, 'order'])->name('bakery.admin-order');
     Route::get('/orders/{order}/edit', [AdminWebController::class, 'editOrder'])->name('bakery.admin-order-edit');
