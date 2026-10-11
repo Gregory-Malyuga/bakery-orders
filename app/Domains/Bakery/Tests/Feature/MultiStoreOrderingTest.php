@@ -88,6 +88,7 @@ class MultiStoreOrderingTest extends TestCase
         $this->actingAs($admin)->get('/admin/catalog?tab=accounts')->assertOk()
             ->assertSee('Балтийская 26, Балтийская 35')
             ->assertSee('Изменить привязку')
+            ->assertSee('type="checkbox" name="stores[]" value="'.$second->id.'" checked', false)
             ->assertSee('form="account-'.$account->id.'"', false);
         $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
 
@@ -101,6 +102,54 @@ class MultiStoreOrderingTest extends TestCase
         $account->refresh();
         $this->assertSame([$second->id], $account->accessibleStoreIds());
         $this->actingAs($account)->get('/orders?store='.$first->id)->assertForbidden();
+        $account->update(['bakery_id' => $first->id]);
+        $this->assertSame([$second->id], $account->accessibleStoreIds());
+        $this->actingAs($account)->get('/orders?store='.$first->id)->assertForbidden();
+        $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
+    }
+
+    public function test_one_account_can_place_one_order_per_store_for_the_same_delivery_date(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
+        $first = Bakery::query()->create(['name' => 'Тестовый магазин А', 'address' => 'Адрес А', 'is_active' => true]);
+        $second = Bakery::query()->create(['name' => 'Тестовый магазин Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $product = Product::query()->create(['name' => 'Тестовый пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'is_active' => true]);
+        foreach ([$first, $second] as $store) {
+            Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 3000]);
+        }
+        $account = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $first->id]);
+        DB::table('bakery_account_stores')->insert([
+            ['user_id' => $account->id, 'bakery_id' => $first->id],
+            ['user_id' => $account->id, 'bakery_id' => $second->id],
+        ]);
+
+        $quote = app(OrderingService::class)->quote($first->id, [$product->id => 1]);
+        $firstResponse = $this->actingAs($account)->post('/orders', [
+            'store' => $first->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->actingAs($account)->get('/orders?store='.$first->id)
+            ->assertOk()->assertSee('Для магазина «Тестовый магазин А» заказ на завтра уже оформлен')
+            ->assertSee('/orders?store='.$second->id, false);
+        $this->actingAs($account)->get('/orders?store='.$second->id)
+            ->assertOk()->assertSee('Проверить заказ');
+
+        $secondResponse = $this->actingAs($account)->post('/orders', [
+            'store' => $second->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->assertNotSame($firstResponse->headers->get('Location'), $secondResponse->headers->get('Location'));
+        $this->assertSame(2, DB::table('bakery_orders')->whereIn('bakery_id', [$first->id, $second->id])
+            ->where('delivery_date', $quote['date'])->where('status', 'accepted')->count());
+
+        $duplicate = $this->actingAs($account)->post('/orders', [
+            'store' => $first->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->assertSame($firstResponse->headers->get('Location'), $duplicate->headers->get('Location'));
+        $this->assertSame(2, DB::table('bakery_orders')->whereIn('bakery_id', [$first->id, $second->id])
+            ->where('delivery_date', $quote['date'])->where('status', 'accepted')->count());
+        Carbon::setTestNow();
     }
 
     public function test_admin_tabs_show_only_selected_section_and_keep_date(): void
