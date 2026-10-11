@@ -43,10 +43,10 @@
 <p class="muted small">Логин — адрес электронной почты; его и пароль можно изменить здесь. Для нескольких магазинов общий прайс берётся из верхнего выбранного магазина в списке.</p>
 <div class="section-head"><h2>Аккаунты магазинов</h2></div>
 <div class="panel data-panel">
-    <p class="muted small">Для аккаунта с несколькими магазинами выбирайте дополнительные магазины с Ctrl или Shift.</p>
+    <p class="muted small">Отметьте все магазины, доступные аккаунту. Каждый магазин оформляет свой заказ отдельно.</p>
     <h3>Новый аккаунт</h3>
     <form method="post" action="{{ route('bakery.save-account') }}" class="form-grid">@csrf
-        <label>Магазины<select name="stores[]" multiple size="5" required>@foreach($stores as $store)<option value="{{ $store->id }}">{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</option>@endforeach</select></label>
+        <fieldset class="store-choices"><legend>Магазины</legend>@foreach($stores as $store)<label><input type="checkbox" name="stores[]" value="{{ $store->id }}">{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@endforeach</fieldset>
         <label>Имя<input name="name" required></label><label>Почта<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" minlength="10" required></label>
         <input type="hidden" name="is_active" value="1"><button class="button primary">Создать</button>
     </form>
@@ -54,7 +54,7 @@
         @foreach($visibleAccounts as $account)
             <tr>
                 <td><form id="account-{{ $account['id'] }}" method="post" action="{{ route('bakery.save-account') }}">@csrf<input type="hidden" name="id" value="{{ $account['id'] }}"><input type="hidden" name="name" value="{{ $account['name'] }}"></form><input form="account-{{ $account['id'] }}" type="email" name="email" value="{{ $account['email'] }}" required></td>
-                <td><strong>{{ $stores->whereIn('id', $account['store_ids'])->pluck('name')->implode(', ') }}</strong><details><summary>Изменить привязку</summary><select form="account-{{ $account['id'] }}" name="stores[]" multiple size="6" required>@foreach($stores as $store)<option value="{{ $store->id }}" @selected(in_array($store->id, $account['store_ids'], true))>{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</option>@endforeach</select></details></td>
+                <td><strong>{{ $stores->whereIn('id', $account['store_ids'])->pluck('name')->implode(', ') }}</strong><details><summary>Изменить привязку</summary><fieldset class="store-choices">@foreach($stores as $store)<label><input form="account-{{ $account['id'] }}" type="checkbox" name="stores[]" value="{{ $store->id }}" @checked(in_array($store->id, $account['store_ids'], true))>{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@endforeach</fieldset></details></td>
                 <td><select form="account-{{ $account['id'] }}" name="is_active"><option value="1" @selected($account['status']==='verify')>Да</option><option value="0" @selected($account['status']!=='verify')>Нет</option></select></td>
                 <td><input form="account-{{ $account['id'] }}" type="password" name="password" placeholder="Без изменения" minlength="10"></td>
                 <td><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button></td>
