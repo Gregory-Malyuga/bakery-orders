@@ -35,6 +35,11 @@ class OrderingRepository implements OrderingRepositoryInterface
         return $prices;
     }
 
+    public function minimums(int $storeId): array
+    {
+        return DB::table('bakery_store_product_minimums')->where('bakery_id', $storeId)->pluck('minimum_quantity', 'product_id')->mapWithKeys(fn ($quantity, $productId): array => [(int) $productId => (int) $quantity])->all();
+    }
+
     public function stores(): Collection
     {
         return Bakery::query()->orderBy('name')->get();

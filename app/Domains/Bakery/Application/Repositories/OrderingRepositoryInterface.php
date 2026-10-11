@@ -17,6 +17,9 @@ interface OrderingRepositoryInterface
     /** @return array<int, int> */
     public function prices(int $storeId): array;
 
+    /** @return array<int, int> Store overrides only. */
+    public function minimums(int $storeId): array;
+
     /** @return Collection<int, Bakery> */
     public function stores(): Collection;
 

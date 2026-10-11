@@ -45,9 +45,43 @@ class StoreWebController
             'open' => $this->service->isOpen(),
             'products' => $this->repository->products()->where('is_active', true),
             'prices' => $this->repository->prices($id),
+            'minimums' => $this->repository->minimums($id),
             'activeOrder' => $this->repository->activeOrder($id, $this->service->deliveryDate()),
             'history' => $this->repository->history($id),
             'requestKey' => (string) Str::uuid(),
+            'repeatQuantities' => [],
+        ]);
+    }
+
+    public function repeat(Request $request, int $order): View
+    {
+        $source = $this->repository->order($order);
+        abort_unless($source !== null && in_array((int) $source->bakery_id, $this->user($request)->accessibleStoreIds(), true), 404);
+        abort_unless($this->service->isOpen(), 422, 'Приём заказов закрыт.');
+        abort_if($this->repository->activeOrder((int) $source->bakery_id, $this->service->deliveryDate()) !== null, 409, 'Заказ на завтра уже оформлен.');
+        $store = $this->repository->store((int) $source->bakery_id);
+        abort_unless($store !== null && $store->is_active, 403);
+        $prices = $this->repository->prices((int) $store->id);
+        $products = $this->repository->products()->where('is_active', true);
+        $repeatQuantities = [];
+        foreach ($source->items as $item) {
+            if ($products->contains('id', $item->product_id) && isset($prices[$item->product_id])) {
+                $repeatQuantities[$item->product_id] = $item->quantity;
+            }
+        }
+
+        return view('bakery.store', [
+            'store' => $store,
+            'accessibleStores' => $this->repository->stores()->whereIn('id', $this->user($request)->accessibleStoreIds())->where('is_active', true),
+            'date' => $this->service->deliveryDate(),
+            'open' => true,
+            'products' => $products,
+            'prices' => $prices,
+            'minimums' => $this->repository->minimums((int) $store->id),
+            'activeOrder' => null,
+            'history' => $this->repository->history((int) $store->id),
+            'requestKey' => (string) Str::uuid(),
+            'repeatQuantities' => $repeatQuantities,
         ]);
     }
 
@@ -82,7 +116,11 @@ class StoreWebController
         $record = $this->repository->order($order);
         abort_unless($record !== null && in_array($record->bakery_id, $this->user($request)->accessibleStoreIds(), true), 404);
 
-        return view('bakery.order', ['order' => $record, 'canCancel' => $record->status === 'accepted' && $this->service->isOpen() && $record->created_at?->timezone('Europe/Moscow')->toDateString() === now('Europe/Moscow')->toDateString()]);
+        return view('bakery.order', [
+            'order' => $record,
+            'canCancel' => $record->status === 'accepted' && $this->service->isOpen() && $record->created_at?->timezone('Europe/Moscow')->toDateString() === now('Europe/Moscow')->toDateString(),
+            'canRepeat' => $this->service->isOpen() && $this->repository->activeOrder((int) $record->bakery_id, $this->service->deliveryDate()) === null,
+        ]);
     }
 
     public function cancel(Request $request, int $order): RedirectResponse
