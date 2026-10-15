@@ -66,19 +66,19 @@
 <div class="panel data-panel">
     <p class="muted small">Отметьте все магазины, доступные аккаунту. Можно снять все отметки и сохранить аккаунт без магазинов.</p>
     <h3>Новый аккаунт</h3>
-    <form method="post" action="{{ route('bakery.save-account') }}" class="form-grid">@csrf
-        <fieldset class="store-choices"><legend>Свободные магазины</legend>@forelse($stores->filter(fn($store) => !isset($storeOwners[$store->id])) as $store)<label><input type="checkbox" name="stores[]" value="{{ $store->id }}">{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@empty<span class="muted small">Свободных магазинов нет.</span>@endforelse</fieldset>
+    <form method="post" action="{{ route('bakery.save-account') }}" class="form-grid account-create-form">@csrf
+        <fieldset class="store-choices account-store-choices"><legend>Свободные магазины</legend>@forelse($stores->filter(fn($store) => !isset($storeOwners[$store->id])) as $store)<label><input type="checkbox" name="stores[]" value="{{ $store->id }}">{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@empty<span class="muted small">Свободных магазинов нет.</span>@endforelse</fieldset>
         <label>Имя<input name="name" required></label><label>Почта<input type="email" name="email" required></label><label>Пароль<input type="password" name="password" minlength="10" required></label>
         <input type="hidden" name="is_active" value="1"><button class="button primary">Создать</button>
     </form>
-    <div class="table-scroll"><table><thead><tr><th>Почта</th><th>Назначенные магазины</th><th>Активен</th><th>Новый пароль</th><th></th></tr></thead><tbody>
+    <div class="table-scroll"><table class="accounts-table"><thead><tr><th>Почта</th><th>Назначенные магазины</th><th>Активен</th><th>Новый пароль</th><th></th></tr></thead><tbody>
         @foreach($visibleAccounts as $account)
             <tr>
                 <td><form id="account-{{ $account['id'] }}" method="post" action="{{ route('bakery.save-account') }}">@csrf<input type="hidden" name="id" value="{{ $account['id'] }}"><input type="hidden" name="name" value="{{ $account['name'] }}"></form><input form="account-{{ $account['id'] }}" type="email" name="email" value="{{ $account['email'] }}" required></td>
                 <td><strong>{{ $stores->whereIn('id', $account['store_ids'])->pluck('name')->implode(', ') ?: 'Нет магазинов' }}</strong><details><summary>Изменить привязку</summary><fieldset class="store-choices">@foreach($stores->filter(fn($store) => !isset($storeOwners[$store->id]) || (int) $storeOwners[$store->id] === $account['id']) as $store)<label><input form="account-{{ $account['id'] }}" type="checkbox" name="stores[]" value="{{ $store->id }}" @checked(in_array($store->id, $account['store_ids'], true))>{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@endforeach</fieldset></details></td>
                 <td><select form="account-{{ $account['id'] }}" name="is_active"><option value="1" @selected($account['status']==='verify')>Да</option><option value="0" @selected($account['status']!=='verify')>Нет</option></select></td>
                 <td><input form="account-{{ $account['id'] }}" type="password" name="password" placeholder="Без изменения" minlength="10"></td>
-                <td><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button>@if($account['status'] === 'verify')<form method="post" action="{{ route('bakery.impersonation-start', $account['id']) }}">@csrf<button class="button secondary">Войти как пользователь</button></form>@endif</td>
+                <td><div class="account-actions"><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button>@if($account['status'] === 'verify')<form method="post" action="{{ route('bakery.impersonation-start', $account['id']) }}">@csrf<button class="button secondary">Войти как пользователь</button></form>@endif</div></td>
             </tr>
         @endforeach
     </tbody></table></div>
