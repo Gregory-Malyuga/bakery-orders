@@ -1,7 +1,7 @@
 @extends('bakery.layout')
 @section('title', 'Справочники')
 @section('content')
-<div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Справочники и цены</h1><p class="muted">Магазины, аккаунты и персональный прайс.</p></div></div><nav class="admin-nav" aria-label="Разделы справочников"><a href="{{ route('bakery.admin') }}">К заказам</a><a href="{{ route('bakery.catalog', ['tab' => 'stores']) }}" @if($tab === 'stores') aria-current="page" @endif>Магазины</a><a href="{{ route('bakery.catalog', ['tab' => 'products']) }}" @if($tab === 'products') aria-current="page" @endif>Товары</a><a href="{{ route('bakery.catalog', ['tab' => 'prices', 'store' => $selectedStore]) }}" @if($tab === 'prices') aria-current="page" @endif>Цены</a><a href="{{ route('bakery.catalog', ['tab' => 'accounts']) }}" @if($tab === 'accounts') aria-current="page" @endif>Аккаунты</a></nav>
+<div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Справочники и цены</h1><p class="muted">Магазины, аккаунты и персональный прайс.</p></div></div><nav class="admin-nav" aria-label="Разделы справочников"><a href="{{ route('bakery.admin') }}">К заказам</a><a href="{{ route('bakery.catalog', ['tab' => 'stores']) }}" @if($tab === 'stores') aria-current="page" @endif>Магазины</a><a href="{{ route('bakery.catalog', ['tab' => 'products']) }}" @if($tab === 'products') aria-current="page" @endif>Товары</a><a href="{{ route('bakery.catalog', ['tab' => 'prices', 'store' => $selectedStore]) }}" @if($tab === 'prices') aria-current="page" @endif>Цены</a><a href="{{ route('bakery.catalog', ['tab' => 'accounts']) }}" @if($tab === 'accounts') aria-current="page" @endif>Аккаунты</a><a href="{{ route('bakery.catalog', ['tab' => 'settings']) }}" @if($tab === 'settings') aria-current="page" @endif>Настройки</a></nav>
 @if($tab === 'stores')
 <div class="section-head"><h2>Магазины</h2></div>
 <div class="panel data-panel">
@@ -21,8 +21,9 @@
 @include('bakery.pagination', ['url' => route('bakery.catalog'), 'query' => ['tab' => 'stores']])
 @elseif($tab === 'products')
 <div class="section-head"><h2>Товары</h2></div>
+<p class="muted small">Фасовка ограничивает количество в заказе: пакеты по 3 и 5 шт. — любое количество от 3, кроме 4 и 7; по 2 шт. — только чётное; по 1 шт. — любое. Минимум действует дополнительно.</p>
 <div class="panel data-panel"><h3>Новый товар</h3>
-    <form method="post" action="{{ route('bakery.save-product') }}" class="form-grid">@csrf<label>Название<input name="name" required></label><label>Порядок<input type="number" name="sort_order" min="0" value="0" required></label><label>Минимум, шт.<input type="number" name="minimum_quantity" min="1" max="100000" value="1" required></label><label>Фасовка<select name="packaging_mode"><option value="mixed">Пакеты по 3 и 5</option><option value="single">По одной штуке</option><option value="pair">По две штуки</option></select></label><input type="hidden" name="is_active" value="1"><button class="button primary">Добавить</button></form>
+    <form method="post" action="{{ route('bakery.save-product') }}" class="form-grid">@csrf<label>Название<input name="name" required></label><label>Порядок<input type="number" name="sort_order" min="0" value="0" required></label><label>Минимум, шт.<input type="number" name="minimum_quantity" min="1" max="100000" value="3" required></label><label>Фасовка<select name="packaging_mode"><option value="mixed">Пакеты по 3 и 5</option><option value="single">По одной штуке</option><option value="pair">По две штуки</option></select></label><input type="hidden" name="is_active" value="1"><button class="button primary">Добавить</button></form>
     <div class="table-scroll"><table><thead><tr><th>Название</th><th>Порядок</th><th>Минимум, шт.</th><th>Фасовка</th><th>Активен</th><th></th></tr></thead><tbody>
         @foreach($products as $product)
             <tr>
@@ -56,6 +57,9 @@
         @endforeach
     </tbody></table></div>
 </div>
+@elseif($tab === 'settings')
+<div class="section-head"><h2>Приём заказов</h2></div>
+<div class="panel data-panel"><form method="post" action="{{ route('bakery.save-settings') }}" class="form-grid">@csrf<label>Последний заказ, МСК<input type="time" name="order_cutoff" value="{{ old('order_cutoff', $orderCutoff) }}" required></label><button class="button primary">Сохранить</button></form><p class="muted small">После этого времени приём и отмена заказов закрываются. Изменение действует сразу.</p></div>
 @else
 <p class="muted small">Логин — адрес электронной почты; его и пароль можно изменить здесь. Магазин может быть привязан только к одному аккаунту. Для нескольких магазинов общий прайс берётся из верхнего выбранного магазина в списке.</p>
 <div class="section-head"><h2>Аккаунты магазинов</h2></div>

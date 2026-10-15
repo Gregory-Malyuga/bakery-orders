@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrderingService
 {
-    public function __construct(private readonly OrderingRepositoryInterface $repository) {}
+    public function __construct(private readonly OrderingRepositoryInterface $repository, private readonly OrderCutoff $cutoff, private readonly PackagingPlanner $packaging) {}
 
     public function deliveryDate(): string
     {
@@ -17,7 +17,7 @@ class OrderingService
 
     public function isOpen(): bool
     {
-        return now('Europe/Moscow')->format('H:i:s') < '18:30:00';
+        return $this->cutoff->isOpen();
     }
 
     /**
@@ -47,6 +47,10 @@ class OrderingService
             if ($quantity < $minimum) {
                 throw ValidationException::withMessages(['quantities' => "Минимальный заказ товара «{$product->name}» — {$minimum} шт."]);
             }
+            if ($this->packaging->plan($quantity, $product->packaging_mode)['loose'] !== 0) {
+                $rule = $product->packaging_mode === 'pair' ? 'по 2 шт.' : 'по 3 и 5 шт.';
+                throw ValidationException::withMessages(['quantities' => "Товар «{$product->name}» фасуется {$rule}: количество {$quantity} заказать нельзя."]);
+            }
             $unit = $prices[(int) $id];
             $items[] = ['product_id' => (int) $id, 'product_name' => $product->name, 'quantity' => $quantity, 'unit_kopecks' => $unit, 'total_kopecks' => $quantity * $unit];
         }
@@ -75,7 +79,7 @@ class OrderingService
                 return ['order' => $previous, 'quote' => null];
             }
             if (! $this->isOpen()) {
-                throw ValidationException::withMessages(['order' => 'Приём заказов на завтра закрыт в 18:30.']);
+                throw ValidationException::withMessages(['order' => 'Приём заказов на завтра закрыт в '.$this->cutoff->time().' МСК.']);
             }
             $store = $this->repository->store($storeId);
             if ($store === null || ! $store->is_active) {
@@ -108,7 +112,7 @@ class OrderingService
                 return $order;
             }
             if (! $this->isOpen() || $order->created_at?->timezone('Europe/Moscow')->toDateString() !== now('Europe/Moscow')->toDateString()) {
-                throw ValidationException::withMessages(['order' => 'Отмена доступна только до 18:30 дня оформления.']);
+                throw ValidationException::withMessages(['order' => 'Отмена доступна только до '.$this->cutoff->time().' МСК дня оформления.']);
             }
             $this->repository->cancel($order);
 

@@ -31,8 +31,8 @@ class OrderManagementTest extends TestCase
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
         $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
-        $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'is_active' => true]);
-        $ham = Product::query()->create(['name' => 'Ветчина', 'sort_order' => 2, 'minimum_quantity' => 1, 'is_active' => true]);
+        $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        $ham = Product::query()->create(['name' => 'Ветчина', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $pizza->id, 'kopecks' => 10000]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $ham->id, 'kopecks' => 7000]);
         $service = app(OrderingService::class);
@@ -81,7 +81,7 @@ class OrderManagementTest extends TestCase
     {
         $first = Bakery::query()->create(['name' => 'Колпино 1', 'address' => '1', 'is_active' => true]);
         $second = Bakery::query()->create(['name' => 'Колпино 2', 'address' => '2', 'is_active' => true]);
-        $product = Product::query()->create(['name' => 'Пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'is_active' => true]);
+        $product = Product::query()->create(['name' => 'Пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 3000]);
         Price::query()->create(['bakery_id' => $second->id, 'product_id' => $product->id, 'kopecks' => 4000]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
