@@ -4,6 +4,7 @@ namespace Domains\Bakery\Tests\Feature;
 
 use Carbon\Carbon;
 use Domains\Bakery\Application\OrderingService;
+use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Bakery\Domain\Models\Price;
@@ -40,7 +41,7 @@ class OrderingFlowTest extends TestCase
     {
         $store = Bakery::query()->create(['name' => $name, 'address' => $name.' 1', 'is_active' => true]);
         $user = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
-        $product = Product::query()->firstOrCreate(['name' => 'Тестовый пирожок'], ['is_active' => true]);
+        $product = Product::query()->firstOrCreate(['name' => 'Тестовый пирожок'], ['is_active' => true, 'packaging_mode' => 'single']);
         Price::query()->updateOrCreate(['bakery_id' => $store->id, 'product_id' => $product->id], ['kopecks' => $kopecks]);
 
         return [$store, $user, $product];
@@ -136,6 +137,90 @@ class OrderingFlowTest extends TestCase
         $newQuote = $service->quote($store->id, [$product->id => 3]);
         $this->assertSame(9000, $newQuote['total']);
         $this->assertNotNull($service->place($store->id, (string) Str::uuid(), [$product->id => 3], $newQuote['hash'])['order']);
+    }
+
+    public function test_order_quantities_must_fit_the_selected_packaging(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, , $product] = $this->shop('Фасовка', 3000);
+        $product->update(['packaging_mode' => 'mixed']);
+        $service = app(OrderingService::class);
+
+        foreach ([3, 5, 6, 8, 9, 10, 11, 100000] as $quantity) {
+            $this->assertSame($quantity, $service->quote($store->id, [$product->id => $quantity])['items'][0]['quantity']);
+        }
+        foreach ([1, 2, 4, 7] as $quantity) {
+            try {
+                $service->quote($store->id, [$product->id => $quantity]);
+                $this->fail("Количество {$quantity} не должно проходить проверку фасовки.");
+            } catch (ValidationException $exception) {
+                $this->assertArrayHasKey('quantities', $exception->errors());
+            }
+        }
+
+        $product->update(['packaging_mode' => 'pair']);
+        $this->assertSame(2, $service->quote($store->id, [$product->id => 2])['items'][0]['quantity']);
+        try {
+            $service->quote($store->id, [$product->id => 3]);
+            $this->fail('Нечётное количество не должно проходить проверку фасовки.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('quantities', $exception->errors());
+        }
+    }
+
+    public function test_admin_can_change_order_cutoff_and_store_cannot(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 17:14:59', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Новое время', 3000);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($user)->post('/admin/settings', ['order_cutoff' => '17:15'])->assertForbidden();
+        $this->actingAs($admin)->post('/admin/settings', ['order_cutoff' => '17:15'])->assertRedirect();
+        $this->assertSame('17:15', DB::table('bakery_settings')->where('key', 'order_cutoff')->value('value'));
+        $this->actingAs($admin)->get('/admin/catalog?tab=settings')->assertOk()->assertSee('value="17:15"', false);
+        $this->actingAs($user)->get('/orders')->assertOk()->assertSee('До 17:15 МСК');
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 1]);
+        $this->assertTrue($service->isOpen());
+        Carbon::setTestNow(Carbon::parse('2026-10-06 17:15:00', 'Europe/Moscow'));
+        $this->assertFalse($service->isOpen());
+        $this->actingAs($user)->post('/orders', ['request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash']])->assertSessionHasErrors('order');
+    }
+
+    public function test_admin_cannot_adjust_order_to_quantity_that_does_not_fit_packaging(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, , $product] = $this->shop('Исправление фасовки', 3000);
+        $product->update(['packaging_mode' => 'mixed']);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 3]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 3], $quote['hash'])['order'];
+        $this->assertNotNull($order);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        try {
+            app(OrderManagementService::class)->adjust($order->id, $admin->id, [$product->id => 4], 'Исправление', null);
+            $this->fail('Корректировка на 4 шт. не должна сохраняться.');
+        } catch (ValidationException $exception) {
+            $this->assertArrayHasKey('quantities', $exception->errors());
+        }
+        $this->assertSame(3, $order->fresh()?->items->first()?->quantity);
+    }
+
+    public function test_product_and_store_minimums_are_raised_to_packaging_minimum(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        [$store, , $product] = $this->shop('Минимум фасовки', 3000);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 1, 'packaging_mode' => 'mixed', 'is_active' => 1])->assertRedirect();
+        $this->assertSame(3, $product->fresh()?->minimum_quantity);
+        $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => 1])->assertRedirect();
+        $this->assertSame(3, DB::table('bakery_store_product_minimums')->where('bakery_id', $store->id)->where('product_id', $product->id)->value('minimum_quantity'));
+        $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 1, 'packaging_mode' => 'pair', 'is_active' => 1])->assertRedirect();
+        $this->assertSame(2, $product->fresh()?->minimum_quantity);
+        $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => 1])->assertRedirect();
+        $this->assertSame(2, DB::table('bakery_store_product_minimums')->where('bakery_id', $store->id)->where('product_id', $product->id)->value('minimum_quantity'));
+        $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => 1])->assertRedirect();
+        $this->assertSame(1, $product->fresh()?->minimum_quantity);
     }
 
     public function test_store_minimum_override_and_repeat_prefill_respect_access_and_current_price(): void

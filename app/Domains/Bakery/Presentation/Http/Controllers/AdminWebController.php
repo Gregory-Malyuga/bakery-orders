@@ -4,6 +4,7 @@ namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\OrderManagementService;
+use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\PackagingPlanner;
 use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
@@ -19,7 +20,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook, private readonly OrderCutoff $cutoff) {}
 
     private function adminId(Request $request): int
     {
@@ -100,7 +101,7 @@ class AdminWebController
         $stores = $this->orders->stores();
         $products = $this->orders->products();
         /** @var array{store?:int|string,tab?:string,page?:int|string} $input */
-        $input = $request->validate(['store' => ['nullable', 'integer'], 'tab' => ['nullable', 'in:stores,products,prices,accounts'], 'page' => ['nullable', 'integer', 'min:1']]);
+        $input = $request->validate(['store' => ['nullable', 'integer'], 'tab' => ['nullable', 'in:stores,products,prices,accounts,settings'], 'page' => ['nullable', 'integer', 'min:1']]);
         $tab = $input['tab'] ?? 'stores';
         $selectedStore = (int) ($input['store'] ?? $stores->first()?->id);
         abort_if($selectedStore && $this->orders->store($selectedStore) === null, 404);
@@ -116,7 +117,16 @@ class AdminWebController
             ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => [(int) $id => true])->all()
             : [];
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : []]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
+    }
+
+    public function saveSettings(Request $request): RedirectResponse
+    {
+        /** @var array{order_cutoff:string} $data */
+        $data = $request->validate(['order_cutoff' => ['required', 'date_format:H:i']]);
+        DB::table('bakery_settings')->updateOrInsert(['key' => 'order_cutoff'], ['value' => $data['order_cutoff']]);
+
+        return redirect()->route('bakery.catalog', ['tab' => 'settings'])->with('success', 'Время последнего заказа сохранено.');
     }
 
     public function saveStore(Request $request): RedirectResponse
@@ -132,11 +142,18 @@ class AdminWebController
     {
         /** @var array{id?:int|string,name:string,sort_order:int|string,minimum_quantity:int|string,packaging_mode?:string,is_active:bool|int|string} $data */
         $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakery_products,id'], 'name' => ['required', 'string', 'max:255'], 'sort_order' => ['required', 'integer', 'min:0'], 'minimum_quantity' => ['required', 'integer', 'min:1', 'max:100000'], 'packaging_mode' => ['nullable', 'in:single,pair,mixed'], 'is_active' => ['required', 'boolean']]);
-        $changes = ['name' => $data['name'], 'sort_order' => (int) $data['sort_order'], 'minimum_quantity' => (int) $data['minimum_quantity'], 'is_active' => (bool) $data['is_active']];
+        $mode = $data['packaging_mode'] ?? (isset($data['id']) ? (string) $this->orders->products()->firstWhere('id', (int) $data['id'])?->packaging_mode : 'mixed');
+        $packageMinimum = $mode === 'mixed' ? 3 : ($mode === 'pair' ? 2 : 1);
+        $changes = ['name' => $data['name'], 'sort_order' => (int) $data['sort_order'], 'minimum_quantity' => max((int) $data['minimum_quantity'], $packageMinimum), 'is_active' => (bool) $data['is_active']];
         if (isset($data['packaging_mode'])) {
             $changes['packaging_mode'] = $data['packaging_mode'];
         }
-        $this->admin->saveProduct(isset($data['id']) ? (int) $data['id'] : null, $changes);
+        DB::transaction(function () use ($data, $changes, $packageMinimum): void {
+            $this->admin->saveProduct(isset($data['id']) ? (int) $data['id'] : null, $changes);
+            if (isset($data['id'])) {
+                DB::table('bakery_store_product_minimums')->where('product_id', (int) $data['id'])->where('minimum_quantity', '<', $packageMinimum)->update(['minimum_quantity' => $packageMinimum]);
+            }
+        });
 
         return back()->with('success', 'Товар сохранён.');
     }
@@ -160,7 +177,9 @@ class AdminWebController
         if (! isset($data['minimum_quantity'])) {
             DB::table('bakery_store_product_minimums')->where($key)->delete();
         } else {
-            DB::table('bakery_store_product_minimums')->updateOrInsert($key, ['minimum_quantity' => (int) $data['minimum_quantity']]);
+            $mode = (string) $this->orders->products()->firstWhere('id', (int) $data['product'])?->packaging_mode;
+            $packageMinimum = $mode === 'mixed' ? 3 : ($mode === 'pair' ? 2 : 1);
+            DB::table('bakery_store_product_minimums')->updateOrInsert($key, ['minimum_quantity' => max((int) $data['minimum_quantity'], $packageMinimum)]);
         }
 
         return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Минимум для магазина сохранён.');
