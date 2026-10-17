@@ -40,15 +40,22 @@ class RecipeWebController
     {
         $data = $request->validate([
             'product' => ['required', 'integer', 'exists:bakery_products,id'],
+            'dough_type' => ['nullable', 'in:main,samsa,none'],
             'dough_grams' => ['nullable', 'numeric', 'min:0', 'max:10000'],
             'ingredients' => ['sometimes', 'array', 'max:100'],
             'ingredients.*.name' => ['required', 'string', 'max:100'],
             'ingredients.*.amount' => ['required', 'numeric', 'gt:0', 'max:100000'],
             'ingredients.*.unit' => ['required', 'in:g,pcs,tbsp'],
         ]);
+        $product = $this->orders->products()->firstWhere('id', (int) $data['product']);
+        $doughType = $data['dough_type'] ?? $this->calculator->productDefinition($product->name, (int) $product->id)['dough_type'];
+        if ($doughType === 'main' && (! isset($data['dough_grams']) || (float) $data['dough_grams'] <= 0)) {
+            throw ValidationException::withMessages(['dough_grams' => 'Укажите вес основного теста на одно изделие.']);
+        }
         $ingredients = $this->ingredients($data['ingredients'] ?? []);
         $this->store->save('product:'.$data['product'], [
-            'dough_grams' => isset($data['dough_grams']) ? (float) $data['dough_grams'] : null,
+            'dough_type' => $doughType,
+            'dough_grams' => $doughType === 'main' ? (float) $data['dough_grams'] : null,
             'ingredients' => $ingredients,
         ]);
 
