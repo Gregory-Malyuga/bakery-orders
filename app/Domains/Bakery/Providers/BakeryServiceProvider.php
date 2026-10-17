@@ -6,6 +6,7 @@ use Domains\Bakery\Application\Commands\Create\CreateBakeryHandler;
 use Domains\Bakery\Application\Commands\Delete\DeleteBakeryHandler;
 use Domains\Bakery\Application\Commands\Update\UpdateBakeryHandler;
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Bakery\Application\IngredientCatalog;
 use Domains\Bakery\Application\ProductionCalculator;
 use Domains\Bakery\Application\ProductionRecipeStore;
 use Domains\Bakery\Application\Queries\FindById\FindBakeryByIdHandler;
@@ -36,7 +37,7 @@ class BakeryServiceProvider extends ServiceProvider
         $this->app->bind(OrderingRepositoryInterface::class, OrderingRepository::class);
         $this->app->bind(AdminRepositoryInterface::class, AdminRepository::class);
         $this->app->bind(InvoiceWorkbookInterface::class, MatrixInvoiceWorkbook::class);
-        $this->app->bind(ProductionCalculator::class, fn ($app): ProductionCalculator => new ProductionCalculator($app->make(ProductionRecipeStore::class)));
+        $this->app->bind(ProductionCalculator::class, fn ($app): ProductionCalculator => new ProductionCalculator($app->make(ProductionRecipeStore::class), $app->make(IngredientCatalog::class)));
     }
 
     public function boot(): void

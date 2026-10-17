@@ -10,6 +10,7 @@
         <a href="{{ route('bakery.admin', $dateQuery + ['tab' => 'labels']) }}" @if(request()->routeIs('bakery.admin') && $adminTab === 'labels') aria-current="page" @endif>Наклейки</a>
         <a href="{{ route('bakery.admin', $dateQuery + ['tab' => 'prep']) }}" @if(request()->routeIs('bakery.admin') && $adminTab === 'prep') aria-current="page" @endif>Заготовки</a>
         <a href="{{ route('bakery.recipes') }}" @if(request()->routeIs('bakery.recipes*')) aria-current="page" @endif>Рецептуры</a>
+        <a href="{{ route('bakery.ingredients') }}" @if(request()->routeIs('bakery.ingredients*')) aria-current="page" @endif>Ингредиенты</a>
         <a href="{{ route('bakery.report') }}" @if(request()->routeIs('bakery.report')) aria-current="page" @endif>Отчёт</a>
         <a href="{{ route('bakery.catalog') }}" @if(request()->routeIs('bakery.catalog')) aria-current="page" @endif>Справочники</a>
     </div>

@@ -134,6 +134,13 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
 .recipe-ingredients td { vertical-align: middle; }
 .recipe-dough-row td > span:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; }
 .recipe-dough-row [hidden] { display: none; }
+.ingredient-create { grid-template-columns: minmax(220px, 2fr) minmax(130px, 1fr) auto; align-items: end; }
+.ingredient-create .button { min-height: 44px; }
+.ingredient-catalog-table td { vertical-align: middle; }
+.ingredient-catalog-table td:last-child { min-width: 200px; }
+.ingredient-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.ingredient-actions form { margin: 0; }
+@media (max-width: 700px) { .ingredient-create { grid-template-columns: 1fr; } .ingredient-actions { flex-wrap: wrap; } }
 
 /* Keep the screen layout aligned while moving between pages. */
 .app-html { scrollbar-gutter: stable; }
