@@ -2,6 +2,7 @@
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
+use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
 use Domains\Bakery\Presentation\Http\Controllers\StoreWebController;
 use Domains\Bakery\Presentation\Http\Controllers\WebAuthController;
 use Illuminate\Http\RedirectResponse;
@@ -32,6 +33,10 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
 Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(function (): void {
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');
+    Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
+    Route::post('/recipes/product', [RecipeWebController::class, 'saveProduct'])->name('bakery.recipes-product');
+    Route::post('/recipes/dough', [RecipeWebController::class, 'saveDough'])->name('bakery.recipes-dough');
+    Route::post('/recipes/reset', [RecipeWebController::class, 'reset'])->name('bakery.recipes-reset');
     Route::post('/stores', [AdminWebController::class, 'saveStore'])->name('bakery.save-store');
     Route::post('/products', [AdminWebController::class, 'saveProduct'])->name('bakery.save-product');
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');

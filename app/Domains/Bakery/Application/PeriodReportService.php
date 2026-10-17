@@ -3,13 +3,14 @@
 namespace Domains\Bakery\Application;
 
 use Domains\Bakery\Domain\Models\Order;
+use Domains\Bakery\Domain\Models\Product;
 use Illuminate\Support\Facades\DB;
 
 class PeriodReportService
 {
     public function __construct(private readonly ProductionCalculator $production) {}
 
-    /** @return array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} */
+    /** @return array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,other_ingredients:array<string,array<string,float>>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} */
     public function build(string $from, string $to): array
     {
         $orders = Order::query()->with('items')->whereBetween('delivery_date', [$from, $to])->where('status', 'accepted')->orderBy('delivery_date')->orderBy('bakery_id')->get();
@@ -47,6 +48,8 @@ class PeriodReportService
         }
         ksort($products);
 
-        return ['orders' => $lines, 'products' => $products, 'production' => $this->production->calculate($products), 'total_kopecks' => $total, 'return_kopecks' => $returnTotal, 'net_kopecks' => $total - $returnTotal];
+        $productIds = Product::query()->whereIn('name', array_keys($products))->pluck('id', 'name')->all();
+
+        return ['orders' => $lines, 'products' => $products, 'production' => $this->production->calculate($products, $productIds), 'total_kopecks' => $total, 'return_kopecks' => $returnTotal, 'net_kopecks' => $total - $returnTotal];
     }
 }

@@ -76,6 +76,7 @@ class AdminWebController
             }
         }
         $productionQuantities = [];
+        $productionProductIds = [];
         foreach ($totals as $productId => $quantity) {
             $product = $productsById->get($productId);
             if ($product === null) {
@@ -83,8 +84,9 @@ class AdminWebController
             }
             $name = $product->name;
             $productionQuantities[$name] = ($productionQuantities[$name] ?? 0) + $quantity;
+            $productionProductIds[$name] = (int) $productId;
         }
-        $production = $this->production->calculate($productionQuantities);
+        $production = $this->production->calculate($productionQuantities, $productionProductIds);
         $labels = [];
         foreach ($packaging as $productId => $plan) {
             $labels[$productId] = $plan['one'] + $plan['two'] + $plan['three'] + $plan['five'];

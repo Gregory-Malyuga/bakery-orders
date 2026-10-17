@@ -101,8 +101,8 @@ class OrderingFlowTest extends TestCase
 
         $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=labels')->assertOk()
             ->assertSee('Всего 6 шт.')
-            ->assertSee('<td>Тестовый пирожок</td><td>4</td>', false)
-            ->assertSee('<td>Пицца для наклеек</td><td>2</td>', false);
+            ->assertSee('<td>Тестовый пирожок</td><td>—</td><td>—</td><td>—</td><td>4</td><td>4</td>', false)
+            ->assertSee('<td>Пицца для наклеек</td><td>2</td><td>—</td><td>—</td><td>—</td><td>2</td>', false);
         $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=production')->assertOk()
             ->assertSee('Всего изделий: 22 шт.');
     }
