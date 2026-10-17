@@ -27,15 +27,25 @@ class ProductionCalculator
         'самса говядина' => ['Говядина' => 42, 'Лук' => 35],
         'курица' => ['Куриная грудка' => 32],
         'курица лук' => ['Куриная грудка' => 32],
-        'яйцо' => ['Майонез' => 7],
+        'яйцо' => ['Майонез' => 7, 'Лук' => 12],
         'капуста' => ['Капуста' => 60, 'Соль' => 0.6, 'Специи' => 0.3],
         'картошка' => ['Картофельное пюре' => 60, 'Соль' => 0.36, 'Специи' => 0.42],
         'беляш' => ['Фарш' => 48, 'Лук' => 35, 'Соль' => 0.48, 'Специи' => 0.48],
         'яйцо рис' => ['Готовый рис' => 20, 'Лук' => 7, 'Майонез' => 10, 'Соль' => 1],
     ];
 
+    /** Quantities whose source units are not grams. */
+    private const OTHER_INGREDIENTS = [
+        'капуста' => ['Яйцо' => ['quantity' => 1 / 50, 'unit' => 'шт.']],
+        'яйцо' => ['Яйцо' => ['quantity' => 0.9, 'unit' => 'шт.']],
+        'самса' => ['Специи' => ['quantity' => 0.045, 'unit' => 'ст. л.']],
+        'самса курица' => ['Специи' => ['quantity' => 0.045, 'unit' => 'ст. л.']],
+        'самса с говядиной' => ['Специи' => ['quantity' => 0.042, 'unit' => 'ст. л.']],
+        'самса говядина' => ['Специи' => ['quantity' => 0.042, 'unit' => 'ст. л.']],
+    ];
+
     /** @param array<string, int> $quantities
-     * @return array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,recipes:array<string, array{quantity:int,ingredients:array<string,float>}>,without_recipe:list<string>}
+     * @return array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,recipes:array<string, array{quantity:int,ingredients:array<string,float>,other_ingredients?:array<string,array{quantity:float,unit:string}>}>,without_recipe:list<string>}
      */
     public function calculate(array $quantities): array
     {
@@ -59,6 +69,12 @@ class ProductionCalculator
             foreach (self::FILLINGS[$key] as $ingredient => $grams) {
                 $ingredients[$ingredient] = ($ingredients[$ingredient] ?? 0) + $grams * $quantity;
                 $recipes[$name]['ingredients'][$ingredient] = ($recipes[$name]['ingredients'][$ingredient] ?? 0) + $grams * $quantity;
+            }
+            foreach (self::OTHER_INGREDIENTS[$key] ?? [] as $ingredient => $measure) {
+                $recipes[$name]['other_ingredients'][$ingredient] = [
+                    'quantity' => $measure['quantity'] * $quantity,
+                    'unit' => $measure['unit'],
+                ];
             }
             $recipes[$name]['quantity'] = $quantity;
         }

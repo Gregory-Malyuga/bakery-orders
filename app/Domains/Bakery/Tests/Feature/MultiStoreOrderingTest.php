@@ -108,6 +108,23 @@ class MultiStoreOrderingTest extends TestCase
         $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
     }
 
+    public function test_accounts_can_be_filtered_by_assigned_store_name(): void
+    {
+        $matchingStore = Bakery::query()->create(['name' => 'Редкая точка Северная', 'address' => 'Северная', 'is_active' => true]);
+        $otherStore = Bakery::query()->create(['name' => 'Редкая точка Южная', 'address' => 'Южная', 'is_active' => true]);
+        $matchingAccount = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $matchingStore->id]);
+        $otherAccount = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $otherStore->id]);
+        DB::table('bakery_account_stores')->insert([
+            ['user_id' => $matchingAccount->id, 'bakery_id' => $matchingStore->id],
+            ['user_id' => $otherAccount->id, 'bakery_id' => $otherStore->id],
+        ]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+
+        $this->actingAs($admin)->get('/admin/catalog?tab=accounts&search='.urlencode('сЕвЕрНаЯ'))
+            ->assertOk()->assertSee('form="account-'.$matchingAccount->id.'"', false)
+            ->assertDontSee('form="account-'.$otherAccount->id.'"', false);
+    }
+
     public function test_one_account_can_place_one_order_per_store_for_the_same_delivery_date(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));

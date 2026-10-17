@@ -63,6 +63,7 @@
 @else
 <p class="muted small">Логин — адрес электронной почты; его и пароль можно изменить здесь. Магазин может быть привязан только к одному аккаунту. Для нескольких магазинов общий прайс берётся из верхнего выбранного магазина в списке.</p>
 <div class="section-head"><h2>Аккаунты магазинов</h2></div>
+<div class="panel data-panel"><form method="get" action="{{ route('bakery.catalog') }}" class="toolbar-form"><input type="hidden" name="tab" value="accounts"><label><span>Поиск точки по названию</span><input type="search" name="search" value="{{ $search }}" placeholder="Название магазина"></label><button class="button primary">Найти</button>@if($search !== '')<a class="button secondary" href="{{ route('bakery.catalog', ['tab' => 'accounts']) }}">Сбросить</a>@endif</form></div>
 <div class="panel data-panel">
     <p class="muted small">Отметьте все магазины, доступные аккаунту. Можно снять все отметки и сохранить аккаунт без магазинов.</p>
     <h3>Новый аккаунт</h3>
@@ -81,8 +82,9 @@
                 <td><div class="account-actions"><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button>@if($account['status'] === 'verify')<form method="post" action="{{ route('bakery.impersonation-start', $account['id']) }}">@csrf<button class="button secondary">Войти как пользователь</button></form>@endif</div></td>
             </tr>
         @endforeach
+        @if(!$visibleAccounts)<tr><td colspan="5" class="muted">По вашему запросу аккаунты не найдены.</td></tr>@endif
     </tbody></table></div>
 </div>
-@include('bakery.pagination', ['url' => route('bakery.catalog'), 'query' => ['tab' => 'accounts']])
+@include('bakery.pagination', ['url' => route('bakery.catalog'), 'query' => ['tab' => 'accounts', 'search' => $search]])
 @endif
 @endsection

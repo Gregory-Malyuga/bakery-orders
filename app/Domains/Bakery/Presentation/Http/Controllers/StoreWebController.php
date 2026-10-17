@@ -2,8 +2,8 @@
 
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
-use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\OrderCutoff;
+use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -38,6 +38,7 @@ class StoreWebController
     {
         if ($this->user($request)->accessibleStoreIds() === []) {
             abort_if($request->has('store'), 403);
+
             return view('bakery.no-stores');
         }
         $id = $this->storeId($request);
@@ -104,6 +105,21 @@ class StoreWebController
         abort_unless($store !== null && $store->is_active, 403);
 
         return view('bakery.confirm', ['store' => $store, 'quote' => $this->service->quote($id, $input['quantities']), 'quantities' => $input['quantities'], 'requestKey' => $input['request_key'], 'comment' => trim($input['comment'] ?? ''), 'changed' => false]);
+    }
+
+    public function editPreview(Request $request): View
+    {
+        abort_unless($this->service->isOpen(), 422, 'Приём заказов закрыт.');
+        /** @var array{quantities:array<int|string,int|string>,request_key:string,comment?:string} $input */
+        $input = $request->validate(['store' => ['required', 'integer'], 'quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'request_key' => ['required', 'uuid'], 'comment' => ['nullable', 'string', 'max:1000']]);
+        $storeId = $this->storeId($request);
+        abort_if($this->repository->activeOrder($storeId, $this->service->deliveryDate()) !== null, 409);
+
+        return $this->index($request)->with([
+            'repeatQuantities' => $input['quantities'],
+            'commentDraft' => $input['comment'] ?? '',
+            'requestKey' => $input['request_key'],
+        ]);
     }
 
     public function place(Request $request): RedirectResponse|View
