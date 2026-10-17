@@ -1,7 +1,9 @@
 @extends('bakery.layout')
 @section('title', 'Рецептуры')
 @section('content')
-<div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Рецептуры</h1><p class="muted">Нормы на одно изделие и на один замес теста. Сохранённые изменения сразу применяются к заготовкам и отчёту за период.</p></div></div>
+<div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Рецептуры</h1><p class="muted">Сохранённые изменения сразу применяются к заготовкам и отчёту за период.</p></div></div>
+<nav class="catalog-nav" aria-label="Разделы рецептур"><a href="{{ route('bakery.recipes') }}" @if($section === 'products') aria-current="page" @endif>Изделия</a><a href="{{ route('bakery.recipes', ['section' => 'dough']) }}" @if($section === 'dough') aria-current="page" @endif>Тесто — общие нормы</a></nav>
+@if($section === 'products')
 <div class="panel data-panel"><form method="get" action="{{ route('bakery.recipes') }}" class="toolbar-form"><label><span>Изделие</span><select name="product">@foreach($products as $product)<option value="{{ $product->id }}" @selected($selected?->id === $product->id)>{{ $product->name }}</option>@endforeach</select></label><button class="button secondary">Показать</button></form></div>
 @if($selected && $productRecipe)
 <div class="section-head"><h2>{{ $selected->name }}</h2></div>
@@ -18,6 +20,8 @@
     <form method="post" action="{{ route('bakery.recipes-reset') }}" class="actions" onsubmit="return confirm('Восстановить исходные нормы для изделия?')">@csrf<input type="hidden" name="kind" value="product"><input type="hidden" name="product" value="{{ $selected->id }}"><button class="button secondary">Вернуть исходную рецептуру</button></form>
 </div>
 @endif
+@else
+<div class="panel data-panel"><p class="muted">Эти нормы используются сразу для нескольких изделий и меняются отдельно от рецептуры выбранного товара.</p></div>
 @foreach(['main_dough' => ['Основное тесто', $mainDough, 'г готового теста'], 'samsa_dough' => ['Тесто для самсы', $samsaDough, 'шт. самсы']] as $kind => [$heading, $recipe, $batchUnit])
 <div class="section-head"><h2>{{ $heading }}</h2></div>
 <div class="panel data-panel">
@@ -33,6 +37,7 @@
     <form method="post" action="{{ route('bakery.recipes-reset') }}" class="actions" onsubmit="return confirm('Восстановить исходные нормы теста?')">@csrf<input type="hidden" name="kind" value="{{ $kind }}"><button class="button secondary">Вернуть исходные нормы</button></form>
 </div>
 @endforeach
+@endif
 <script>
 document.querySelectorAll('[data-recipe-form]').forEach(form => {
     const body = form.querySelector('[data-ingredients]');
