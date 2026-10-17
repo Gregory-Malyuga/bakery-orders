@@ -3,8 +3,8 @@
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
-use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\OrderCutoff;
+use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\PackagingPlanner;
 use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
@@ -85,7 +85,12 @@ class AdminWebController
             $productionQuantities[$name] = ($productionQuantities[$name] ?? 0) + $quantity;
         }
         $production = $this->production->calculate($productionQuantities);
-        $labelTotal = array_sum($totals);
+        $labels = [];
+        foreach ($packaging as $productId => $plan) {
+            $labels[$productId] = $plan['one'] + $plan['two'] + $plan['three'] + $plan['five'];
+        }
+        $labelTotal = array_sum($labels);
+        $productionTotal = array_sum($totals);
         $orderedStoreIds = $orders->pluck('bakery_id')->all();
         $activeStores = $stores->where('is_active', true);
         $matrixStores = $stores->filter(fn ($store): bool => $store->is_active || in_array($store->id, $orderedStoreIds, true));
@@ -93,19 +98,24 @@ class AdminWebController
         $page = min((int) ($input['page'] ?? 1), $pageCount);
         $visibleOrders = $orders->forPage($page, 20);
 
-        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labelTotal', 'production', 'orderedStoreIds'));
+        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
     }
 
     public function catalog(Request $request): View
     {
         $stores = $this->orders->stores();
         $products = $this->orders->products();
-        /** @var array{store?:int|string,tab?:string,page?:int|string} $input */
-        $input = $request->validate(['store' => ['nullable', 'integer'], 'tab' => ['nullable', 'in:stores,products,prices,accounts,settings'], 'page' => ['nullable', 'integer', 'min:1']]);
+        /** @var array{store?:int|string,tab?:string,page?:int|string,search?:string} $input */
+        $input = $request->validate(['store' => ['nullable', 'integer'], 'tab' => ['nullable', 'in:stores,products,prices,accounts,settings'], 'page' => ['nullable', 'integer', 'min:1'], 'search' => ['nullable', 'string', 'max:255']]);
         $tab = $input['tab'] ?? 'stores';
         $selectedStore = (int) ($input['store'] ?? $stores->first()?->id);
         abort_if($selectedStore && $this->orders->store($selectedStore) === null, 404);
         $accounts = $this->admin->accounts();
+        $search = trim($input['search'] ?? '');
+        if ($tab === 'accounts' && $search !== '') {
+            $matchingStoreIds = $stores->filter(fn ($store): bool => mb_stripos($store->name, $search) !== false)->pluck('id')->all();
+            $accounts = array_values(array_filter($accounts, fn (array $account): bool => count(array_intersect($account['store_ids'], $matchingStoreIds)) > 0));
+        }
         $storeOwners = $tab === 'accounts' ? DB::table('bakery_account_stores')->pluck('user_id', 'bakery_id')->all() : [];
         $perPage = $tab === 'accounts' ? 8 : 20;
         $count = $tab === 'accounts' ? count($accounts) : $stores->count();
@@ -117,7 +127,7 @@ class AdminWebController
             ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => [(int) $id => true])->all()
             : [];
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
     }
 
     public function saveSettings(Request $request): RedirectResponse

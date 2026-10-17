@@ -15,8 +15,8 @@ use Domains\User\Domain\Models\User;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use PharData;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -66,6 +66,45 @@ class OrderingFlowTest extends TestCase
         $this->assertSame(3000, app(OrderingRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks);
         $this->actingAs($secondUser)->get('/orders/'.$first->id)->assertNotFound();
         $this->actingAs($firstUser)->get('/orders/'.$first->id)->assertOk();
+    }
+
+    public function test_editing_preview_preserves_quantities_comment_and_request_key(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Редактируемый заказ', 3000);
+        $second = Product::query()->create(['name' => 'Второй товар для правки', 'sort_order' => 200, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $store->id, 'product_id' => $second->id, 'kopecks' => 4000]);
+        $key = (string) Str::uuid();
+        $input = ['store' => $store->id, 'request_key' => $key, 'comment' => 'Без лука', 'quantities' => [$product->id => 3, $second->id => 2]];
+
+        $this->actingAs($user)->post('/orders/preview', $input)->assertOk()->assertSee('Изменить количество');
+        $this->actingAs($user)->post('/orders/edit-preview', $input)->assertOk()
+            ->assertSee('name="quantities['.$product->id.']" value="3"', false)
+            ->assertSee('name="quantities['.$second->id.']" value="2"', false)
+            ->assertSee('name="request_key" value="'.$key.'"', false)
+            ->assertSee('Без лука');
+    }
+
+    public function test_labels_count_packages_and_production_shows_total_pieces(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Фасовка для наклеек', 3000);
+        $product->update(['packaging_mode' => 'mixed', 'minimum_quantity' => 3]);
+        $single = Product::query()->create(['name' => 'Пицца для наклеек', 'sort_order' => 201, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $store->id, 'product_id' => $single->id, 'kopecks' => 4000]);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 20, $single->id => 2]);
+        $service->place($store->id, (string) Str::uuid(), [$product->id => 20, $single->id => 2], $quote['hash']);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+
+        $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=labels')->assertOk()
+            ->assertSee('Всего 6 шт.')
+            ->assertSee('<td>Тестовый пирожок</td><td>4</td>', false)
+            ->assertSee('<td>Пицца для наклеек</td><td>2</td>', false);
+        $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=production')->assertOk()
+            ->assertSee('Всего изделий: 22 шт.');
     }
 
     public function test_cutoff_and_cancellation_remove_order_from_summary_and_print(): void

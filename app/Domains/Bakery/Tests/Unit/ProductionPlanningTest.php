@@ -35,4 +35,15 @@ class ProductionPlanningTest extends TestCase
         $this->assertSame(1980, $result['ingredients']['Курица']);
         $this->assertSame(['Вишня'], $result['without_recipe']);
     }
+
+    public function test_prep_includes_eggs_on_cabbage_and_egg_pies_and_spices_on_samsa(): void
+    {
+        $result = (new ProductionCalculator)->calculate(['Капуста' => 50, 'Яйцо' => 10, 'Самса' => 20, 'Самса с говядиной' => 10]);
+
+        $this->assertSame(120, $result['recipes']['Яйцо']['ingredients']['Лук']);
+        $this->assertEqualsWithDelta(1, $result['recipes']['Капуста']['other_ingredients']['Яйцо']['quantity'], 0.0001);
+        $this->assertEqualsWithDelta(9, $result['recipes']['Яйцо']['other_ingredients']['Яйцо']['quantity'], 0.0001);
+        $this->assertEqualsWithDelta(0.9, $result['recipes']['Самса']['other_ingredients']['Специи']['quantity'], 0.0001);
+        $this->assertEqualsWithDelta(0.42, $result['recipes']['Самса с говядиной']['other_ingredients']['Специи']['quantity'], 0.0001);
+    }
 }

@@ -23,6 +23,7 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
     Route::get('/orders', [StoreWebController::class, 'index'])->name('bakery.store');
     Route::get('/orders/{order}/repeat', [StoreWebController::class, 'repeat'])->name('bakery.repeat');
     Route::post('/orders/preview', [StoreWebController::class, 'preview'])->name('bakery.preview');
+    Route::post('/orders/edit-preview', [StoreWebController::class, 'editPreview'])->name('bakery.edit-preview');
     Route::post('/orders', [StoreWebController::class, 'place'])->name('bakery.place');
     Route::get('/orders/{order}', [StoreWebController::class, 'show'])->name('bakery.order');
     Route::post('/orders/{order}/cancel', [StoreWebController::class, 'cancel'])->name('bakery.cancel');
