@@ -23,7 +23,7 @@
 <div class="panel data-panel">
     <p class="muted small">Ингредиенты указаны на один замес. Размер замеса задаёт, на сколько {{ $batchUnit }} рассчитаны нормы.</p>
     <form method="post" action="{{ route('bakery.recipes-dough') }}" data-recipe-form data-mode="dough">@csrf<input type="hidden" name="kind" value="{{ $kind }}">
-        <div class="form-grid"><label>Размер замеса, {{ $batchUnit }}<input type="number" name="batch_size" value="{{ old('kind') === $kind ? old('batch_size') : $recipe['batch_size'] }}" min="0.001" max="100000" step="any" required></label></div>
+        <div class="form-grid"><label>Размер замеса, {{ $batchUnit }}<input type="number" name="batch_size" value="{{ old('kind') === $kind ? old('batch_size') : $recipe['batch_size'] }}" min="{{ $kind === 'samsa_dough' ? '1' : '0.001' }}" max="100000" step="{{ $kind === 'samsa_dough' ? '1' : 'any' }}" required></label></div>
         @php($doughRows = old('kind') === $kind ? old('ingredients', $recipe['ingredients']) : $recipe['ingredients'])
         <div class="table-scroll"><table><thead><tr><th>Ингредиент</th><th>На замес, г</th><th></th></tr></thead><tbody data-ingredients data-next="{{ count($doughRows) }}">
         @foreach($doughRows as $index => $ingredient)<tr><td><input name="ingredients[{{ $index }}][name]" value="{{ $ingredient['name'] }}" maxlength="100" required></td><td><input type="number" name="ingredients[{{ $index }}][amount]" value="{{ $ingredient['amount'] }}" min="0.001" max="100000" step="any" required></td><td><button type="button" class="button secondary" data-remove-row>Удалить</button></td></tr>@endforeach
