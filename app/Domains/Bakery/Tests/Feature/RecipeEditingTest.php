@@ -43,7 +43,10 @@ class RecipeEditingTest extends TestCase
         $service->place($store->id, (string) Str::uuid(), [$product->id => 2], $quote['hash']);
 
         $this->actingAs($customer)->get('/admin/recipes')->assertForbidden();
-        $this->actingAs($admin)->get('/admin/recipes?product='.$product->id)->assertOk()->assertSee('Помидоры');
+        $this->actingAs($admin)->get('/admin/recipes?product='.$product->id)->assertOk()
+            ->assertSee('Помидоры')->assertDontSee('Размер замеса');
+        $this->actingAs($admin)->get('/admin/recipes?section=dough')->assertOk()
+            ->assertSee('Основное тесто')->assertSee('Тесто для самсы')->assertDontSee('На 1 шт.');
         $this->actingAs($admin)->post('/admin/recipes/product', [
             'product' => $product->id,
             'ingredients' => [
@@ -62,11 +65,11 @@ class RecipeEditingTest extends TestCase
         $this->actingAs($admin)->post('/admin/recipes/dough', [
             'kind' => 'main_dough', 'batch_size' => 500,
             'ingredients' => [['name' => 'Мука', 'amount' => 600]],
-        ])->assertRedirect();
+        ])->assertRedirect('/admin/recipes?section=dough');
         $this->actingAs($admin)->post('/admin/recipes/dough', [
             'kind' => 'samsa_dough', 'batch_size' => 20,
             'ingredients' => [['name' => 'Мука', 'amount' => 2000]],
-        ])->assertRedirect();
+        ])->assertRedirect('/admin/recipes?section=dough');
 
         $production = $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=prep')->assertOk()
             ->assertSee('0,100 кг')->assertSee('0,0005 кг')->assertSee('1,000 шт.')->assertSee('замеса по 20 шт.')->viewData('production');

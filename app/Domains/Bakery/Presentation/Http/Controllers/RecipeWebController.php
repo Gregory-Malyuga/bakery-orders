@@ -16,16 +16,23 @@ class RecipeWebController
 
     public function index(Request $request): View
     {
-        $input = $request->validate(['product' => ['nullable', 'integer', 'exists:bakery_products,id']]);
+        $input = $request->validate([
+            'section' => ['nullable', 'in:products,dough'],
+            'product' => ['nullable', 'integer', 'exists:bakery_products,id'],
+        ]);
+        $section = $input['section'] ?? 'products';
         $products = $this->orders->products();
-        $selected = $products->firstWhere('id', (int) ($input['product'] ?? $products->first()?->id));
+        $selected = $section === 'products'
+            ? $products->firstWhere('id', (int) ($input['product'] ?? $products->first()?->id))
+            : null;
 
         return view('bakery.recipes', [
+            'section' => $section,
             'products' => $products,
             'selected' => $selected,
             'productRecipe' => $selected ? $this->calculator->productDefinition($selected->name, (int) $selected->id) : null,
-            'mainDough' => $this->calculator->doughDefinition('main_dough'),
-            'samsaDough' => $this->calculator->doughDefinition('samsa_dough'),
+            'mainDough' => $section === 'dough' ? $this->calculator->doughDefinition('main_dough') : null,
+            'samsaDough' => $section === 'dough' ? $this->calculator->doughDefinition('samsa_dough') : null,
         ]);
     }
 
@@ -68,7 +75,7 @@ class RecipeWebController
             'ingredients' => $this->ingredients($rows),
         ]);
 
-        return redirect()->route('bakery.recipes')->with('success', 'Рецептура теста сохранена.');
+        return redirect()->route('bakery.recipes', ['section' => 'dough'])->with('success', 'Рецептура теста сохранена.');
     }
 
     public function reset(Request $request): RedirectResponse
@@ -77,7 +84,9 @@ class RecipeWebController
         $key = $data['kind'] === 'product' ? 'product:'.$data['product'] : $data['kind'];
         $this->store->reset($key);
 
-        return redirect()->route('bakery.recipes', isset($data['product']) ? ['product' => $data['product']] : [])->with('success', 'Восстановлены исходные нормы из таблицы.');
+        $query = $data['kind'] === 'product' ? ['product' => $data['product']] : ['section' => 'dough'];
+
+        return redirect()->route('bakery.recipes', $query)->with('success', 'Восстановлены исходные нормы из таблицы.');
     }
 
     /** @param array<int|string, array{name:string,amount:int|float|string,unit:string}> $rows
