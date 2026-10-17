@@ -2,6 +2,7 @@
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
+use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
 use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
 use Domains\Bakery\Presentation\Http\Controllers\StoreWebController;
 use Domains\Bakery\Presentation\Http\Controllers\WebAuthController;
@@ -34,6 +35,10 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');
     Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
+    Route::get('/ingredients', [IngredientCatalogWebController::class, 'index'])->name('bakery.ingredients');
+    Route::post('/ingredients', [IngredientCatalogWebController::class, 'create'])->name('bakery.ingredients-create');
+    Route::post('/ingredients/{ingredient}/rename', [IngredientCatalogWebController::class, 'rename'])->name('bakery.ingredients-rename');
+    Route::post('/ingredients/{ingredient}/toggle', [IngredientCatalogWebController::class, 'toggle'])->name('bakery.ingredients-toggle');
     Route::post('/recipes/product', [RecipeWebController::class, 'saveProduct'])->name('bakery.recipes-product');
     Route::post('/recipes/dough', [RecipeWebController::class, 'saveDough'])->name('bakery.recipes-dough');
     Route::post('/recipes/reset', [RecipeWebController::class, 'reset'])->name('bakery.recipes-reset');
