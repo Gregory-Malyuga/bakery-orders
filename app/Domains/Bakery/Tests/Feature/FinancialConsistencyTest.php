@@ -9,6 +9,7 @@ use Domains\Bakery\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Carbon;
@@ -28,6 +29,7 @@ class FinancialConsistencyTest extends TestCase
 
     public function test_order_pages_printouts_and_both_workbooks_agree_after_adjustment_returns_and_price_change(): void
     {
+        $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
         $first = Bakery::query()->create(['name' => 'Проверка А', 'address' => 'Адрес А', 'is_active' => true]);
         $second = Bakery::query()->create(['name' => 'Проверка Б', 'address' => 'Адрес Б', 'is_active' => true]);

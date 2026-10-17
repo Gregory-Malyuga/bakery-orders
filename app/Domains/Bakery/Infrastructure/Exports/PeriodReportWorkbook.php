@@ -8,7 +8,7 @@ use RuntimeException;
 
 class PeriodReportWorkbook
 {
-    /** @param array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} $report */
+    /** @param array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,other_ingredients:array<string,array<string,float>>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} $report */
     public function create(array $report): string
     {
         $orders = [['Дата поставки', 'Магазин', 'Товар', 'Заказано, шт.', 'Возврат, шт.', 'Цена, ₽', 'Сумма, ₽', 'Возврат, ₽', 'После возврата, ₽']];
@@ -19,10 +19,15 @@ class PeriodReportWorkbook
         foreach ($report['products'] as $name => $quantity) {
             $products[] = [$name, $quantity];
         }
-        $ingredients = [['Раздел', 'Сырьё', 'Количество, кг']];
+        $ingredients = [['Раздел', 'Сырьё', 'Количество', 'Единица']];
         foreach (['main_dough' => 'Основное тесто', 'samsa_dough' => 'Тесто для самсы', 'ingredients' => 'Начинки и заготовки'] as $key => $section) {
             foreach ($report['production'][$key] as $name => $grams) {
-                $ingredients[] = [$section, $name, round($grams / 1000, 3)];
+                $ingredients[] = [$section, $name, round($grams / 1000, 3), 'кг'];
+            }
+        }
+        foreach ($report['production']['other_ingredients'] as $unit => $items) {
+            foreach ($items as $name => $quantity) {
+                $ingredients[] = ['Начинки и заготовки', $name, round($quantity, 3), $unit];
             }
         }
         $temporary = tempnam(sys_get_temp_dir(), 'bakery-period-');
