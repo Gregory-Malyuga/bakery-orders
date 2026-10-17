@@ -2,13 +2,14 @@
 
 namespace Domains\Bakery\Infrastructure\Exports;
 
+use Domains\Bakery\Application\WeightFormatter;
 use Phar;
 use PharData;
 use RuntimeException;
 
 class PeriodReportWorkbook
 {
-    /** @param array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,other_ingredients:array<string,array<string,float>>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} $report */
+    /** @param array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} $report */
     public function create(array $report): string
     {
         $orders = [['Дата поставки', 'Магазин', 'Товар', 'Заказано, шт.', 'Возврат, шт.', 'Цена, ₽', 'Сумма, ₽', 'Возврат, ₽', 'После возврата, ₽']];
@@ -22,7 +23,7 @@ class PeriodReportWorkbook
         $ingredients = [['Раздел', 'Сырьё', 'Количество', 'Единица']];
         foreach (['main_dough' => 'Основное тесто', 'samsa_dough' => 'Тесто для самсы', 'ingredients' => 'Начинки и заготовки'] as $key => $section) {
             foreach ($report['production'][$key] as $name => $grams) {
-                $ingredients[] = [$section, $name, round($grams / 1000, 3), 'кг'];
+                $ingredients[] = [$section, $name, WeightFormatter::kilograms($grams), 'кг'];
             }
         }
         foreach ($report['production']['other_ingredients'] as $unit => $items) {

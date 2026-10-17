@@ -95,7 +95,7 @@ class ProductionCalculator
 
     /** @param array<string, int> $quantities
      * @param  array<string, int>  $productIdsByName
-     * @return array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,recipes:array<string, array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,array{quantity:int|float,unit:string}>}>,without_recipe:list<string>}
+     * @return array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,recipes:array<string, array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,array{quantity:int|float,unit:string}>}>,without_recipe:list<string>}
      */
     public function calculate(array $quantities, array $productIdsByName = []): array
     {
@@ -159,6 +159,7 @@ class ProductionCalculator
             'dough_grams' => $doughGrams,
             'main_dough' => $mainIngredients,
             'samsa_count' => $samsaCount,
+            'samsa_batch_size' => $samsaDough['batch_size'],
             'samsa_dough' => $samsaIngredients,
             'ingredients' => $ingredients,
             'other_ingredients' => $otherIngredients,

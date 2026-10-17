@@ -18,18 +18,18 @@
 @else
 <div class="section-head"><h2>Заготовки по рецептурам</h2></div>
 <div class="panel data-panel">
-    <p>Основное тесто: <strong>{{ number_format($production['dough_grams'] / 1000, 3, ',', ' ') }} кг</strong>. Самса: <strong>{{ $production['samsa_count'] }} шт.</strong> ({{ number_format($production['samsa_count'] / 44, 2, ',', ' ') }} замеса по 44 шт.).</p>
+    <p>Основное тесто: <strong>{{ \Domains\Bakery\Application\WeightFormatter::label($production['dough_grams']) }} кг</strong>. Самса: <strong>{{ $production['samsa_count'] }} шт.</strong> ({{ number_format($production['samsa_count'] / $production['samsa_batch_size'], 2, ',', ' ') }} замеса по {{ number_format($production['samsa_batch_size'], 0, ',', ' ') }} шт.).</p>
     <p class="muted small">Базовые нормы взяты из листа 12.09 присланного файла; изменения на странице «Рецептуры» учитываются сразу. Остатки не включены.</p>
     @foreach(['main_dough' => 'ТЕСТО Пирожки', 'samsa_dough' => 'ТЕСТО на САМСУ'] as $section => $heading)
         <h3>{{ $heading }}</h3>
         <div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>
-            @foreach($production[$section] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@endforeach
+            @foreach($production[$section] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ \Domains\Bakery\Application\WeightFormatter::label($grams) }}</td></tr>@endforeach
         </tbody></table></div>
     @endforeach
     @foreach($production['recipes'] as $name => $recipe)
         <h3>{{ $name }} — {{ $recipe['quantity'] }} шт.</h3>
         <div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество</th></tr></thead><tbody>
-            @foreach($recipe['ingredients'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }} кг</td></tr>@endforeach
+            @foreach($recipe['ingredients'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ \Domains\Bakery\Application\WeightFormatter::label($grams) }} кг</td></tr>@endforeach
             @foreach($recipe['other_ingredients'] ?? [] as $ingredient => $amount)<tr><th>{{ $ingredient }}</th><td>{{ number_format($amount['quantity'], 3, ',', ' ') }} {{ $amount['unit'] }}</td></tr>@endforeach
         </tbody></table></div>
     @endforeach

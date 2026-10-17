@@ -7,7 +7,7 @@
 <div class="section-head"><h2>Изделия</h2></div><div class="panel data-panel"><div class="table-scroll"><table><thead><tr><th>Изделие</th><th>Заказано, шт.</th></tr></thead><tbody>@forelse($report['products'] as $name => $quantity)<tr><td>{{ $name }}</td><td>{{ $quantity }}</td></tr>@empty<tr><td colspan="2" class="muted">За выбранный период принятых заказов нет.</td></tr>@endforelse</tbody></table></div></div>
 <div class="section-head"><h2>Расход сырья</h2></div><div class="panel data-panel"><div class="table-scroll"><table><thead><tr><th>Раздел</th><th>Сырьё</th><th>Количество</th><th>Единица</th></tr></thead><tbody>
 @foreach(['main_dough' => 'Основное тесто', 'samsa_dough' => 'Тесто для самсы', 'ingredients' => 'Начинки и заготовки'] as $key => $section)
-    @foreach($report['production'][$key] as $name => $grams)<tr><td>{{ $section }}</td><td>{{ $name }}</td><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td><td>кг</td></tr>@endforeach
+    @foreach($report['production'][$key] as $name => $grams)<tr><td>{{ $section }}</td><td>{{ $name }}</td><td>{{ \Domains\Bakery\Application\WeightFormatter::label($grams) }}</td><td>кг</td></tr>@endforeach
 @endforeach
 @foreach($report['production']['other_ingredients'] as $unit => $ingredients)
     @foreach($ingredients as $name => $quantity)<tr><td>Начинки и заготовки</td><td>{{ $name }}</td><td>{{ number_format($quantity, 3, ',', ' ') }}</td><td>{{ $unit }}</td></tr>@endforeach

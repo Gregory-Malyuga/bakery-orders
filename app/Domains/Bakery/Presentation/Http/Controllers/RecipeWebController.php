@@ -52,7 +52,9 @@ class RecipeWebController
     {
         $data = $request->validate([
             'kind' => ['required', 'in:main_dough,samsa_dough'],
-            'batch_size' => ['required', 'numeric', 'gt:0', 'max:100000'],
+            'batch_size' => $request->input('kind') === 'samsa_dough'
+                ? ['required', 'integer', 'min:1', 'max:100000']
+                : ['required', 'numeric', 'gt:0', 'max:100000'],
             'ingredients' => ['required', 'array', 'min:1', 'max:100'],
             'ingredients.*.name' => ['required', 'string', 'max:100'],
             'ingredients.*.amount' => ['required', 'numeric', 'gt:0', 'max:100000'],
@@ -90,9 +92,9 @@ class RecipeWebController
             if ($name === '') {
                 throw ValidationException::withMessages(['ingredients' => 'Укажите название каждого ингредиента.']);
             }
-            $key = mb_strtolower($name).'|'.$row['unit'];
+            $key = mb_strtolower($name);
             if (isset($seen[$key])) {
-                throw ValidationException::withMessages(['ingredients' => 'Один ингредиент с той же единицей указан дважды.']);
+                throw ValidationException::withMessages(['ingredients' => 'Один ингредиент указан дважды.']);
             }
             $seen[$key] = true;
             $result[] = ['name' => $name, 'amount' => (float) $row['amount'], 'unit' => $row['unit']];
