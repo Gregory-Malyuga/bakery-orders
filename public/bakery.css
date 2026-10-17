@@ -129,6 +129,9 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
 .toolbar-form .toolbar-date input[type=date] { width: 160px; height: 44px; min-height: 44px; margin: 0; }
 .toolbar-form .button { flex: none; min-height: 44px; }
 .toolbar-form + p { margin: 10px 0 0; }
+.recipe-picker { align-items: flex-end; }
+.recipe-picker .button { align-self: flex-end; }
+[data-main-dough-weight][hidden] { display: none; }
 
 /* Keep the screen layout aligned while moving between pages. */
 .app-html { scrollbar-gutter: stable; }

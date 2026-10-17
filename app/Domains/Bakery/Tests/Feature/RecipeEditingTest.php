@@ -5,6 +5,7 @@ namespace Domains\Bakery\Tests\Feature;
 use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
+use Domains\Bakery\Application\ProductionRecipeStore;
 use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Bakery\Domain\Models\Price;
 use Domains\Bakery\Domain\Models\Product;
@@ -48,7 +49,7 @@ class RecipeEditingTest extends TestCase
         $this->actingAs($admin)->get('/admin/recipes?section=dough')->assertOk()
             ->assertSee('Основное тесто')->assertSee('Тесто для самсы')->assertDontSee('На 1 шт.');
         $this->actingAs($admin)->post('/admin/recipes/product', [
-            'product' => $product->id,
+            'product' => $product->id, 'dough_type' => 'main', 'dough_grams' => 136,
             'ingredients' => [
                 ['name' => 'Яйцо', 'amount' => 1, 'unit' => 'pcs'],
                 ['name' => 'Яйцо', 'amount' => 1, 'unit' => 'g'],
@@ -114,5 +115,40 @@ class RecipeEditingTest extends TestCase
         $this->actingAs($admin)->post('/admin/recipes/reset', ['kind' => 'product', 'product' => $product->id])->assertRedirect();
         $product->update(['name' => 'Пицца']);
         $this->assertSame(80, app(ProductionCalculator::class)->calculate(['Пицца' => 2], ['Пицца' => $product->id])['ingredients']['Помидоры']);
+    }
+
+    public function test_dough_choice_controls_production_independently_of_product_name(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $samsa = Product::query()->create(['name' => 'Самса', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        $calculator = app(ProductionCalculator::class);
+
+        $this->actingAs($admin)->get('/admin/recipes?product='.$samsa->id)->assertOk()
+            ->assertSee('name="dough_type"', false)
+            ->assertSee('Тесто для самсы');
+        $this->actingAs($admin)->post('/admin/recipes/product', [
+            'product' => $samsa->id, 'dough_type' => 'main', 'dough_grams' => 120,
+            'ingredients' => [['name' => 'Курица', 'amount' => 45, 'unit' => 'g']],
+        ])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/recipes/product', [
+            'product' => $pizza->id, 'dough_type' => 'samsa',
+            'ingredients' => [['name' => 'Сыр', 'amount' => 19, 'unit' => 'g']],
+        ])->assertRedirect();
+
+        $production = $calculator->calculate(['Самса' => 2, 'Пицца' => 3], ['Самса' => $samsa->id, 'Пицца' => $pizza->id]);
+        $this->assertEqualsWithDelta(240, $production['dough_grams'], 0.001);
+        $this->assertSame(3, $production['samsa_count']);
+        $this->assertEqualsWithDelta(240 * 564 / 1000, $production['main_dough']['Мука'], 0.001);
+        $this->assertEqualsWithDelta(3 * 3000 / 44, $production['samsa_dough']['Мука'], 0.001);
+
+        app(ProductionRecipeStore::class)->save('product:'.$pizza->id, [
+            'dough_grams' => 136.0,
+            'ingredients' => [['name' => 'Сыр', 'amount' => 19.0, 'unit' => 'g']],
+        ]);
+        $legacy = $calculator->calculate(['Пицца' => 3], ['Пицца' => $pizza->id]);
+        $this->assertEqualsWithDelta(408, $legacy['dough_grams'], 0.001);
+        $this->assertSame(0, $legacy['samsa_count']);
     }
 }

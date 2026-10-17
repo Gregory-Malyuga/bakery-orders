@@ -4,13 +4,14 @@
 <div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Рецептуры</h1><p class="muted">Сохранённые изменения сразу применяются к заготовкам и отчёту за период.</p></div></div>
 <nav class="catalog-nav" aria-label="Разделы рецептур"><a href="{{ route('bakery.recipes') }}" @if($section === 'products') aria-current="page" @endif>Изделия</a><a href="{{ route('bakery.recipes', ['section' => 'dough']) }}" @if($section === 'dough') aria-current="page" @endif>Тесто — общие нормы</a></nav>
 @if($section === 'products')
-<div class="panel data-panel"><form method="get" action="{{ route('bakery.recipes') }}" class="toolbar-form"><label><span>Изделие</span><select name="product">@foreach($products as $product)<option value="{{ $product->id }}" @selected($selected?->id === $product->id)>{{ $product->name }}</option>@endforeach</select></label><button class="button secondary">Показать</button></form></div>
+<div class="panel data-panel"><form method="get" action="{{ route('bakery.recipes') }}" class="toolbar-form recipe-picker"><label><span>Изделие</span><select name="product">@foreach($products as $product)<option value="{{ $product->id }}" @selected($selected?->id === $product->id)>{{ $product->name }}</option>@endforeach</select></label><button class="button secondary">Показать</button></form></div>
 @if($selected && $productRecipe)
 <div class="section-head"><h2>{{ $selected->name }}</h2></div>
 <div class="panel data-panel">
-    <p class="muted small">Нормы указаны на 1 изделие. Пустой вес основного теста означает, что изделие не входит в расчёт этого теста. Чтобы убрать ингредиент, удалите строку.</p>
+    <p class="muted small">Выберите тесто для изделия. Основное тесто рассчитывается по весу на 1 шт., тесто для самсы — по числу изделий на замес. Чтобы убрать ингредиент, удалите строку.</p>
     <form method="post" action="{{ route('bakery.recipes-product') }}" data-recipe-form data-mode="product">@csrf<input type="hidden" name="product" value="{{ $selected->id }}">
-        <div class="form-grid"><label>Основное тесто на 1 шт., г<input type="number" name="dough_grams" value="{{ old('product') == $selected->id ? old('dough_grams') : $productRecipe['dough_grams'] }}" min="0" max="10000" step="any" placeholder="Не используется"></label></div>
+        @php($selectedDoughType = old('product') == $selected->id ? old('dough_type', $productRecipe['dough_type']) : $productRecipe['dough_type'])
+        <div class="form-grid"><label>Вид теста<select name="dough_type" data-dough-type><option value="main" @selected($selectedDoughType === 'main')>Основное тесто</option><option value="samsa" @selected($selectedDoughType === 'samsa')>Тесто для самсы</option><option value="none" @selected($selectedDoughType === 'none')>Без теста</option></select></label><label data-main-dough-weight @if($selectedDoughType !== 'main') hidden @endif>Основное тесто на 1 шт., г<input type="number" name="dough_grams" value="{{ old('product') == $selected->id ? old('dough_grams') : $productRecipe['dough_grams'] }}" min="0.001" max="10000" step="any" @if($selectedDoughType === 'main') required @endif></label></div>
         @php($productRows = old('product') == $selected->id ? old('ingredients', $productRecipe['ingredients']) : $productRecipe['ingredients'])
         <div class="table-scroll"><table><thead><tr><th>Ингредиент</th><th>На 1 шт.</th><th>Единица</th><th></th></tr></thead><tbody data-ingredients data-next="{{ count($productRows) }}">
         @foreach($productRows as $index => $ingredient)<tr><td><input name="ingredients[{{ $index }}][name]" value="{{ $ingredient['name'] }}" maxlength="100" required></td><td><input type="number" name="ingredients[{{ $index }}][amount]" value="{{ $ingredient['amount'] }}" min="0.001" max="100000" step="any" required></td><td><select name="ingredients[{{ $index }}][unit]"><option value="g" @selected($ingredient['unit'] === 'g')>г</option><option value="pcs" @selected($ingredient['unit'] === 'pcs')>шт.</option><option value="tbsp" @selected($ingredient['unit'] === 'tbsp')>ст. л.</option></select></td><td><button type="button" class="button secondary" data-remove-row>Удалить</button></td></tr>@endforeach
@@ -40,6 +41,15 @@
 @endif
 <script>
 document.querySelectorAll('[data-recipe-form]').forEach(form => {
+    const doughType = form.querySelector('[data-dough-type]');
+    if (doughType) {
+        const weight = form.querySelector('[data-main-dough-weight]');
+        const input = weight.querySelector('input');
+        doughType.addEventListener('change', () => {
+            weight.hidden = doughType.value !== 'main';
+            input.required = doughType.value === 'main';
+        });
+    }
     const body = form.querySelector('[data-ingredients]');
     form.querySelector('[data-add-row]').addEventListener('click', () => {
         const index = Number(body.dataset.next);

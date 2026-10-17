@@ -50,7 +50,7 @@ class ProductionCalculator
 
     private const SAMSA_DOUGH = ['batch_size' => 44, 'ingredients' => ['Мука' => 3000, 'Вода' => 1500, 'Соль' => 60, 'Маргарин' => 600]];
 
-    /** @return array{dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>} */
+    /** @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>} */
     public function productDefinition(string $name, ?int $productId = null): array
     {
         $key = $this->normalize($name);
@@ -62,15 +62,19 @@ class ProductionCalculator
             $unit = $measure['unit'] === 'шт.' ? 'pcs' : 'tbsp';
             $ingredients[] = ['name' => $ingredient, 'amount' => (float) $measure['quantity'], 'unit' => $unit];
         }
-        $default = ['dough_grams' => self::DOUGH[$key] ?? null, 'ingredients' => $ingredients];
+        $default = [
+            'dough_type' => $this->defaultDoughType($key),
+            'dough_grams' => self::DOUGH[$key] ?? null,
+            'ingredients' => $ingredients,
+        ];
         if ($productId === null || $this->store === null) {
             return $default;
         }
 
-        /** @var array{dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}|null $override */
+        /** @var array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}|null $override */
         $override = $this->store->overrides(['product:'.$productId])['product:'.$productId] ?? null;
 
-        return $override ?? $default;
+        return $override === null ? $default : $this->withDoughType($override, $key);
     }
 
     /** @return array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>} */
@@ -91,6 +95,25 @@ class ProductionCalculator
     private function normalize(string $name): string
     {
         return str_replace('ё', 'е', mb_strtolower(trim($name)));
+    }
+
+    private function defaultDoughType(string $key): string
+    {
+        if (str_starts_with($key, 'самса')) {
+            return 'samsa';
+        }
+
+        return isset(self::DOUGH[$key]) ? 'main' : 'none';
+    }
+
+    /** @param array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>} $definition
+     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}
+     */
+    private function withDoughType(array $definition, string $key): array
+    {
+        $definition['dough_type'] ??= (float) $definition['dough_grams'] > 0 ? 'main' : $this->defaultDoughType($key);
+
+        return $definition;
     }
 
     /** @param array<string, int> $quantities
@@ -117,10 +140,11 @@ class ProductionCalculator
             $key = $this->normalize($name);
             $productKey = isset($productIdsByName[$name]) ? 'product:'.$productIdsByName[$name] : null;
             $definition = $productKey !== null && isset($overrides[$productKey])
-                ? $overrides[$productKey]
+                ? $this->withDoughType($overrides[$productKey], $key)
                 : $this->productDefinition($name);
-            $doughGrams += ($definition['dough_grams'] ?? 0) * $quantity;
-            if (str_starts_with($key, 'самса')) {
+            if ($definition['dough_type'] === 'main') {
+                $doughGrams += ($definition['dough_grams'] ?? 0) * $quantity;
+            } elseif ($definition['dough_type'] === 'samsa') {
                 $samsaCount += $quantity;
             }
             if ($definition['ingredients'] === []) {
