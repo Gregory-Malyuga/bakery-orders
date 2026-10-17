@@ -126,7 +126,7 @@ class RecipeEditingTest extends TestCase
         $calculator = app(ProductionCalculator::class);
 
         $this->actingAs($admin)->get('/admin/recipes?product='.$samsa->id)->assertOk()
-            ->assertSee('name="dough_type"', false)
+            ->assertSeeInOrder(['<th>Ингредиент</th>', 'name="dough_type"', 'data-ingredients'], false)
             ->assertSee('Тесто для самсы');
         $this->actingAs($admin)->post('/admin/recipes/product', [
             'product' => $samsa->id, 'dough_type' => 'main', 'dough_grams' => 120,

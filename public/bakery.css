@@ -131,7 +131,9 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
 .toolbar-form + p { margin: 10px 0 0; }
 .recipe-picker { align-items: flex-end; }
 .recipe-picker .button { align-self: flex-end; }
-[data-main-dough-weight][hidden] { display: none; }
+.recipe-ingredients td { vertical-align: middle; }
+.recipe-dough-row td > span:not([hidden]) { display: inline-flex; align-items: center; min-height: 44px; }
+.recipe-dough-row [hidden] { display: none; }
 
 /* Keep the screen layout aligned while moving between pages. */
 .app-html { scrollbar-gutter: stable; }

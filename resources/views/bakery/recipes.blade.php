@@ -8,12 +8,13 @@
 @if($selected && $productRecipe)
 <div class="section-head"><h2>{{ $selected->name }}</h2></div>
 <div class="panel data-panel">
-    <p class="muted small">Выберите тесто для изделия. Основное тесто рассчитывается по весу на 1 шт., тесто для самсы — по числу изделий на замес. Чтобы убрать ингредиент, удалите строку.</p>
+    <p class="muted small">Тесто — ингредиент изделия. Основное тесто укажите в граммах на 1 шт.; тесто для самсы считается как 1 порция на изделие. Состав и размер замеса задаются в разделе «Тесто — общие нормы».</p>
     <form method="post" action="{{ route('bakery.recipes-product') }}" data-recipe-form data-mode="product">@csrf<input type="hidden" name="product" value="{{ $selected->id }}">
         @php($selectedDoughType = old('product') == $selected->id ? old('dough_type', $productRecipe['dough_type']) : $productRecipe['dough_type'])
-        <div class="form-grid"><label>Вид теста<select name="dough_type" data-dough-type><option value="main" @selected($selectedDoughType === 'main')>Основное тесто</option><option value="samsa" @selected($selectedDoughType === 'samsa')>Тесто для самсы</option><option value="none" @selected($selectedDoughType === 'none')>Без теста</option></select></label><label data-main-dough-weight @if($selectedDoughType !== 'main') hidden @endif>Основное тесто на 1 шт., г<input type="number" name="dough_grams" value="{{ old('product') == $selected->id ? old('dough_grams') : $productRecipe['dough_grams'] }}" min="0.001" max="10000" step="any" @if($selectedDoughType === 'main') required @endif></label></div>
         @php($productRows = old('product') == $selected->id ? old('ingredients', $productRecipe['ingredients']) : $productRecipe['ingredients'])
-        <div class="table-scroll"><table><thead><tr><th>Ингредиент</th><th>На 1 шт.</th><th>Единица</th><th></th></tr></thead><tbody data-ingredients data-next="{{ count($productRows) }}">
+        <div class="table-scroll"><table class="recipe-ingredients"><thead><tr><th>Ингредиент</th><th>На 1 шт.</th><th>Единица</th><th></th></tr></thead>
+        <tbody><tr class="recipe-dough-row"><td><select name="dough_type" data-dough-type aria-label="Тесто для изделия"><option value="main" @selected($selectedDoughType === 'main')>Основное тесто</option><option value="samsa" @selected($selectedDoughType === 'samsa')>Тесто для самсы</option><option value="none" @selected($selectedDoughType === 'none')>Без теста</option></select></td><td><input type="number" name="dough_grams" data-main-dough-weight value="{{ old('product') == $selected->id ? old('dough_grams') : $productRecipe['dough_grams'] }}" min="0.001" max="10000" step="any" aria-label="Вес основного теста на одно изделие" @if($selectedDoughType !== 'main') hidden @endif @if($selectedDoughType === 'main') required @endif><span data-samsa-dough-amount @if($selectedDoughType !== 'samsa') hidden @endif>1</span><span data-no-dough-amount @if($selectedDoughType !== 'none') hidden @endif>—</span></td><td><span data-main-dough-unit @if($selectedDoughType !== 'main') hidden @endif>г</span><span data-samsa-dough-unit @if($selectedDoughType !== 'samsa') hidden @endif>шт.</span><span data-no-dough-unit @if($selectedDoughType !== 'none') hidden @endif>—</span></td><td></td></tr></tbody>
+        <tbody data-ingredients data-next="{{ count($productRows) }}">
         @foreach($productRows as $index => $ingredient)<tr><td><input name="ingredients[{{ $index }}][name]" value="{{ $ingredient['name'] }}" maxlength="100" required></td><td><input type="number" name="ingredients[{{ $index }}][amount]" value="{{ $ingredient['amount'] }}" min="0.001" max="100000" step="any" required></td><td><select name="ingredients[{{ $index }}][unit]"><option value="g" @selected($ingredient['unit'] === 'g')>г</option><option value="pcs" @selected($ingredient['unit'] === 'pcs')>шт.</option><option value="tbsp" @selected($ingredient['unit'] === 'tbsp')>ст. л.</option></select></td><td><button type="button" class="button secondary" data-remove-row>Удалить</button></td></tr>@endforeach
         </tbody></table></div>
         <div class="actions"><button type="button" class="button secondary" data-add-row>Добавить ингредиент</button><button class="button primary">Сохранить рецептуру</button></div>
@@ -44,11 +45,14 @@ document.querySelectorAll('[data-recipe-form]').forEach(form => {
     const doughType = form.querySelector('[data-dough-type]');
     if (doughType) {
         const weight = form.querySelector('[data-main-dough-weight]');
-        const input = weight.querySelector('input');
-        doughType.addEventListener('change', () => {
+        const toggleDough = () => {
             weight.hidden = doughType.value !== 'main';
-            input.required = doughType.value === 'main';
-        });
+            weight.required = doughType.value === 'main';
+            form.querySelectorAll('[data-samsa-dough-amount], [data-samsa-dough-unit]').forEach(element => element.hidden = doughType.value !== 'samsa');
+            form.querySelectorAll('[data-no-dough-amount], [data-no-dough-unit]').forEach(element => element.hidden = doughType.value !== 'none');
+            form.querySelector('[data-main-dough-unit]').hidden = doughType.value !== 'main';
+        };
+        doughType.addEventListener('change', toggleDough);
     }
     const body = form.querySelector('[data-ingredients]');
     form.querySelector('[data-add-row]').addEventListener('click', () => {
