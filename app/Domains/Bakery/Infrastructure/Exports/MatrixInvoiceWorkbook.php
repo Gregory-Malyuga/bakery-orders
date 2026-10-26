@@ -329,10 +329,17 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     private function workbook(array $orders): string
     {
         $sheets = '';
+        $usedNames = ['заказ' => true];
         foreach ($orders as $index => $order) {
-            $name = htmlspecialchars('Накладная '.$order->id, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            $duplicate = 1;
+            do {
+                $suffix = $duplicate === 1 ? '' : ' ('.$duplicate.')';
+                $name = $this->invoiceSheetName($order, 31 - mb_strlen($suffix)).$suffix;
+                $duplicate++;
+            } while (isset($usedNames[mb_strtolower($name)]));
+            $usedNames[mb_strtolower($name)] = true;
             $number = $index + 1;
-            $sheets .= '<sheet name="'.$name.'" sheetId="'.$number.'" r:id="rId'.$number.'"/>';
+            $sheets .= '<sheet name="'.htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8').'" sheetId="'.$number.'" r:id="rId'.$number.'"/>';
         }
         if ($orders === []) {
             $sheets = '<sheet name="Накладная" sheetId="1" r:id="rId1"/>';
@@ -344,6 +351,30 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             .'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
             .'<sheets>'.$sheets.'</sheets>'
             .'<calcPr calcId="0" fullCalcOnLoad="1"/></workbook>';
+    }
+
+    private function invoiceSheetName(Order $order, int $maxLength): string
+    {
+        $address = $this->safeSheetPart($order->store_address);
+        $customer = $this->safeSheetPart($order->store_name);
+        if ($address === '' || $customer === '') {
+            return mb_substr($address ?: ($customer ?: 'Накладная '.$order->id), 0, $maxLength);
+        }
+
+        $room = $maxLength - 3; // " — "
+        $addressLength = min(mb_strlen($address), intdiv($room, 2));
+        $customerLength = min(mb_strlen($customer), $room - $addressLength);
+        $addressLength = min(mb_strlen($address), $room - $customerLength);
+
+        return mb_substr($address, 0, $addressLength).' — '.mb_substr($customer, 0, $customerLength);
+    }
+
+    private function safeSheetPart(string $value): string
+    {
+        $value = str_replace(['\\', '/', '?', '*', '[', ']', ':'], ' ', $value);
+        $value = preg_replace('/[\x00-\x1F\s]+/u', ' ', $value) ?? $value;
+
+        return trim($value, " '");
     }
 
     private function workbookRelationships(int $sheetCount): string
