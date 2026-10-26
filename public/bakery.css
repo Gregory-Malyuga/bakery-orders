@@ -211,3 +211,10 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     body { font-family: var(--font-ui); background: #fff; }
     th { background: #fff; }
 }
+
+@media print {
+    body { font-size: 22px; line-height: 1.25; }
+    .invoice h2 { font-size: 26px; }
+    .invoice p { font-size: 20px; }
+    .invoice th, .invoice td { font-size: 18px; padding: 4px 8px; }
+}

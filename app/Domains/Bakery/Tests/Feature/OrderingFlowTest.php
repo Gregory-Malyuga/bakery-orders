@@ -332,7 +332,9 @@ class OrderingFlowTest extends TestCase
         $path = $response->baseResponse->getFile()->getPathname();
         $archive = new PharData($path);
         $sheet = $archive['xl/worksheets/sheet1.xml']->getContent();
-        $summary = $archive['xl/worksheets/sheet2.xml']->getContent();
+        $secondInvoice = $archive['xl/worksheets/sheet2.xml']->getContent();
+        $summary = $archive['xl/worksheets/sheet3.xml']->getContent();
+        $workbook = $archive['xl/workbook.xml']->getContent();
         $styles = $archive['xl/styles.xml']->getContent();
         $this->assertStringContainsString('<fills count="4">', $styles);
         $this->assertStringContainsString('fgColor rgb="FFFFFF00"', $styles);
@@ -342,10 +344,12 @@ class OrderingFlowTest extends TestCase
         $this->assertStringContainsString('r="A7" s="4"', $sheet);
         $this->assertStringContainsString('r="A3" s="5"', $summary);
         $this->assertStringContainsString('Седьмой', $sheet);
-        $this->assertStringContainsString('Девятый', $sheet);
-        $this->assertStringContainsString('r="J4"', $sheet);
+        $this->assertStringNotContainsString('Девятый', $sheet);
+        $this->assertStringContainsString('Девятый', $secondInvoice);
+        $this->assertStringContainsString('Накладная '.$accepted->id, $workbook);
+        $this->assertStringContainsString('sheetId="3"', $workbook);
         $this->assertStringContainsString('<v>31.50</v>', $sheet);
-        $this->assertStringContainsString('<v>34.00</v>', $sheet);
+        $this->assertStringContainsString('<v>34.00</v>', $secondInvoice);
         $this->assertStringNotContainsString('Восьмой', $sheet);
         $this->assertStringContainsString('Заказ на ', $summary);
         $this->assertStringContainsString('Итого, ₽', $summary);

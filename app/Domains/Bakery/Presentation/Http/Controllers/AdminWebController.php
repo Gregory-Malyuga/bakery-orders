@@ -5,6 +5,7 @@ namespace Domains\Bakery\Presentation\Http\Controllers;
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\OrderManagementService;
+use Domains\Bakery\Application\OrderReturnSummary;
 use Domains\Bakery\Application\PackagingPlanner;
 use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
@@ -20,7 +21,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook, private readonly OrderCutoff $cutoff) {}
 
     private function adminId(Request $request): int
     {
@@ -230,8 +231,10 @@ class AdminWebController
 
         $returns = DB::table('bakery_returns')->where('order_id', $order)->orderByDesc('id')->get();
         $adjustments = DB::table('bakery_order_adjustments')->where('order_id', $order)->orderByDesc('id')->get();
+        $prices = $this->orders->prices((int) $record->bakery_id);
+        $returnProducts = $this->orders->products()->filter(fn ($product): bool => $record->items->contains('product_id', $product->id) || ($product->is_active && isset($prices[$product->id])));
 
-        return view('bakery.admin-order', ['order' => $record, 'returns' => $returns, 'adjustments' => $adjustments]);
+        return view('bakery.admin-order', ['order' => $record, 'returns' => $returns, 'adjustments' => $adjustments, 'returnProducts' => $returnProducts]);
     }
 
     public function editOrder(int $order): View
@@ -298,7 +301,7 @@ class AdminWebController
         $record = $this->orders->order($order);
         abort_unless($record !== null && $record->status === 'accepted', 404);
 
-        return view('bakery.print', ['orders' => collect([$record]), 'returns' => $this->returnsForOrders([$record->id]), 'downloadUrl' => route('bakery.xlsx-one', $record->id)]);
+        return view('bakery.print', ['orders' => collect([$record]), 'returns' => $this->returnSummary->forOrders([$record]), 'downloadUrl' => route('bakery.xlsx-one', $record->id)]);
     }
 
     public function printBatch(Request $request): View
@@ -307,23 +310,7 @@ class AdminWebController
 
         $orders = $this->orders->orders($date);
 
-        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnsForOrders($orders->pluck('id')->all()), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
-    }
-
-    /** @param list<int> $ids
-     * @return array<int, array<int, int>>
-     */
-    private function returnsForOrders(array $ids): array
-    {
-        if ($ids === []) {
-            return [];
-        }
-        $result = [];
-        foreach (DB::table('bakery_returns')->select('order_id', 'product_id')->selectRaw('SUM(quantity) AS quantity')->whereIn('order_id', $ids)->groupBy('order_id', 'product_id')->get() as $row) {
-            $result[$row->order_id][$row->product_id] = (int) $row->quantity;
-        }
-
-        return $result;
+        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnSummary->forOrders($orders), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse
