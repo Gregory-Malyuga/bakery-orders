@@ -3,15 +3,17 @@
 namespace Domains\Bakery\Infrastructure\Exports;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Bakery\Application\OrderReturnSummary;
 use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\Product;
-use Illuminate\Support\Facades\DB;
 use Phar;
 use PharData;
 use RuntimeException;
 
 class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 {
+    public function __construct(private readonly OrderReturnSummary $returnSummary) {}
+
     /**
      * @param  iterable<Order>  $orders
      * @param  iterable<Product>  $products
@@ -20,13 +22,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     {
         /** @var list<Order> $orderList */
         $orderList = iterator_to_array($orders, false);
-        $returns = [];
-        $orderIds = array_map(fn (Order $order): int => (int) $order->id, $orderList);
-        if ($orderIds !== []) {
-            foreach (DB::table('bakery_returns')->select('order_id', 'product_id')->selectRaw('SUM(quantity) AS quantity')->whereIn('order_id', $orderIds)->groupBy('order_id', 'product_id')->get() as $row) {
-                $returns[$row->order_id][$row->product_id] = (int) $row->quantity;
-            }
-        }
+        $returns = $this->returnSummary->forOrders($orderList);
         $catalog = [];
         foreach ($products as $product) {
             if ($product->is_active) {
@@ -48,13 +44,19 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 
         try {
             $archive = new PharData($path, 0, null, Phar::ZIP);
-            $archive->addFromString('[Content_Types].xml', $this->contentTypes());
+            $invoiceCount = max(1, count($orderList));
+            $archive->addFromString('[Content_Types].xml', $this->contentTypes($invoiceCount + 1));
             $archive->addFromString('_rels/.rels', $this->rootRelationships());
-            $archive->addFromString('xl/workbook.xml', $this->workbook());
-            $archive->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships());
+            $archive->addFromString('xl/workbook.xml', $this->workbook($orderList));
+            $archive->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships($invoiceCount + 1));
             $archive->addFromString('xl/styles.xml', $this->styles());
-            $archive->addFromString('xl/worksheets/sheet1.xml', $this->invoiceSheet($orderList, $catalog, $returns));
-            $archive->addFromString('xl/worksheets/sheet2.xml', $this->orderSheet($orderList, $catalog));
+            foreach ($orderList as $index => $order) {
+                $archive->addFromString('xl/worksheets/sheet'.($index + 1).'.xml', $this->invoiceSheet($order, $returns[$order->id] ?? ['quantities' => [], 'extras' => [], 'amount' => 0]));
+            }
+            if ($orderList === []) {
+                $archive->addFromString('xl/worksheets/sheet1.xml', $this->invoiceSheet(null, ['quantities' => [], 'extras' => [], 'amount' => 0]));
+            }
+            $archive->addFromString('xl/worksheets/sheet'.($invoiceCount + 1).'.xml', $this->orderSheet($orderList, $catalog));
             unset($archive);
 
             return $path;
@@ -66,76 +68,84 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         }
     }
 
-    /**
-     * @param  list<Order>  $orders
-     * @param  array<int, string>  $catalog
-     * @param  array<int, array<int, int>>  $returns
-     */
-    private function invoiceSheet(array $orders, array $catalog, array $returns): string
+    /** @param array{quantities:array<int,int>,extras:list<array{product_id:int,name:string,quantity:int,unit_kopecks:int}>,amount:int} $returns */
+    private function invoiceSheet(?Order $order, array $returns): string
     {
         $cells = [];
-        $widths = [];
-        $lastProductRow = 6 + count($catalog);
-        foreach ($orders as $index => $order) {
-            $start = 1 + $index * 8;
-            foreach ([10, 43, 16, 16, 16, 17, 20, 3] as $offset => $width) {
-                $column = $start + $offset;
-                $widths[] = '<col min="'.$column.'" max="'.$column.'" width="'.$width.'" customWidth="1"/>';
-            }
-            $this->put($cells, 1, $this->label($start + 3, 1, 'Дата поставки'));
-            $this->put($cells, 1, $this->label($start + 4, 1, $order->delivery_date->format('d.m.Y')));
-            $this->put($cells, 2, $this->blank($start, 2, 9));
-            $this->put($cells, 2, $this->label($start + 1, 2, 'Накладная №'.$order->id, 9));
-            for ($offset = 2; $offset <= 6; $offset++) {
-                $this->put($cells, 2, $this->blank($start + $offset, 2, 9));
-            }
-            if ($order->comment !== null && $order->comment !== '') {
-                $this->put($cells, 3, $this->label($start + 1, 3, 'Комментарий: '.$order->comment));
-            }
-            $this->put($cells, 4, $this->label($start, 4, 'Кому'));
-            $this->put($cells, 4, $this->label($start + 1, 4, $order->store_name, 1));
-            $this->put($cells, 5, $this->label($start + 1, 5, $order->store_address));
-            foreach (['№', 'Товар', 'Заказано', 'Возврат', 'Цена, ₽', 'Сумма, ₽', 'После возврата, ₽'] as $offset => $title) {
-                $this->put($cells, 6, $this->label($start + $offset, 6, $title, 5));
-            }
-            $items = $order->items->keyBy('product_id');
-            $position = 1;
-            foreach ($catalog as $productId => $name) {
-                $row = 6 + $position;
-                $item = $items->get($productId);
-                $this->put($cells, $row, $this->number($start, $row, (string) $position, 4));
-                $this->put($cells, $row, $this->label($start + 1, $row, $item === null ? $name : $item->product_name, 4));
-                $this->put($cells, $row, $this->number($start + 2, $row, (string) ($item === null ? 0 : $item->quantity), 4));
-                $returned = $returns[$order->id][$productId] ?? 0;
-                $this->put($cells, $row, $this->number($start + 3, $row, (string) $returned, 4));
-                if ($item !== null) {
-                    $this->put($cells, $row, $this->number($start + 4, $row, $this->rubles($item->unit_kopecks), 6));
-                    $this->put($cells, $row, $this->formula($start + 5, $row, $this->ref($start + 2, $row).'*'.$this->ref($start + 4, $row), $this->rubles($item->total_kopecks), 6));
-                    $this->put($cells, $row, $this->formula($start + 6, $row, '('.$this->ref($start + 2, $row).'-'.$this->ref($start + 3, $row).')*'.$this->ref($start + 4, $row), $this->rubles(($item->quantity - $returned) * $item->unit_kopecks), 6));
-                } else {
-                    for ($offset = 4; $offset <= 6; $offset++) {
-                        $this->put($cells, $row, $this->blank($start + $offset, $row, 6));
-                    }
-                }
-                $position++;
-            }
-            $totalRow = $lastProductRow + 1;
-            $quantityColumn = $this->column($start + 2);
-            $returnColumn = $this->column($start + 3);
-            $sumColumn = $this->column($start + 5);
-            $netColumn = $this->column($start + 6);
-            $returnedQuantity = array_sum($returns[$order->id] ?? []);
-            $returnedKopecks = $order->items->sum(fn ($item): int => ($returns[$order->id][$item->product_id] ?? 0) * $item->unit_kopecks);
-            $this->put($cells, $totalRow, $this->blank($start, $totalRow, 7));
-            $this->put($cells, $totalRow, $this->label($start + 1, $totalRow, 'Итого', 7));
-            $this->put($cells, $totalRow, $this->formula($start + 2, $totalRow, "SUM({$quantityColumn}7:{$quantityColumn}{$lastProductRow})", (string) $this->quantity($order), 7));
-            $this->put($cells, $totalRow, $this->formula($start + 3, $totalRow, "SUM({$returnColumn}7:{$returnColumn}{$lastProductRow})", (string) $returnedQuantity, 7));
-            $this->put($cells, $totalRow, $this->blank($start + 4, $totalRow, 7));
-            $this->put($cells, $totalRow, $this->formula($start + 5, $totalRow, "SUM({$sumColumn}7:{$sumColumn}{$lastProductRow})", $this->rubles($order->total_kopecks), 8));
-            $this->put($cells, $totalRow, $this->formula($start + 6, $totalRow, "SUM({$netColumn}7:{$netColumn}{$lastProductRow})", $this->rubles($order->total_kopecks - $returnedKopecks), 8));
-        }
-        if ($orders === []) {
+        if ($order === null) {
             $this->put($cells, 1, $this->label(1, 1, 'На выбранную дату принятых заказов нет.'));
+
+            return $this->sheet($cells, '', false);
+        }
+
+        $hasReturns = $returns['quantities'] !== [] || $returns['extras'] !== [];
+        $widths = [];
+        foreach ($hasReturns ? [10, 43, 16, 16, 16, 17, 20] : [10, 43, 16, 16, 17] as $index => $width) {
+            $column = $index + 1;
+            $widths[] = '<col min="'.$column.'" max="'.$column.'" width="'.$width.'" customWidth="1"/>';
+        }
+        $this->put($cells, 1, $this->label(3, 1, 'Дата поставки'));
+        $this->put($cells, 1, $this->label(4, 1, $order->delivery_date->format('d.m.Y')));
+        $this->put($cells, 2, $this->blank(1, 2, 9));
+        $this->put($cells, 2, $this->label(2, 2, 'Накладная №'.$order->id, 9));
+        for ($column = 3; $column <= ($hasReturns ? 7 : 5); $column++) {
+            $this->put($cells, 2, $this->blank($column, 2, 9));
+        }
+        if ($order->comment !== null && $order->comment !== '') {
+            $this->put($cells, 3, $this->label(2, 3, 'Комментарий: '.$order->comment));
+        }
+        $this->put($cells, 4, $this->label(1, 4, 'Кому'));
+        $this->put($cells, 4, $this->label(2, 4, $order->store_name, 1));
+        $this->put($cells, 5, $this->label(2, 5, $order->store_address));
+        $titles = $hasReturns
+            ? ['№', 'Товар', 'Заказано', 'Возврат', 'Цена, ₽', 'Сумма, ₽', 'После возврата, ₽']
+            : ['№', 'Товар', 'Заказано', 'Цена, ₽', 'Сумма, ₽'];
+        foreach ($titles as $index => $title) {
+            $this->put($cells, 6, $this->label($index + 1, 6, $title, 5));
+        }
+
+        $position = 0;
+        foreach ($order->items as $item) {
+            $row = 7 + $position++;
+            $returned = $returns['quantities'][$item->product_id] ?? 0;
+            $this->put($cells, $row, $this->number(1, $row, (string) $position, 4));
+            $this->put($cells, $row, $this->label(2, $row, $item->product_name, 4));
+            $this->put($cells, $row, $this->number(3, $row, (string) $item->quantity, 4));
+            if ($hasReturns) {
+                $this->put($cells, $row, $this->number(4, $row, (string) $returned, 4));
+            }
+            $priceColumn = $hasReturns ? 5 : 4;
+            $sumColumn = $hasReturns ? 6 : 5;
+            $this->put($cells, $row, $this->number($priceColumn, $row, $this->rubles($item->unit_kopecks), 6));
+            $this->put($cells, $row, $this->formula($sumColumn, $row, $this->ref(3, $row).'*'.$this->ref($priceColumn, $row), $this->rubles($item->total_kopecks), 6));
+            if ($hasReturns) {
+                $this->put($cells, $row, $this->formula(7, $row, '('.$this->ref(3, $row).'-'.$this->ref(4, $row).')*'.$this->ref(5, $row), $this->rubles(($item->quantity - $returned) * $item->unit_kopecks), 6));
+            }
+        }
+        foreach ($returns['extras'] as $extra) {
+            $row = 7 + $position++;
+            $this->put($cells, $row, $this->number(1, $row, (string) $position, 4));
+            $this->put($cells, $row, $this->label(2, $row, $extra['name'], 4));
+            $this->put($cells, $row, $this->number(3, $row, '0', 4));
+            $this->put($cells, $row, $this->number(4, $row, (string) $extra['quantity'], 4));
+            $this->put($cells, $row, $this->number(5, $row, $this->rubles($extra['unit_kopecks']), 6));
+            $this->put($cells, $row, $this->formula(6, $row, 'C'.$row.'*E'.$row, '0.00', 6));
+            $this->put($cells, $row, $this->formula(7, $row, '(C'.$row.'-D'.$row.')*E'.$row, $this->rubles(-$extra['quantity'] * $extra['unit_kopecks']), 6));
+        }
+        $lastRow = 6 + $position;
+        $totalRow = $lastRow + 1;
+        $this->put($cells, $totalRow, $this->blank(1, $totalRow, 7));
+        $this->put($cells, $totalRow, $this->label(2, $totalRow, 'Итого', 7));
+        $this->put($cells, $totalRow, $this->formula(3, $totalRow, "SUM(C7:C{$lastRow})", (string) $this->quantity($order), 7));
+        if ($hasReturns) {
+            $returnedQuantity = array_sum($returns['quantities']) + array_sum(array_column($returns['extras'], 'quantity'));
+            $this->put($cells, $totalRow, $this->formula(4, $totalRow, "SUM(D7:D{$lastRow})", (string) $returnedQuantity, 7));
+            $this->put($cells, $totalRow, $this->blank(5, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->formula(6, $totalRow, "SUM(F7:F{$lastRow})", $this->rubles($order->total_kopecks), 8));
+            $this->put($cells, $totalRow, $this->formula(7, $totalRow, "SUM(G7:G{$lastRow})", $this->rubles($order->total_kopecks - $returns['amount']), 8));
+        } else {
+            $this->put($cells, $totalRow, $this->blank(4, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->formula(5, $totalRow, "SUM(E7:E{$lastRow})", $this->rubles($order->total_kopecks), 8));
         }
 
         return $this->sheet($cells, implode('', $widths), false);
@@ -210,8 +220,10 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+            .($freeze ? '' : '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>')
             .'<sheetViews><sheetView showGridLines="0" workbookViewId="0">'.($freeze ? '<pane xSplit="1" ySplit="3" topLeftCell="B4" activePane="bottomRight" state="frozen"/>' : '').'</sheetView></sheetViews>'
             .'<cols>'.$widths.'</cols><sheetData>'.$rows.'</sheetData>'
+            .($freeze ? '' : '<pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="1"/>')
             .'<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'
             .'</worksheet>';
     }
@@ -262,7 +274,9 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 
     private function rubles(int $kopecks): string
     {
-        return intdiv($kopecks, 100).'.'.str_pad((string) ($kopecks % 100), 2, '0', STR_PAD_LEFT);
+        $absolute = abs($kopecks);
+
+        return ($kopecks < 0 ? '-' : '').intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 
     private function quantity(Order $order): int
@@ -286,15 +300,19 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         return 0;
     }
 
-    private function contentTypes(): string
+    private function contentTypes(int $sheetCount): string
     {
+        $sheets = '';
+        for ($index = 1; $index <= $sheetCount; $index++) {
+            $sheets .= '<Override PartName="/xl/worksheets/sheet'.$index.'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>';
+        }
+
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
             .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
             .'<Default Extension="xml" ContentType="application/xml"/>'
             .'<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
-            .'<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
-            .'<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+            .$sheets
             .'<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
             .'</Types>';
     }
@@ -307,21 +325,38 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             .'</Relationships>';
     }
 
-    private function workbook(): string
+    /** @param list<Order> $orders */
+    private function workbook(array $orders): string
     {
+        $sheets = '';
+        foreach ($orders as $index => $order) {
+            $name = htmlspecialchars('Накладная '.$order->id, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+            $number = $index + 1;
+            $sheets .= '<sheet name="'.$name.'" sheetId="'.$number.'" r:id="rId'.$number.'"/>';
+        }
+        if ($orders === []) {
+            $sheets = '<sheet name="Накладная" sheetId="1" r:id="rId1"/>';
+        }
+        $summary = max(1, count($orders)) + 1;
+        $sheets .= '<sheet name="Заказ" sheetId="'.$summary.'" r:id="rId'.$summary.'"/>';
+
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
-            .'<sheets><sheet name="Накладная" sheetId="1" r:id="rId1"/><sheet name="Заказ" sheetId="2" r:id="rId2"/></sheets>'
+            .'<sheets>'.$sheets.'</sheets>'
             .'<calcPr calcId="0" fullCalcOnLoad="1"/></workbook>';
     }
 
-    private function workbookRelationships(): string
+    private function workbookRelationships(int $sheetCount): string
     {
+        $sheets = '';
+        for ($index = 1; $index <= $sheetCount; $index++) {
+            $sheets .= '<Relationship Id="rId'.$index.'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet'.$index.'.xml"/>';
+        }
+
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
-            .'<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>'
-            .'<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+            .$sheets
+            .'<Relationship Id="rId'.($sheetCount + 1).'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
             .'</Relationships>';
     }
 

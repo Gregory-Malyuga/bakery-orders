@@ -31,10 +31,6 @@ class OrderManagementService
                 $id = (int) $rawId;
                 $quantity = (int) $rawQuantity;
                 $item = $items->get($id);
-                $returned = (int) DB::table('bakery_returns')->where('order_id', $orderId)->where('product_id', $id)->sum('quantity');
-                if ($quantity < $returned) {
-                    throw ValidationException::withMessages(['quantities' => 'Количество не может быть меньше уже зафиксированного возврата.']);
-                }
                 if ($quantity === 0) {
                     continue;
                 }
@@ -91,14 +87,24 @@ class OrderManagementService
             $order = Order::query()->whereKey($orderId)->lockForUpdate()->firstOrFail();
             abort_unless($order->status === 'accepted', 422, 'Возврат можно зафиксировать только для принятого заказа.');
             $item = $order->items()->where('product_id', $productId)->first();
-            abort_unless($item !== null, 422, 'Товар отсутствует в заказе.');
-            $returned = (int) DB::table('bakery_returns')->where('order_id', $orderId)->where('product_id', $productId)->sum('quantity');
-            if ($returned + $quantity > $item->quantity) {
-                throw ValidationException::withMessages(['quantity' => 'Возврат превышает количество в заказе.']);
+            if ($item === null) {
+                $product = $this->orders->products()->firstWhere('id', $productId);
+                $prices = $this->orders->prices((int) $order->bakery_id);
+                if ($product === null || ! $product->is_active || ! isset($prices[$productId])) {
+                    throw ValidationException::withMessages(['product' => 'Товар недоступен для заказа этому магазину.']);
+                }
+                $name = $product->name;
+                $unit = $prices[$productId];
+            } else {
+                $name = $item->product_name;
+                $unit = $item->unit_kopecks;
             }
             DB::table('bakery_returns')->insert([
                 'order_id' => $orderId,
                 'product_id' => $productId,
+                'product_name' => $name,
+                'unit_kopecks' => $unit,
+                'is_order_item' => $item !== null,
                 'admin_user_id' => $adminId,
                 'quantity' => $quantity,
                 'reason' => $reason,
