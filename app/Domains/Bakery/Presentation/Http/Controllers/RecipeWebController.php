@@ -17,6 +17,7 @@ class RecipeWebController
 
     public function index(Request $request): View
     {
+        /** @var array{section?:string,product?:int|string} $input */
         $input = $request->validate([
             'section' => ['nullable', 'in:products,dough'],
             'product' => ['nullable', 'integer', 'exists:bakery_products,id'],
@@ -42,6 +43,7 @@ class RecipeWebController
 
     public function saveProduct(Request $request): RedirectResponse
     {
+        /** @var array{product:int|string,dough_type?:string,dough_grams?:int|float|numeric-string,ingredients?:list<array<string,mixed>>} $data */
         $data = $request->validate([
             'product' => ['required', 'integer', 'exists:bakery_products,id'],
             'dough_type' => ['nullable', 'in:main,samsa,none'],
@@ -53,6 +55,9 @@ class RecipeWebController
             'ingredients.*.unit' => ['nullable', 'in:g,pcs,tbsp'],
         ]);
         $product = $this->orders->products()->firstWhere('id', (int) $data['product']);
+        if ($product === null) {
+            abort(404);
+        }
         $doughType = $data['dough_type'] ?? $this->calculator->productDefinition($product->name, (int) $product->id)['dough_type'];
         if ($doughType === 'main' && (! isset($data['dough_grams']) || (float) $data['dough_grams'] <= 0)) {
             throw ValidationException::withMessages(['dough_grams' => 'Укажите вес основного теста на одно изделие.']);
@@ -69,6 +74,7 @@ class RecipeWebController
 
     public function saveDough(Request $request): RedirectResponse
     {
+        /** @var array{kind:string,batch_size:int|float|numeric-string,ingredients:list<array<string,mixed>>} $data */
         $data = $request->validate([
             'kind' => ['required', 'in:main_dough,samsa_dough'],
             'batch_size' => $request->input('kind') === 'samsa_dough'
@@ -89,11 +95,16 @@ class RecipeWebController
 
     public function reset(Request $request): RedirectResponse
     {
+        /** @var array{kind:string,product?:int|string} $data */
         $data = $request->validate(['kind' => ['required', 'in:product,main_dough,samsa_dough'], 'product' => ['required_if:kind,product', 'nullable', 'integer', 'exists:bakery_products,id']]);
-        $key = $data['kind'] === 'product' ? 'product:'.$data['product'] : $data['kind'];
+        $productId = $data['product'] ?? null;
+        if ($data['kind'] === 'product' && $productId === null) {
+            abort(422);
+        }
+        $key = $data['kind'] === 'product' ? 'product:'.$productId : $data['kind'];
         $this->store->reset($key);
 
-        $query = $data['kind'] === 'product' ? ['product' => $data['product']] : ['section' => 'dough'];
+        $query = $data['kind'] === 'product' ? ['product' => $productId] : ['section' => 'dough'];
 
         return redirect()->route('bakery.recipes', $query)->with('success', 'Восстановлены исходные нормы из таблицы.');
     }
@@ -108,26 +119,34 @@ class RecipeWebController
         $byId = $this->catalog->all()->keyBy('id');
         $byName = [];
         foreach ($byId as $ingredient) {
+            /** @var object{id:int,name:string,unit:string,source_name:?string,source_unit:?string} $ingredient */
             $byName[$this->catalog->key($ingredient->name, $ingredient->unit)] = $ingredient;
             if ($ingredient->source_name !== null) {
-                $byName[$this->catalog->key($ingredient->source_name, $ingredient->source_unit)] = $ingredient;
+                $byName[$this->catalog->key($ingredient->source_name, $ingredient->source_unit ?? '')] = $ingredient;
             }
         }
         foreach ($rows as $row) {
-            $ingredient = isset($row['ingredient_id']) ? $byId->get((int) $row['ingredient_id']) : null;
+            $ingredientId = $row['ingredient_id'] ?? null;
+            $ingredient = is_numeric($ingredientId) ? $byId->get((int) $ingredientId) : null;
             if (isset($row['ingredient_id']) && $ingredient === null) {
                 throw ValidationException::withMessages(['ingredients' => 'Выберите ингредиент из справочника.']);
             }
-            $unit = $requiredUnit ?? ($row['unit'] ?? '');
-            $ingredient ??= $byName[$this->catalog->key((string) ($row['name'] ?? ''), $unit)] ?? null;
+            $unit = $row['unit'] ?? '';
+            $name = $row['name'] ?? '';
+            $ingredient ??= $byName[$this->catalog->key(is_string($name) ? $name : '', $requiredUnit ?? (is_string($unit) ? $unit : ''))] ?? null;
             if ($ingredient === null || ($requiredUnit !== null && $ingredient->unit !== $requiredUnit)) {
                 throw ValidationException::withMessages(['ingredients' => 'Выберите ингредиент из справочника.']);
             }
+            /** @var object{id:int,name:string,unit:string} $ingredient */
             if (isset($seen[$ingredient->id])) {
                 throw ValidationException::withMessages(['ingredients' => 'Один ингредиент указан дважды.']);
             }
             $seen[$ingredient->id] = true;
-            $result[] = ['ingredient_id' => (int) $ingredient->id, 'name' => $ingredient->name, 'amount' => (float) $row['amount'], 'unit' => $ingredient->unit];
+            $amount = $row['amount'] ?? null;
+            if (! is_numeric($amount)) {
+                throw ValidationException::withMessages(['ingredients' => 'Укажите количество ингредиента.']);
+            }
+            $result[] = ['ingredient_id' => $ingredient->id, 'name' => $ingredient->name, 'amount' => (float) $amount, 'unit' => $ingredient->unit];
         }
 
         return $result;

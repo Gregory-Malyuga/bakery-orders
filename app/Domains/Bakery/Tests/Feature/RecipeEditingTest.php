@@ -76,6 +76,7 @@ class RecipeEditingTest extends TestCase
 
         $production = $this->actingAs($admin)->get('/admin?date='.$quote['date'].'&tab=prep')->assertOk()
             ->assertSee('0,100 кг')->assertSee('0,0005 кг')->assertSee('1,000 шт.')->assertSee('замеса по 20 шт.')->viewData('production');
+        /** @var array{dough_grams:int|float,ingredients:array<string,int|float>,main_dough:array<string,float>,recipes:array<string,array{other_ingredients:array<string,array{quantity:int|float}>}>} $production */
         $this->assertEqualsWithDelta(300, $production['dough_grams'], 0.001);
         $this->assertEqualsWithDelta(100, $production['ingredients']['Помидоры'], 0.001);
         $this->assertEqualsWithDelta(360, $production['main_dough']['Мука'], 0.001);
@@ -100,7 +101,7 @@ class RecipeEditingTest extends TestCase
         $values = [];
         foreach ($rows as $row) {
             $cells = $row->xpath('./*[local-name()="c"]');
-            $values[] = array_map(fn ($cell): string => isset($cell->is->t) ? (string) $cell->is->t : (string) $cell->v, $cells);
+            $values[] = array_map(fn ($cell): string => isset($cell->is->t) ? (string) $cell->is->t : (string) $cell->v, $cells ?? []);
         }
         $this->assertContains(['Начинки и заготовки', 'Помидоры', '0.1', 'кг'], $values);
         $this->assertContains(['Начинки и заготовки', 'Соль', '0.0005', 'кг'], $values);
@@ -180,6 +181,12 @@ class RecipeEditingTest extends TestCase
         $this->assertNotNull($paprika);
         $this->assertNotNull($flour);
         $this->assertNotNull($eggPieces);
+        $paprikaId = $paprika->id;
+        $flourId = $flour->id;
+        $eggPiecesId = $eggPieces->id;
+        $this->assertIsInt($paprikaId);
+        $this->assertIsInt($flourId);
+        $this->assertIsInt($eggPiecesId);
 
         $this->actingAs($admin)->post('/admin/recipes/dough', [
             'kind' => 'main_dough', 'batch_size' => 1000,
@@ -187,20 +194,20 @@ class RecipeEditingTest extends TestCase
         ])->assertSessionHasErrors('ingredients');
         $this->actingAs($admin)->post('/admin/recipes/dough', [
             'kind' => 'main_dough', 'batch_size' => 1000,
-            'ingredients' => [['ingredient_id' => $eggPieces->id, 'amount' => 10]],
+            'ingredients' => [['ingredient_id' => $eggPiecesId, 'amount' => 10]],
         ])->assertSessionHasErrors('ingredients');
         $this->actingAs($admin)->post('/admin/recipes/dough', [
             'kind' => 'main_dough', 'batch_size' => 1000,
-            'ingredients' => [['ingredient_id' => $flour->id, 'amount' => 600]],
+            'ingredients' => [['ingredient_id' => $flourId, 'amount' => 600]],
         ])->assertRedirect();
 
         $this->actingAs($admin)->post('/admin/recipes/product', [
             'product' => $product->id, 'dough_type' => 'main', 'dough_grams' => 136,
-            'ingredients' => [['ingredient_id' => $paprika->id, 'amount' => 3]],
+            'ingredients' => [['ingredient_id' => $paprikaId, 'amount' => 3]],
         ])->assertRedirect();
-        $this->actingAs($admin)->post('/admin/ingredients/'.$paprika->id.'/rename', ['name' => 'Паприка молотая'])->assertRedirect();
-        $this->actingAs($admin)->post('/admin/ingredients/'.$flour->id.'/rename', ['name' => 'Мука хлебопекарная'])->assertRedirect();
-        $this->actingAs($admin)->post('/admin/ingredients/'.$paprika->id.'/toggle')->assertRedirect();
+        $this->actingAs($admin)->post('/admin/ingredients/'.$paprikaId.'/rename', ['name' => 'Паприка молотая'])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/ingredients/'.$flourId.'/rename', ['name' => 'Мука хлебопекарная'])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/ingredients/'.$paprikaId.'/toggle')->assertRedirect();
 
         $production = app(ProductionCalculator::class)->calculate(['Пицца' => 2], ['Пицца' => $product->id]);
         $this->assertEqualsWithDelta(6, $production['ingredients']['Паприка молотая'], 0.001);

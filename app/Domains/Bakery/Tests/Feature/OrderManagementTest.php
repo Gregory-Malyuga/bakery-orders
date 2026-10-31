@@ -57,6 +57,7 @@ class OrderManagementTest extends TestCase
         $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertOk()->assertSee('Уточнение магазина')->assertSee('Обмен');
         $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/print')->assertOk()->assertSee('Возврат, шт.')->assertSee('170,00');
         $invoice = $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/xlsx')->assertOk();
+        $this->assertInstanceOf(BinaryFileResponse::class, $invoice->baseResponse);
         $invoicePath = $invoice->baseResponse->getFile()->getPathname();
         $invoiceArchive = new PharData($invoicePath);
         $this->assertStringContainsString('Возврат', $invoiceArchive['xl/worksheets/sheet1.xml']->getContent());

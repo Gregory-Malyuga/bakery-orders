@@ -44,7 +44,7 @@ class ImpersonationController
             return redirect()->route('bakery.login');
         }
 
-        $userId = $request->user()?->id;
+        $userId = $request->user()->id;
         Auth::login($admin);
         $request->session()->regenerate();
         $request->session()->forget(self::SESSION_KEY);

@@ -255,11 +255,11 @@ class OrderingFlowTest extends TestCase
         $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => 1])->assertRedirect();
         $this->assertSame(3, DB::table('bakery_store_product_minimums')->where('bakery_id', $store->id)->where('product_id', $product->id)->value('minimum_quantity'));
         $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 1, 'packaging_mode' => 'pair', 'is_active' => 1])->assertRedirect();
-        $this->assertSame(2, $product->fresh()?->minimum_quantity);
+        $this->assertSame(2, $product->fresh()->minimum_quantity);
         $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => 1])->assertRedirect();
         $this->assertSame(2, DB::table('bakery_store_product_minimums')->where('bakery_id', $store->id)->where('product_id', $product->id)->value('minimum_quantity'));
         $this->actingAs($admin)->post('/admin/products', ['id' => $product->id, 'name' => $product->name, 'sort_order' => 0, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => 1])->assertRedirect();
-        $this->assertSame(1, $product->fresh()?->minimum_quantity);
+        $this->assertSame(1, $product->fresh()->minimum_quantity);
     }
 
     public function test_store_minimum_override_and_repeat_prefill_respect_access_and_current_price(): void
@@ -375,6 +375,7 @@ class OrderingFlowTest extends TestCase
 
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $response = $this->actingAs($admin)->get('/admin/xlsx?date=2026-10-07')->assertOk();
+        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $response->baseResponse);
         $path = $response->baseResponse->getFile()->getPathname();
         $archive = new PharData($path);
         $workbook = $archive['xl/workbook.xml']->getContent();

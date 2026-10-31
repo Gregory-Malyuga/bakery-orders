@@ -77,6 +77,7 @@ class ProductionCalculator
     public function productDefinition(string $name, ?int $productId = null): array
     {
         $key = $this->normalize($name);
+        /** @var list<array{name:string,amount:float,unit:string}> $ingredients */
         $ingredients = [];
         foreach (self::FILLINGS[$key] ?? [] as $ingredient => $grams) {
             $ingredients[] = ['name' => $ingredient, 'amount' => $grams, 'unit' => 'g'];
@@ -116,6 +117,7 @@ class ProductionCalculator
     public function doughDefinition(string $kind): array
     {
         $default = $kind === 'samsa_dough' ? self::SAMSA_DOUGH : self::MAIN_DOUGH;
+        /** @var list<array{name:string,amount:float,unit:string}> $ingredients */
         $ingredients = [];
         foreach ($default['ingredients'] as $name => $grams) {
             $ingredients[] = ['name' => $name, 'amount' => $grams, 'unit' => 'g'];
@@ -149,7 +151,7 @@ class ProductionCalculator
      */
     private function withDoughType(array $definition, string $key): array
     {
-        $definition['dough_type'] ??= (float) $definition['dough_grams'] > 0 ? 'main' : $this->defaultDoughType($key);
+        $definition['dough_type'] ??= ($definition['dough_grams'] ?? 0) > 0 ? 'main' : $this->defaultDoughType($key);
 
         return $definition;
     }
@@ -173,14 +175,17 @@ class ProductionCalculator
         foreach ($productIdsByName as $id) {
             $keys[] = 'product:'.$id;
         }
+        /** @var array<string, array<string, mixed>> $overrides */
         $overrides = $this->store?->overrides($keys) ?? [];
         foreach ($quantities as $name => $quantity) {
             $key = $this->normalize($name);
             $productKey = isset($productIdsByName[$name]) ? 'product:'.$productIdsByName[$name] : null;
-            $definition = $productKey !== null && isset($overrides[$productKey])
-                ? $this->withDoughType($overrides[$productKey], $key)
+            /** @var array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}|null $productOverride */
+            $productOverride = $productKey !== null ? ($overrides[$productKey] ?? null) : null;
+            $definition = $productOverride !== null
+                ? $this->withDoughType($productOverride, $key)
                 : $this->productDefinition($name);
-            if ($productKey !== null && isset($overrides[$productKey])) {
+            if ($productOverride !== null) {
                 $definition['ingredients'] = $this->catalog?->resolveRows($definition['ingredients']) ?? $definition['ingredients'];
             }
             if ($definition['dough_type'] === 'main') {
@@ -209,8 +214,12 @@ class ProductionCalculator
             $recipes[$name] = ['quantity' => $quantity, 'ingredients' => $recipeIngredients, 'other_ingredients' => $recipeOtherIngredients];
         }
         ksort($ingredients);
-        $mainDough = $overrides['main_dough'] ?? $this->doughDefinition('main_dough');
-        $samsaDough = $overrides['samsa_dough'] ?? $this->doughDefinition('samsa_dough');
+        /** @var array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>}|null $mainOverride */
+        $mainOverride = $overrides['main_dough'] ?? null;
+        /** @var array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>}|null $samsaOverride */
+        $samsaOverride = $overrides['samsa_dough'] ?? null;
+        $mainDough = $mainOverride ?? $this->doughDefinition('main_dough');
+        $samsaDough = $samsaOverride ?? $this->doughDefinition('samsa_dough');
         $mainDough['ingredients'] = $this->catalog?->resolveRows($mainDough['ingredients']) ?? $mainDough['ingredients'];
         $samsaDough['ingredients'] = $this->catalog?->resolveRows($samsaDough['ingredients']) ?? $samsaDough['ingredients'];
         $mainIngredients = [];

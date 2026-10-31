@@ -13,8 +13,9 @@ class IngredientCatalog
         return DB::table('bakery_ingredients')->orderBy('name')->orderBy('unit')->get();
     }
 
-    /** @param list<array<string, mixed>> $rows
-     * @return list<array<string, mixed>>
+    /** @template T of array{name:string,amount:float,unit:string}
+     * @param list<T> $rows
+     * @return list<T>
      */
     public function resolveRows(array $rows): array
     {
