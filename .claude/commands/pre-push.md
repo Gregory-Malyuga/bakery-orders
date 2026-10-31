@@ -8,12 +8,15 @@
 docker compose exec -T php sh -c "cd /var/www/app && composer pre-push"
 ```
 
-`composer pre-push` должен включать (в `composer.json → scripts`):
+Текущий `composer pre-push` в `composer.json → scripts` включает:
 ```json
 "pre-push": [
-    "./vendor/bin/pint --test",
-    "./vendor/bin/phpstan analyse --level=8",
-    "@php artisan test"
+    "@lint:php",
+    "@cs:check",
+    "@phpstan",
+    "@architecture",
+    "@docs:check",
+    "@test"
 ]
 ```
 
@@ -23,10 +26,10 @@ docker compose exec -T php sh -c "cd /var/www/app && composer pre-push"
 2. Исправить (не обходить через `--no-verify`)
 3. Повторить
 
-**После 3 провалов подряд** — остановиться с отчётом `🛑 Stopped` и описанием причины.
+Если проверка недоступна из-за окружения, записать причину и непроверенные пункты в `docs/state.md`; не объявлять gate пройденным. После исправления повторить только нужную проверку и затем полный gate.
 
 ## Артефакты
 
-- Pint изменяет файлы — закоммить правки
+- `cs:check` проверяет стиль без записи; изменения форматирования делать отдельно и просматривать diff.
 - PHPStan — исправить реальные ошибки типов
 - PHPUnit/Pest — исправить тесты или код (не пропускать тесты)
