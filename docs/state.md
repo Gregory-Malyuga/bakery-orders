@@ -2,6 +2,7 @@
 
 ## Current — 2026-11-01
 
+- **CI / BUG-01:** по сообщению о падении Deptrac на `670aea7` установлен прямой импорт `Infrastructure\\Exports\\PeriodReportWorkbook` из `Presentation\\Http\\Controllers\\AdminWebController`. В отдельном worktree контроллер переведён на интерфейс Application, реализация привязана в `BakeryServiceProvider`; локальный кодовый коммит `fe6b5eb`. Проверка `git diff --check` прошла; на этом ПК недоступны PHP и Docker, поэтому Deptrac, `composer pre-push` и тесты пока не запускались. Push, CI и production-деплой на момент записи не выполнялись.
 - **Now:** очередь задач и процесс ведения ошибок оформлены; реализация BAK-01…BAK-12 не начата.
 - **Next:** BAK-01 — отмена ошибочного возврата; затем BAK-02 — итоги и комментарии в списке принятых заказов. Очередь: [roadmap](process/roadmap.md), подробности: [backlog](backlog-2026-11-01.md).
 - **Blocked:** подтверждённых блокеров для записи плана нет. Вопросы, требующие решения перед отдельными задачами, перечислены в бэклоге.
