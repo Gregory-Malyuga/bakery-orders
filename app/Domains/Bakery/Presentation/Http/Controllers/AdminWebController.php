@@ -131,9 +131,9 @@ class AdminWebController
 
     public function saveStore(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,name:string,address:string,is_active:bool|int|string,discount_enabled?:bool|int|string,discount_percent?:int|string} $data */
-        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'address' => ['required', 'string', 'max:255'], 'is_active' => ['required', 'boolean'], 'discount_enabled' => ['sometimes', 'boolean'], 'discount_percent' => ['nullable', 'integer', 'min:0', 'max:100']]);
-        $this->admin->saveStore(isset($data['id']) ? (int) $data['id'] : null, ['name' => $data['name'], 'address' => $data['address'], 'is_active' => (bool) $data['is_active'], 'discount_enabled' => (bool) ($data['discount_enabled'] ?? false), 'discount_percent' => (int) ($data['discount_percent'] ?? 0)]);
+        /** @var array{id?:int|string,name:string,address:string,is_active:bool|int|string,discount_percent?:int|string|null} $data */
+        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'address' => ['required', 'string', 'max:255'], 'is_active' => ['required', 'boolean'], 'discount_percent' => ['nullable', 'integer', 'min:0', 'max:100']]);
+        $this->admin->saveStore(isset($data['id']) ? (int) $data['id'] : null, ['name' => $data['name'], 'address' => $data['address'], 'is_active' => (bool) $data['is_active'], 'discount_enabled' => (int) ($data['discount_percent'] ?? 0) > 0, 'discount_percent' => (int) ($data['discount_percent'] ?? 0)]);
 
         return back()->with('success', 'Магазин сохранён.');
     }
