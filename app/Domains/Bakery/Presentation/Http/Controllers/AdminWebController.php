@@ -100,8 +100,9 @@ class AdminWebController
         $pageCount = max(1, (int) ceil($orders->count() / 20));
         $page = min((int) ($input['page'] ?? 1), $pageCount);
         $visibleOrders = $orders->forPage($page, 20);
+        $orderReturns = $this->returnSummary->forOrders($visibleOrders);
 
-        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
+        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
     }
 
     public function catalog(Request $request): View
@@ -230,12 +231,16 @@ class AdminWebController
         $record = $this->orders->order($order);
         abort_if($record === null, 404);
 
-        $returns = DB::table('bakery_returns')->where('order_id', $order)->orderByDesc('id')->get();
+        $returns = DB::table('bakery_returns')->leftJoin('users as cancelling_users', 'bakery_returns.cancelled_by_user_id', '=', 'cancelling_users.id')
+            ->where('bakery_returns.order_id', $order)->orderByDesc('bakery_returns.id')
+            ->select('bakery_returns.*', 'cancelling_users.name as cancelled_by_name')->get();
         $adjustments = DB::table('bakery_order_adjustments')->where('order_id', $order)->orderByDesc('id')->get();
         $prices = $this->orders->prices((int) $record->bakery_id);
         $returnProducts = $this->orders->products()->filter(fn ($product): bool => $record->items->contains('product_id', $product->id) || ($product->is_active && isset($prices[$product->id])));
 
-        return view('bakery.admin-order', ['order' => $record, 'returns' => $returns, 'adjustments' => $adjustments, 'returnProducts' => $returnProducts]);
+        $returnAmount = $this->returnSummary->forOrders([$record])[$order]['amount'] ?? 0;
+
+        return view('bakery.admin-order', ['order' => $record, 'returns' => $returns, 'adjustments' => $adjustments, 'returnProducts' => $returnProducts, 'returnAmount' => $returnAmount]);
     }
 
     public function editOrder(int $order): View
@@ -264,6 +269,15 @@ class AdminWebController
         $this->management->recordReturn($order, $this->adminId($request), (int) $data['product'], (int) $data['quantity'], isset($data['reason']) ? trim($data['reason']) : null);
 
         return back()->with('success', 'Возврат зафиксирован.');
+    }
+
+    public function cancelReturn(Request $request, int $order, int $return): RedirectResponse
+    {
+        /** @var array{reason:string} $data */
+        $data = $request->validate(['reason' => ['required', 'string', 'max:500', 'not_regex:/^\s*$/u']]);
+        $this->management->cancelReturn($order, $return, $this->adminId($request), trim($data['reason']));
+
+        return redirect()->route('bakery.admin-order', $order)->with('success', 'Возврат отменён.');
     }
 
     /** @return array{from:string,to:string} */

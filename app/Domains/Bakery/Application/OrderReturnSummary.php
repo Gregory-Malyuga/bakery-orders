@@ -22,7 +22,7 @@ class OrderReturnSummary
         }
 
         $result = [];
-        foreach (DB::table('bakery_returns')->whereIn('order_id', array_keys($byId))->orderBy('id')->get() as $row) {
+        foreach (DB::table('bakery_returns')->whereIn('order_id', array_keys($byId))->where('status', 'active')->orderBy('id')->get() as $row) {
             /** @var object{order_id:int|string,product_id:int|string,quantity:int|string,unit_kopecks:int|string|null,product_name:string|null,is_order_item:bool|int|string} $row */
             $orderId = (int) $row->order_id;
             $productId = (int) $row->product_id;

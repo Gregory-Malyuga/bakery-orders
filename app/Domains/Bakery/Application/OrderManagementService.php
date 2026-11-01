@@ -108,7 +108,26 @@ class OrderManagementService
                 'admin_user_id' => $adminId,
                 'quantity' => $quantity,
                 'reason' => $reason,
+                'status' => 'active',
                 'created_at' => now(),
+            ]);
+        });
+    }
+
+    public function cancelReturn(int $orderId, int $returnId, int $adminId, string $reason): void
+    {
+        DB::transaction(function () use ($orderId, $returnId, $adminId, $reason): void {
+            $order = Order::query()->whereKey($orderId)->lockForUpdate()->firstOrFail();
+            $return = DB::table('bakery_returns')->where('order_id', $orderId)->where('id', $returnId)->lockForUpdate()->first();
+            abort_if($return === null, 404);
+            abort_unless($order->status === 'accepted', 422, 'Возврат отменённого заказа нельзя изменить.');
+            abort_unless($return->status === 'active', 422, 'Этот возврат уже отменён.');
+
+            DB::table('bakery_returns')->where('id', $returnId)->update([
+                'status' => 'cancelled',
+                'cancelled_by_user_id' => $adminId,
+                'cancelled_at' => now(),
+                'cancellation_reason' => $reason,
             ]);
         });
     }
