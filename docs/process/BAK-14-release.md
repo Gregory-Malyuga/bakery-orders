@@ -23,7 +23,7 @@
 
 ## Критерии приёмки
 
-- [ ] В `production` доступны секреты `DEPLOY_SSH_PRIVATE_KEY` и
+- [ ] В `production` доступны секреты `DEPLOY_SSH_PRIVATE_KEY_B64` и
   `DEPLOY_KNOWN_HOSTS`.
 - [ ] CI после build, Trivy, smoke и публикации `latest` запускает deploy job.
 - [ ] На хосте PHP-контейнер запущен из образа с SHA релиза и `/health` отвечает.

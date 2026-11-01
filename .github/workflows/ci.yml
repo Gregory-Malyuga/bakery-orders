@@ -430,7 +430,7 @@ jobs:
     env:
       DEPLOY_HOST: 153.80.246.224
       DEPLOY_USER: bakery-deploy
-      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_SSH_PRIVATE_KEY_B64: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY_B64 }}
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       GHCR_ACTOR: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -440,11 +440,13 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
-          test -n "$DEPLOY_SSH_PRIVATE_KEY"
+          test -n "$DEPLOY_SSH_PRIVATE_KEY_B64"
           test -n "$DEPLOY_KNOWN_HOSTS"
           mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/bakery_deploy
+          printf '%s' "$DEPLOY_SSH_PRIVATE_KEY_B64" | base64 --decode > ~/.ssh/bakery_deploy
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/bakery_deploy </dev/null >/dev/null
+          ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
 
       - name: Pull, tag, update PHP and clean old image
         shell: bash
