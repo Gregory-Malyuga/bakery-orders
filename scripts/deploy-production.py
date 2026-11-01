@@ -84,6 +84,8 @@ def main() -> None:
             if not any(mount.get("Destination") == "/var/lib/postgresql" and
                        mount.get("Name") == DATABASE_VOLUME for mount in mounts):
                 raise ValueError("PostgreSQL volume changed unexpectedly")
+            print(run(*compose, "exec", "-T", "php", "php", "artisan", "migrate", "--force",
+                      "--no-interaction", env=runtime), flush=True)
             run("curl", "--fail", "--silent", "--show-error", "--max-time", "15", "--resolve",
                 f"{DOMAIN}:443:127.0.0.1", f"https://{DOMAIN}/health", env=runtime)
 
