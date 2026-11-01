@@ -391,3 +391,102 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     .closed-date-form > .button { width: 100%; }
     .stock-date-form > label, .stock-date-form > .button { flex: 1 1 100%; }
 }
+
+/* Header uses the viewport, not the content column. */
+.app-page .topbar-inner {
+    width: calc(100% - 64px);
+    max-width: none;
+    margin: 0 auto;
+}
+.app-page .topbar-inner > form { margin: 0; }
+.app-page .topbar-inner .brand { flex: 0 1 auto; }
+.app-page .topbar-inner .link-button { padding: 9px 12px; border-radius: 8px; }
+.app-page .topbar-inner .link-button:hover { background: #edf4ec; }
+@media (max-width: 700px) {
+    .app-page .topbar-inner { width: calc(100% - 28px); }
+}
+
+/* Store groups: prevent detached checkboxes and unreadable 10-column lists. */
+.group-editor > label:not(.group-option) { display: block; max-width: 640px; }
+.group-editor > label:not(.group-option) > input { width: 100%; }
+.group-editor .group-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 16px 0;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+}
+.group-editor input[type="checkbox"] {
+    display: inline-block;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+    padding: 0;
+    vertical-align: middle;
+}
+.group-editor details { margin: 18px 0 22px; }
+.group-editor details > summary {
+    display: list-item;
+    width: fit-content;
+    padding: 7px 0;
+}
+.group-store-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 270px), 1fr));
+    gap: 8px;
+    max-height: 440px;
+    overflow-y: auto;
+    padding: 12px;
+    margin-top: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fbfcf9;
+}
+.group-store-grid .group-store-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid #e2e9df;
+    border-radius: 9px;
+    background: #fff;
+    font-weight: 500;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+.group-store-grid .group-store-option:hover { background: #f0f6ee; }
+.group-store-grid .group-store-option input[type="checkbox"] { margin-top: 2px; }
+.group-editor > .button { margin-top: 4px; }
+
+/* Tables: readable fields, non-cramped actions, no collisions with headings. */
+.app-page .data-panel .table-scroll { margin-top: 14px; }
+.app-page .data-panel .table-scroll th { vertical-align: middle; }
+.app-page .data-panel .table-scroll td { vertical-align: middle; }
+.app-page .data-panel .table-scroll td > input,
+.app-page .data-panel .table-scroll td > select {
+    min-width: 140px;
+}
+.app-page .data-panel .table-scroll td > input[type="number"] { min-width: 90px; }
+.app-page .accounts-table { min-width: 1050px; }
+.app-page .accounts-table td:nth-child(2) { min-width: 260px; }
+.app-page .accounts-table td:nth-child(2) strong {
+    display: block;
+    max-width: 420px;
+    overflow-wrap: anywhere;
+}
+.app-page .accounts-table .account-actions { min-width: 180px; }
+.app-page .accounts-table details .store-choices { max-width: 350px; }
+.app-page .data-panel > h2 + form,
+.app-page .data-panel > h3 + form { margin-top: 18px; }
+@media (max-width: 700px) {
+    .group-store-grid { grid-template-columns: minmax(0, 1fr); max-height: 360px; }
+    .app-page .data-panel { padding: 16px; }
+}

@@ -5,15 +5,15 @@
 
 <div class="panel data-panel">
     <h2>Новая группа</h2>
-    <form method="post" action="{{ route('bakery.groups-save') }}">
+    <form class="group-editor" method="post" action="{{ route('bakery.groups-save') }}">
         @csrf
         <label>Название<input name="name" value="{{ old('name') }}" maxlength="255" required></label>
-        <label><input type="checkbox" name="show_in_invoice" value="1"> Отображать группу в накладной</label>
-        <label><input type="checkbox" name="exclude_from_labels" value="1"> Исключить точки из расчёта этикеток</label>
+        <label class="group-option"><input type="checkbox" name="show_in_invoice" value="1"> Отображать группу в накладной</label>
+        <label class="group-option"><input type="checkbox" name="exclude_from_labels" value="1"> Исключить точки из расчёта этикеток</label>
         <details><summary>Состав группы — выбрать точки</summary>
-            <div class="form-grid">
+            <div class="group-store-grid">
                 @foreach($stores as $store)
-                    <label><input type="checkbox" name="stores[]" value="{{ $store->id }}"> {{ $store->name }} · {{ $store->address }}</label>
+                    <label class="group-store-option"><input type="checkbox" name="stores[]" value="{{ $store->id }}"> {{ $store->name }} · {{ $store->address }}</label>
                 @endforeach
             </div>
         </details>
@@ -24,16 +24,16 @@
 @foreach($groups as $group)
     <div class="panel data-panel">
         <h2>{{ $group->name }}</h2>
-        <form method="post" action="{{ route('bakery.groups-save') }}">
+        <form class="group-editor" method="post" action="{{ route('bakery.groups-save') }}">
             @csrf
             <input type="hidden" name="id" value="{{ $group->id }}">
             <label>Название<input name="name" value="{{ $group->name }}" maxlength="255" required></label>
-            <label><input type="checkbox" name="show_in_invoice" value="1" @checked($group->show_in_invoice)> Отображать группу в накладной</label>
-            <label><input type="checkbox" name="exclude_from_labels" value="1" @checked($group->exclude_from_labels)> Исключить точки из расчёта этикеток</label>
+            <label class="group-option"><input type="checkbox" name="show_in_invoice" value="1" @checked($group->show_in_invoice)> Отображать группу в накладной</label>
+            <label class="group-option"><input type="checkbox" name="exclude_from_labels" value="1" @checked($group->exclude_from_labels)> Исключить точки из расчёта этикеток</label>
             <details><summary>Состав группы · {{ ($members[$group->id] ?? collect())->count() }} точек</summary>
-                <div class="form-grid">
+                <div class="group-store-grid">
                     @foreach($stores as $store)
-                        <label><input type="checkbox" name="stores[]" value="{{ $store->id }}" @checked(($members[$group->id] ?? collect())->contains('bakery_id', $store->id))> {{ $store->name }} · {{ $store->address }}</label>
+                        <label class="group-store-option"><input type="checkbox" name="stores[]" value="{{ $store->id }}" @checked(($members[$group->id] ?? collect())->contains('bakery_id', $store->id))> {{ $store->name }} · {{ $store->address }}</label>
                     @endforeach
                 </div>
             </details>
