@@ -117,7 +117,7 @@ class AdminWebController
             ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all()
             : [];
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true, false) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
     }
 
     public function saveSettings(Request $request): RedirectResponse
@@ -131,9 +131,9 @@ class AdminWebController
 
     public function saveStore(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,name:string,address:string,is_active:bool|int|string} $data */
-        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'address' => ['required', 'string', 'max:255'], 'is_active' => ['required', 'boolean']]);
-        $this->admin->saveStore(isset($data['id']) ? (int) $data['id'] : null, ['name' => $data['name'], 'address' => $data['address'], 'is_active' => (bool) $data['is_active']]);
+        /** @var array{id?:int|string,name:string,address:string,is_active:bool|int|string,discount_percent?:int|string|null} $data */
+        $data = $request->validate(['id' => ['nullable', 'integer', 'exists:bakeries,id'], 'name' => ['required', 'string', 'max:255'], 'address' => ['required', 'string', 'max:255'], 'is_active' => ['required', 'boolean'], 'discount_percent' => ['nullable', 'integer', 'min:0', 'max:100']]);
+        $this->admin->saveStore(isset($data['id']) ? (int) $data['id'] : null, ['name' => $data['name'], 'address' => $data['address'], 'is_active' => (bool) $data['is_active'], 'discount_enabled' => (int) ($data['discount_percent'] ?? 0) > 0, 'discount_percent' => (int) ($data['discount_percent'] ?? 0)]);
 
         return back()->with('success', 'Магазин сохранён.');
     }
