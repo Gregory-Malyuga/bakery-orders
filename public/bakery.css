@@ -326,3 +326,68 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
         margin: 0;
     }
 }
+
+/* Consistent layout for administrative filter and action forms. */
+.analytics-filter-form {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: end;
+    gap: 14px;
+}
+.analytics-filter-form > label,
+.closed-date-form > label { min-width: 0; }
+.analytics-filter-form > .button {
+    width: auto;
+    min-width: 145px;
+    justify-self: start;
+    align-self: end;
+    min-height: 44px;
+}
+.analytics-filter-form > .analytics-download { margin: 0; }
+.stock-date-form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.stock-date-form > label { flex: 0 1 280px; min-width: 200px; }
+.stock-date-form > .button { min-height: 44px; }
+.closed-date-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(220px, 1.2fr) auto;
+    align-items: end;
+    gap: 16px;
+}
+.closed-date-form .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 44px;
+    font-weight: 600;
+    line-height: 1.4;
+    cursor: pointer;
+}
+.closed-date-form .checkbox-field input[type="checkbox"] {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    min-height: 18px;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 18px;
+}
+.closed-date-form > .button { min-height: 44px; align-self: end; }
+@media (max-width: 1100px) {
+    .closed-date-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .closed-date-form .checkbox-field { grid-column: 1 / -1; }
+    .closed-date-form > .button { justify-self: start; }
+}
+@media (max-width: 700px) {
+    .analytics-filter-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .closed-date-form { grid-template-columns: minmax(0, 1fr); }
+    .closed-date-form .checkbox-field { grid-column: auto; }
+}
+@media (max-width: 480px) {
+    .analytics-filter-form { grid-template-columns: minmax(0, 1fr); }
+    .analytics-filter-form > .button,
+    .closed-date-form > .button { width: 100%; }
+    .stock-date-form > label, .stock-date-form > .button { flex: 1 1 100%; }
+}
