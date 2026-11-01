@@ -42,12 +42,14 @@ class PersistentWebSessionTest extends TestCase
             }
         }
         $this->assertInstanceOf(Cookie::class, $cookie);
+        $cookieValue = $cookie->getValue();
+        $this->assertIsString($cookieValue);
 
         $this->app['auth']->forgetGuards();
         $this->app['session']->forgetDrivers();
         $this->app->forgetInstance('session.store');
 
-        $this->withCookie($cookie->getName(), $cookie->getValue())
+        $this->withUnencryptedCookie($cookie->getName(), $cookieValue)
             ->get('/orders')->assertOk();
         $this->assertAuthenticatedAs($user);
     }
