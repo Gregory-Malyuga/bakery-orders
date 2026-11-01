@@ -149,7 +149,11 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     position: sticky;
     top: 0;
     z-index: 30;
-    background: #fff;
+    background-color: var(--cream);
+    background-image:
+        radial-gradient(circle at 1px 1px, #dce5d7 1px, transparent 1.2px),
+        linear-gradient(135deg, #f8f9f3, #f1f5ed);
+    background-size: 24px 24px, 100% 100%;
 }
 .app-page .admin-nav {
     position: sticky;
@@ -161,15 +165,19 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     padding: 0;
     overflow: visible;
     border-bottom: 1px solid var(--line);
-    background: var(--cream);
+    background-color: var(--cream);
+    background-image:
+        radial-gradient(circle at 1px 1px, #dce5d7 1px, transparent 1.2px),
+        linear-gradient(135deg, #f8f9f3, #f1f5ed);
+    background-size: 24px 24px, 100% 100%;
 }
 .admin-nav-inner {
     display: flex;
     align-items: center;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 10px;
     min-height: 56px;
-    overflow-x: auto;
+    overflow: visible;
 }
 .admin-nav-inner a { flex: none; }
 .catalog-nav {
