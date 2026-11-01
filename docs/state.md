@@ -3,11 +3,11 @@
 ## Current — 2026-11-01
 
 - **CI / BUG-01:** по сообщению о падении Deptrac на `670aea7` установлен прямой импорт `Infrastructure\\Exports\\PeriodReportWorkbook` из `Presentation\\Http\\Controllers\\AdminWebController`. В отдельном worktree контроллер переведён на интерфейс Application, реализация привязана в `BakeryServiceProvider`; локальный кодовый коммит `fe6b5eb`. Проверка `git diff --check` прошла; на этом ПК недоступны PHP и Docker, поэтому Deptrac, `composer pre-push` и тесты пока не запускались. Push, CI и production-деплой на момент записи не выполнялись.
-- **Now:** на локальную `main` перенесены коммиты `0dfa47c` и `5d74858` из `origin/main`. После повторного сбоя BUG-02 с отключённым Code Scanning отчёты Trivy FS/Image сохраняются как артефакты workflow; исправлены три замечания Pint (BUG-04). Правки ожидают проверки CI. Реализация BAK-01…BAK-12 не начата.
+- **Now:** коммит `37126e2` отправлен в `origin/main`. CI снова упал на Pint: из 277 файлов остался один с проблемой PHPDoc в `IngredientCatalog.php` (BUG-04). Добавлены разделитель после `@template` и требуемый пробел у `@param`; повторный CI ещё не проверен. Отчёты Trivy FS/Image по BUG-02 сохраняются как артефакты workflow; результат security jobs ещё не подтверждён. Реализация BAK-01…BAK-12 не начата.
 - **BUG-03:** исправления PHPStan из коммита `5d74858` теперь в `main`; повторный PHPStan и CI ещё не проверены. Локальный PHP/Composer/Docker недоступен.
 - **Next:** BAK-01 — отмена ошибочного возврата; затем BAK-02 — итоги и комментарии в списке принятых заказов. Очередь: [roadmap](process/roadmap.md), подробности: [backlog](backlog-2026-11-01.md).
 - **Blocked:** подтверждённых блокеров для записи плана нет. Вопросы, требующие решения перед отдельными задачами, перечислены в бэклоге.
-- **Verification:** для BUG-02 и BUG-04 выполнен `git diff --check`. PHP, Composer и Docker на этом ПК недоступны; Pint, `composer pre-push`, PHPStan, Deptrac, тесты и CI пока не запускались после правок. Результат локального коммита и push фиксируется отдельно; production-деплой не выполнялся. Проверка приложения, печати и Excel для BAK-задач ещё не выполнялась.
+- **Verification:** `git diff --check` прошёл для `37126e2`, push в `origin/main` успешен; CI на этом коммите подтвердил один оставшийся style issue в `IngredientCatalog.php`. PHP, Composer и Docker на этом ПК недоступны; локальный Pint, `composer pre-push`, PHPStan, Deptrac и тесты не запускались. Новая PHPDoc-правка проверяется отдельно; production-деплой не подтверждён. Проверка приложения, печати и Excel для BAK-задач ещё не выполнялась.
 
 Новые краткие статусы добавлять сюда с датой и ссылкой на ID. Исторические записи ниже не описывают текущее состояние рабочего дерева или production.
 

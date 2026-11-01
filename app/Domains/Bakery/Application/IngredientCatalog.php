@@ -15,7 +15,8 @@ class IngredientCatalog
 
     /**
      * @template T of array{name:string,amount:float,unit:string}
-     * @param list<T> $rows
+     *
+     * @param  list<T>  $rows
      * @return list<T>
      */
     public function resolveRows(array $rows): array

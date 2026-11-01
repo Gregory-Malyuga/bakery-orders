@@ -10,7 +10,7 @@
 - [ ] **BUG-03 · P1** — PHPStan в GitHub Actions завершает `analyze-phpstan` с 105 ошибками (`php vendor/bin/phpstan analyse --memory-limit=512M`). Воспроизведение: запустить job для `670aea7`; ожидается exit 0, фактически exit 1. Ошибки типов рецептур, контроллеров и тестов блокируют зелёный CI. Исправление проверять повторным PHPStan и полным CI; результат записать в `docs/state.md`.
 - [ ] **BAK-01 · P0** — [отменить ошибочный возврат без потери истории](../backlog-2026-11-01.md#bak-01--отмена-ошибочного-возврата--p0). Сообщение пользователя: один возврат случайно записан дважды, удалить его нельзя.
 - [ ] **BUG-02 · P1** — [SARIF upload падает в CI](bugs/BUG-02.md). После добавления `actions: read` GitHub сообщает `Code scanning is not enabled for this repository`; отчёты Trivy переведены в артефакты workflow, ожидается проверка в CI.
-- [ ] **BUG-04 · P1** — Pint на `5d74858` завершает `lint-code-style` с 3 ошибками: `phpdoc_align` в `IngredientCatalog.php`, `ordered_imports` в `BakeryServiceProvider.php`, `fully_qualified_strict_types` в `OrderingFlowTest.php`. Воспроизведение: `php vendor/bin/pint --test`. Ожидается exit 0; правки ожидают проверки Pint и CI.
+- [ ] **BUG-04 · P1** — Pint на `5d74858` завершил `lint-code-style` с 3 ошибками; после коммита `37126e2` остаётся один файл: `IngredientCatalog.php` (`phpdoc_separation` и правило PHPDoc, название которого обрезано в журнале). Воспроизведение: `php vendor/bin/pint --test` в CI. Ожидается exit 0; исправлен пробел после `@param` и разделены группы аннотаций, повторная проверка CI ещё нужна.
 
 ### Изменения продукта
 
