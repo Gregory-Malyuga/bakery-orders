@@ -42,7 +42,7 @@ app/Domains/{Name}/
 ```
 Domain          ← изолирован (зависит только от Laravel/Spatie примитивов)
 Application     ← Domain + Infrastructure + Shared
-Infrastructure  ← Domain + Shared + Elasticsearch
+Infrastructure  ← Domain + Shared + PostgreSQL
 Presentation    ← Application + Domain + Shared
 ```
 
@@ -56,7 +56,7 @@ Presentation    ← Application + Domain + Shared
 
 **Разрешено:** Eloquent-модели, доменные события, исключения, enum, фабрики.
 
-**Запрещено:** импорты из `Application/`, `Infrastructure/`, `Presentation/`; HTTP; прямой доступ к Elasticsearch/Redis; бизнес-логика в моделях.
+**Запрещено:** импорты из `Application/`, `Infrastructure/`, `Presentation/`; HTTP; прямой доступ к внешним сервисам; бизнес-логика в моделях.
 
 Модель — тонкая: `$fillable`/`$casts`, отношения, не более. Никаких запросов и оркестрации.
 

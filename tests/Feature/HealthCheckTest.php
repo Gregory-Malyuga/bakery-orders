@@ -10,8 +10,7 @@ class HealthCheckTest extends TestCase
     {
         $response = $this->getJson('/health');
 
-        $response->assertJsonStructure(['status', 'db', 'es', 'redis']);
-        $response->assertJsonPath('db', true);
+        $response->assertOk()->assertExactJson(['status' => 'ok', 'db' => true]);
     }
 
     public function test_health_returns_200_or_503(): void
@@ -33,17 +32,8 @@ class HealthCheckTest extends TestCase
     {
         $response = $this->getJson('/health');
 
-        $response->assertJsonStructure(['status', 'db', 'es', 'redis']);
+        $response->assertJsonStructure(['status', 'db']);
         $this->assertIsString($response->json('status'));
         $this->assertIsBool($response->json('db'));
-        $response->assertJsonPath('es', null)->assertJsonPath('redis', null);
-    }
-
-    public function test_health_skips_disabled_services(): void
-    {
-        config()->set('health.elasticsearch', false);
-        config()->set('health.redis', false);
-
-        $this->getJson('/health')->assertOk()->assertJsonPath('status', 'ok')->assertJsonPath('es', null)->assertJsonPath('redis', null);
     }
 }

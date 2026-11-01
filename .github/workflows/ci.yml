@@ -269,8 +269,6 @@ jobs:
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
-      HEALTH_CHECK_ELASTICSEARCH: "false"
-      HEALTH_CHECK_REDIS: "false"
       MAIL_MAILER: log
       MAIL_FROM_ADDRESS: hello@example.com
       MAIL_FROM_NAME: Laravel

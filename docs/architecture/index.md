@@ -9,7 +9,7 @@
 | [onion.md](onion.md) | DDD-слои домена — Domain / Application / Infrastructure / Presentation |
 | [cqrs.md](cqrs.md) | CQRS — `Shared\Bus` CommandBus / QueryBus, конвенция Handler |
 | [persistence.md](persistence.md) | Хранилище — Eloquent, `BaseRepository`, Spatie Data, миграции |
-| [search.md](search.md) | Поиск пользователей через PostgreSQL; Elasticsearch-компоненты каркаса |
+| [search.md](search.md) | Поиск пользователей через PostgreSQL |
 | [events.md](events.md) | Доменные события — Laravel events, `{Name}Created/Updated/Deleted` |
 | [cross-module.md](cross-module.md) | Связи между доменами — FK по id, события |
 | [deptrac.md](deptrac.md) | Deptrac — контроль зависимостей между слоями |

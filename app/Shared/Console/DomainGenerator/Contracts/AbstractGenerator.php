@@ -3,7 +3,6 @@
 namespace Shared\Console\DomainGenerator\Contracts;
 
 use Illuminate\Filesystem\Filesystem;
-use Shared\Console\DomainGenerator\Context\DomainContext;
 
 abstract class AbstractGenerator implements GeneratorInterface
 {

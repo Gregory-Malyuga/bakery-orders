@@ -10,7 +10,6 @@
     "require": {
         "php": "^8.5",
         "darkaonline/l5-swagger": "^11.0",
-        "elasticsearch/elasticsearch": "^8.0",
         "laravel/framework": "^13.8",
         "laravel/octane": "^2.17",
         "laravel/sanctum": "^4.3",
@@ -50,8 +49,7 @@
     "config": {
         "allow-plugins": {
             "ergebnis/composer-normalize": true,
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "pestphp/pest-plugin": true
         },
         "optimize-autoloader": true,
         "preferred-install": "dist",

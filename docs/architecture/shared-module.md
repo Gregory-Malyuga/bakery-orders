@@ -17,7 +17,6 @@
 | `Filters/` | `FilterInterface` — кастомные фильтры |
 | `Http/Data/` | `BaseData`, `BaseDataCollection` — основа Spatie Data DTO |
 | `Data/` | `PaginationData`, `SortData` (`fromRequest()`) |
-| `Elasticsearch/` | Неиспользуемые команды и интерфейс прежнего каркаса; поиск текущего приложения описан в [Search](search.md) |
 | `Cache/` | `CacheWarmerInterface`, `CacheWarmCommand` (`php artisan cache:warm`) |
 | `Console/Commands/` | `MakeDomainCommand` (`make:domain`), `GenerateOpenApiDocsCommand` (`openapi:generate`) |
 | `Testing/` | `BaseRepositoryTest`, `BaseApiTest` + трейты `HasRepositoryTests`, `HasApiTests`, `InteractsWith*`, `MakesApiAssertions` |
@@ -27,7 +26,7 @@
 
 ## Правила
 
-- `Shared` зависит только от фреймворка (Laravel, Spatie, Elasticsearch) — не от `Domains\*`.
+- `Shared` зависит только от фреймворка и общих библиотек (Laravel, Spatie) — не от `Domains\*`.
 - `Shared\Testing\*` выделен в отдельный deptrac-слой `TestSupport`, чтобы тестовые базовые классы не тянули прод-`Shared`.
 - Новый общий механизм добавляется в `Shared`, только если он нужен ≥ 2 доменам; иначе он остаётся в домене.
 - Базовые тест-классы расширяют `Illuminate\Foundation\Testing\TestCase` напрямую (не `Tests\TestCase`), чтобы не создавать зависимость на `tests/`.

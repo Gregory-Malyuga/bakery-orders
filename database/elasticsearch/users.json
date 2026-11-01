@@ -1,9 +1,0 @@
-{
-  "mappings": {
-    "properties": {
-      "email": {
-        "type": "search_as_you_type"
-      }
-    }
-  }
-}

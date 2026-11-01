@@ -10,8 +10,6 @@ x-php-env: &php-env
   CACHE_STORE: database
   QUEUE_CONNECTION: sync
   SESSION_DRIVER: database
-  HEALTH_CHECK_ELASTICSEARCH: "false"
-  HEALTH_CHECK_REDIS: "false"
   DB_CONNECTION: pgsql
   DB_HOST: postgres
   DB_PORT: "5432"

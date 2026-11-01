@@ -9,7 +9,6 @@
 | N+1 в Repository (забыли `with()`) | — |
 | Тест не чистит БД (`RefreshDatabase` отсутствует) | — |
 | PHPStan не видит тип возврата Eloquent-коллекции | — |
-| Elasticsearch-индекс не найден в тесте | — |
 | l5-swagger не находит PHPUnit при генерации | [HIST-001](HIST-001.md) |
 | SQLSTATE[25P02] только в полном прогоне тестов | [HIST-002](HIST-002.md) |
 | OpenAPI не обновляется после правки аннотаций | [HIST-003](HIST-003.md) |
