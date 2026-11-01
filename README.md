@@ -29,11 +29,12 @@ $bakeryEnv -replace '^APP_KEY=.*$', ('APP_KEY=base64:' + [Convert]::ToBase64Stri
 
 Демовходы: `admin@example.test`, `sadovaya@example.test`, `frunze@example.test`, `shosse@example.test`; пароль для всех `Demo123456!`. Демоданные запускайте только в локальной среде. В рабочей среде создайте аккаунт администратора отдельно и задайте собственный пароль. Пользователи магазинов создаются в панели администратора.
 
-Для первого развёртывания после настройки `.env` выполните миграции, заполните магазины, товары, цены и магазинные аккаунты из «Лист1», затем создайте администратора. Последняя команда запускается **без `-T`**: пароль вводится скрыто дважды и не попадает в историю команд.
+Для первого развёртывания после настройки `.env` выполните миграции, передайте закрытый исходный XLSX в PHP-контейнер, заполните магазины, товары, цены и магазинные аккаунты из «Лист1», затем создайте администратора. Обе команды создания аккаунтов запускаются **без `-T`**: пароли вводятся скрыто и не попадают в историю команд.
 
 ```bash
 docker compose exec -T php php artisan migrate --force
-docker compose exec -T php php artisan bakery:seed-reference
+docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
+docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
 docker compose exec php php artisan bakery:create-admin admin@example.com
 ```
 
@@ -45,18 +46,19 @@ docker compose exec php php artisan bakery:create-admin admin@example.com
 
 ### Начальная загрузка из «Лист1»
 
-Файл `resources/data/Накладные 10.09.xlsx` используется как источник 72 магазинов, 23 товаров и персональных цен. Проверка без записи и загрузка:
+Исходный XLSX с листом «Лист1» храните вне репозитория. Передайте его в контейнер и укажите путь явно. Проверка без записи и загрузка:
 
 ```bash
-docker compose exec -T php php artisan bakery:seed-reference --dry-run
-docker compose exec -T php php artisan bakery:seed-reference
+docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
+docker compose exec -T php php artisan bakery:seed-reference /tmp/private-reference.xlsx --dry-run
+docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
 ```
 
-Для новых магазинов создаются логины `store-001@bakery.test` … `store-072@bakery.test` в порядке колонок «Лист1», пароль `changeme`. При повторном запуске существующие пароли сохраняются. Нулевая цена означает недоступность товара для конкретного магазина: цена не показывается, заказ товара запрещён. В исходном листе название и адрес магазина объединены в одной ячейке, поэтому при загрузке это значение записывается в оба поля; адрес можно уточнить в админ-панели. Демоаккаунты и демотовары сохраняются.
+Для новых магазинов создаются логины `store-001@bakery.test` … `store-072@bakery.test` в порядке колонок «Лист1». Пароль новых аккаунтов вводится скрыто, должен содержать не менее 12 символов и не выводится командой. При повторном запуске существующие пароли сохраняются. Нулевая цена означает недоступность товара для конкретного магазина: цена не показывается, заказ товара запрещён. В исходном листе название и адрес магазина объединены в одной ячейке, поэтому при загрузке это значение записывается в оба поля; адрес можно уточнить в админ-панели. Демоаккаунты и демотовары сохраняются.
 
 ### Импорт согласованного каталога
 
-Сохраните согласованную таблицу в UTF-8 CSV с разделителем `;` и заголовком `product;store;address;price`. Каждая строка задаёт цену одного товара для одного магазина; для всех пар магазин–товар строки обязательны. Команда сначала проверяет пропуски, дубликаты, написания и цены. Соответствия названий между файлами не угадываются. Исходные Excel в `resources/data` не изменяются.
+Сохраните согласованную таблицу в UTF-8 CSV с разделителем `;` и заголовком `product;store;address;price`. Каждая строка задаёт цену одного товара для одного магазина; для всех пар магазин–товар строки обязательны. Команда сначала проверяет пропуски, дубликаты, написания и цены. Соответствия названий между файлами не угадываются. Исходные Excel не храните в репозитории.
 
 ```bash
 docker compose exec -T php sh -c 'cd /var/www/app && php artisan bakery:import-catalog /var/www/app/resources/data/approved.csv'
@@ -78,7 +80,8 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 ```bash
 docker compose up -d --build --remove-orphans
 docker compose exec -T php php artisan migrate --force
-docker compose exec -T php php artisan bakery:seed-reference
+docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
+docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
 docker compose exec php php artisan bakery:create-admin admin@backery.com
 ```
 

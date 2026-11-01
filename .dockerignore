@@ -10,6 +10,9 @@ CLAUDE.md
 .env
 .env.*
 !.env.example
+*.xls
+*.xlsx
+.sandbox
 vendor
 storage/app
 storage/framework/cache
