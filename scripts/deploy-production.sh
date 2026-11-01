@@ -38,6 +38,16 @@ docker tag "$image" "$working_tag"
 
 compose=(docker compose -p "$project" -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.domain.yml)
 "${compose[@]}" up -d --no-build --no-deps --force-recreate php
+for attempt in $(seq 1 60); do
+    if [[ "$(docker inspect "${project}-php-1" --format '{{.State.Health.Status}}')" == healthy ]]; then
+        break
+    fi
+    sleep 2
+done
+[[ "$(docker inspect "${project}-php-1" --format '{{.State.Health.Status}}')" == healthy ]] || {
+    echo 'PHP did not become healthy within 120 seconds' >&2
+    exit 1
+}
 "${compose[@]}" exec -T php wget -qO- http://127.0.0.1:8000/health >/dev/null
 new_volume="$(docker inspect "${project}-postgres-1" --format '{{range .Mounts}}{{if eq .Destination "/var/lib/postgresql"}}{{.Name}}{{end}}{{end}}')"
 [[ "$new_volume" == "$volume" ]] || { echo 'PostgreSQL volume changed unexpectedly' >&2; exit 1; }
