@@ -23,7 +23,7 @@ class OrderingRepository implements OrderingRepositoryInterface
         return Product::query()->orderBy('sort_order')->orderBy('id')->get();
     }
 
-    public function prices(int $storeId, bool $includeUnavailable = false): array
+    public function prices(int $storeId, bool $includeUnavailable = false, bool $applyDiscount = true): array
     {
         $store = Bakery::query()->findOrFail($storeId);
         $priceStoreId = (int) ($store->price_source_id ?: $storeId);
@@ -36,7 +36,7 @@ class OrderingRepository implements OrderingRepositoryInterface
             $prices[(int) $price->product_id] = (int) $price->kopecks;
         }
 
-        $discount = $store->discount_enabled ? (int) $store->discount_percent : 0;
+        $discount = $applyDiscount && $store->discount_enabled ? (int) $store->discount_percent : 0;
         if ($discount > 0) {
             foreach ($prices as $productId => $kopecks) {
                 // Round the discounted unit price to whole kopecks before order snapshots.
