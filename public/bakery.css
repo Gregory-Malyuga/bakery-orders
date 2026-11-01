@@ -500,4 +500,4 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
 /* Per-store discounts in the store catalog. */
 .app-page .store-discount-toggle { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; font-weight: 600; white-space: nowrap; }
 .app-page .store-discount-toggle input[type="checkbox"] { display: inline-block; flex: none; width: 18px; height: 18px; min-height: 18px; margin: 0; }
-.app-page .data-panel .table-scroll td > input[name="discount_percent"] { width: 105px; min-width: 90px; }
+.app-page .data-panel .table-scroll td > input[name="discount_percent"] { width: 150px; min-width: 150px; }
