@@ -33,13 +33,10 @@ class HealthCheckTest extends TestCase
     {
         $response = $this->getJson('/health');
 
-        // DB is always up in tests; if es/redis are also up → 'ok' and 200
-        // If either is down → 'degraded' and 503 — structure still valid
         $response->assertJsonStructure(['status', 'db', 'es', 'redis']);
         $this->assertIsString($response->json('status'));
         $this->assertIsBool($response->json('db'));
-        $this->assertIsBool($response->json('es'));
-        $this->assertIsBool($response->json('redis'));
+        $response->assertJsonPath('es', null)->assertJsonPath('redis', null);
     }
 
     public function test_health_skips_disabled_services(): void

@@ -28,6 +28,23 @@ env:
 
 jobs:
 
+  lint-compose:
+    name: Lint / Docker Compose
+    runs-on: ubuntu-latest
+    env:
+      APP_KEY: compose-validation-key
+      APP_URL: http://localhost:8099
+      DB_PASSWORD: compose-validation-password
+      PHP_BUILD_TARGET: prod
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate three-service stack
+        run: |
+          docker compose config --quiet
+          actual=$(docker compose config --services | sort)
+          expected=$(printf 'caddy\nphp\npostgres\n' | sort)
+          test "$actual" = "$expected"
+
 # ─── PREPARE ─────────────────────────────────────────────────────────────────
 # Устанавливает vendor и кладёт в кеш. Последующие джобы восстанавливают кеш
 # без повторного composer install (~instant при cache hit).
@@ -239,31 +256,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
-      elasticsearch:
-        image: elasticsearch:8.13.4
-        env:
-          discovery.type: single-node
-          xpack.security.enabled: "false"
-          ES_JAVA_OPTS: "-Xms512m -Xmx512m"
-        options: >-
-          --health-cmd "curl -sf http://localhost:9200/_cluster/health"
-          --health-interval 10s
-          --health-timeout 10s
-          --health-retries 30
-      mailpit:
-        image: axllent/mailpit:latest
-        options: >-
-          --health-cmd "/mailpit readyz"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
       APP_KEY: ${{ vars.APP_KEY_TESTING }}
       APP_ENV: testing
@@ -274,14 +266,12 @@ jobs:
       DB_DATABASE: laravel-database-test
       DB_USERNAME: laravel-database-user
       DB_PASSWORD: laravel-database-secret
-      REDIS_URL: redis://redis:6379
-      ELASTICSEARCH_URL: http://elasticsearch:9200
       CACHE_STORE: array
       QUEUE_CONNECTION: sync
       SESSION_DRIVER: array
-      MAIL_MAILER: smtp
-      MAIL_HOST: mailpit
-      MAIL_PORT: "1025"
+      HEALTH_CHECK_ELASTICSEARCH: "false"
+      HEALTH_CHECK_REDIS: "false"
+      MAIL_MAILER: log
       MAIL_FROM_ADDRESS: hello@example.com
       MAIL_FROM_NAME: Laravel
     steps:
@@ -313,6 +303,7 @@ jobs:
       - lint-code-style
       - lint-composer-normalize
       - lint-doc-links
+      - lint-compose
       - analyze-phpstan
       - analyze-deptrac
       - test
@@ -407,7 +398,6 @@ jobs:
             -e APP_ENV=production -e APP_DEBUG=0 \
             -e DB_CONNECTION=sqlite -e DB_DATABASE=":memory:" \
             -e CACHE_STORE=array -e QUEUE_CONNECTION=sync -e SESSION_DRIVER=array \
-            -e ELASTICSEARCH_URL=http://localhost:9200 \
             ${{ needs.build.outputs.image }}:${{ github.sha }} \
             sh -c "php artisan about --ansi && php artisan route:list --ansi && php artisan optimize --ansi"
 

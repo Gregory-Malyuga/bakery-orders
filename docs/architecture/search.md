@@ -1,6 +1,6 @@
 # Search
 
-Полнотекстовый/фильтрующий поиск — через Elasticsearch 8 (`elasticsearch/elasticsearch`). Подключается к репозиторию опционально, не меняя его публичный контракт.
+Поиск пользователей в текущем приложении выполняет PostgreSQL через `UserRepository` и `EmailFilter`. Контейнер Elasticsearch не входит в локальный или рабочий Compose. Ниже описаны оставшиеся в общем каркасе опциональные компоненты Elasticsearch; для их использования потребуется отдельно поднять сервис и настроить индексацию.
 
 См. также: [Persistence](persistence.md).
 
@@ -11,7 +11,7 @@
 Репозиторий, которому нужен ES, реализует интерфейс и подмешивает трейт из `app/Shared/Elasticsearch/`:
 
 ```php
-class UserRepository extends BaseRepository implements ElasticsearchSearchable
+class ExampleRepository extends BaseRepository implements ElasticsearchSearchable
 {
     use InteractsWithElasticsearch;
 

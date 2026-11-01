@@ -5,7 +5,7 @@ RUN php -r 'exit(version_compare(PHP_VERSION, "8.5.12", ">=") ? 0 : 1);'
 
 RUN apk upgrade --no-cache curl libcurl \
     && apk add --no-cache git \
-    && install-php-extensions pdo_pgsql redis pcntl sockets
+    && install-php-extensions pdo_pgsql pcntl sockets
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 

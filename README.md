@@ -11,10 +11,21 @@
 В XLSX каждая накладная находится на отдельном листе и настроена для печати на одной странице. Лист «Заказ» содержит матрицу количеств по магазинам и итоги в штуках и рублях. Столбцы возврата в накладной появляются только при наличии возвратов. Можно вернуть доступный магазину товар, даже если его нет в текущем заказе; цена фиксируется при возврате. Заказанные позиции сохраняют цену на момент оформления.
 
 ```bash
-docker compose up -d --build
-docker compose exec -T php sh -c 'cd /var/www/app && composer install && php artisan migrate --force'
+cp .env.example .env
+# Задайте APP_KEY в .env перед запуском.
+docker compose up -d --build --remove-orphans
+docker compose exec -T php php artisan migrate --force
 docker compose exec -T php sh -c 'cd /var/www/app && php artisan db:seed --class=BakeryDemoSeeder --force'
 ```
+
+В PowerShell ключ для локального `.env` можно создать так:
+
+```powershell
+$bakeryEnv = Get-Content .env
+$bakeryEnv -replace '^APP_KEY=.*$', ('APP_KEY=base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))) | Set-Content .env
+```
+
+Один `docker-compose.yml` запускает Caddy, PHP и PostgreSQL локально и в рабочем окружении. Сессии и кеш хранятся в PostgreSQL, очередь выполняется синхронно, письма пишутся в лог. Исходники и `vendor` не монтируются в PHP-контейнер: после изменения кода пересоберите его командой `docker compose up -d --build`. При переходе со старого стека `--remove-orphans` удалит лишние контейнеры; тома Redis и Elasticsearch автоматически не удаляются.
 
 Демовходы: `admin@example.test`, `sadovaya@example.test`, `frunze@example.test`, `shosse@example.test`; пароль для всех `Demo123456!`. Демоданные запускайте только в локальной среде. В рабочей среде создайте аккаунт администратора отдельно и задайте собственный пароль. Пользователи магазинов создаются в панели администратора.
 
@@ -26,7 +37,7 @@ docker compose exec -T php php artisan bakery:seed-reference
 docker compose exec php php artisan bakery:create-admin admin@example.com
 ```
 
-Если `APP_KEY` ещё не задан, перед миграциями выполните `docker compose exec -T php php artisan key:generate`. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
+`APP_KEY` должен быть задан в `.env` до запуска Compose. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
 
 ### Начальная загрузка из «Лист1»
 
@@ -58,16 +69,16 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 
 ### Развёртывание и резервное копирование
 
-Для рабочего окружения используйте `docker-compose.prod.yml` вместе с основным Compose-файлом. Он запускает только Caddy, PHP и PostgreSQL: сессии и кеш хранятся в PostgreSQL, очередь работает синхронно. Зависимости находятся внутри PHP-образа, каталог `vendor` с хоста не монтируется. По умолчанию HTTP привязан только к `127.0.0.1:8099`. Задайте уникальные `APP_KEY`, `DB_PASSWORD` и `APP_URL` в закрытом для посторонних `.env`; пароль роли PostgreSQL должен совпадать с `DB_PASSWORD`. После настройки HTTPS и домена измените публикацию Caddy. Не размещайте форму входа в открытом интернете по HTTP.
+Для рабочего окружения используйте тот же `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T php php artisan migrate --force
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T php php artisan bakery:seed-reference
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec php php artisan bakery:create-admin admin@backery.com
+docker compose up -d --build --remove-orphans
+docker compose exec -T php php artisan migrate --force
+docker compose exec -T php php artisan bakery:seed-reference
+docker compose exec php php artisan bakery:create-admin admin@backery.com
 ```
 
-Приложение использует постоянные тома PostgreSQL, Redis и Elasticsearch. После запуска проверьте `/health`, вход, оформление и печать.
+Приложение использует постоянный том PostgreSQL. После запуска проверьте `/health`, вход, оформление и печать.
 
 Для резервной копии остановка приложения не требуется. Пример для локального Compose:
 
@@ -78,13 +89,11 @@ docker cp laravel-app-postgres-1:/tmp/bakery.dump ./bakery-$(Get-Date -Format yy
 
 Храните копию вне хоста и регулярно проверяйте восстановление в отдельную БД командой `pg_restore`. Перед миграциями в рабочей среде сначала сделайте и проверьте копию.
 
-Стартовый шаблон Laravel-микросервиса: PHP 8.5 / Laravel 13, Elasticsearch, Redis, Docker Swarm.
-
 ## Стек
 
 - PHP 8.5 / Laravel 13
-- Elasticsearch 8.x (хранение, поиск)
-- Redis 7 (кеш, очереди)
+- PostgreSQL 18 (данные, сессии, кеш)
+- Синхронная очередь Laravel
 - Caddy (reverse proxy)
 - Docker / docker-compose
 
