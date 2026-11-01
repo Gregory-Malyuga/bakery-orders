@@ -1,6 +1,7 @@
 <?php
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
+use Domains\Bakery\Presentation\Http\Controllers\AnalyticsController;
 use Domains\Bakery\Presentation\Http\Controllers\ClosedDateController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
 use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
@@ -45,6 +46,8 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/closed-dates', [ClosedDateController::class, 'save'])->name('bakery.closed-dates-save');
     Route::post('/closed-dates/{date}/open', [ClosedDateController::class, 'open'])->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')->name('bakery.closed-dates-open');
     Route::get('/stock', [StockController::class, 'index'])->name('bakery.stock');
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('bakery.analytics');
+    Route::get('/analytics/csv', [AnalyticsController::class, 'download'])->name('bakery.analytics-csv');
     Route::post('/stock/packaging', [StockController::class, 'createPackaging'])->name('bakery.stock-packaging');
     Route::post('/stock/movements', [StockController::class, 'record'])->name('bakery.stock-record');
     Route::post('/stock/movements/{movement}/reverse', [StockController::class, 'reverse'])->name('bakery.stock-reverse');
