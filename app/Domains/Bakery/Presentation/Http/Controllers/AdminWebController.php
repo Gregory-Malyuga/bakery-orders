@@ -117,7 +117,7 @@ class AdminWebController
             ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all()
             : [];
 
-        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
+        return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true, false) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
     }
 
     public function saveSettings(Request $request): RedirectResponse
