@@ -36,7 +36,7 @@ revision="$(docker image inspect "$image" --format '{{index .Config.Labels "org.
 [[ "$revision" == "$commit" ]] || { echo 'Image revision does not match requested commit' >&2; exit 1; }
 docker tag "$image" "$working_tag"
 
-compose=(docker compose -p "$project" -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.domain.yml)
+compose=(docker compose -p "$project" -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.domain.yml -f docker-compose.image.yml)
 "${compose[@]}" up -d --no-build --no-deps --force-recreate php
 for attempt in $(seq 1 60); do
     if [[ "$(docker inspect "${project}-php-1" --format '{{.State.Health.Status}}')" == healthy ]]; then

@@ -1,0 +1,6 @@
+# Installed once as /root/bakery-orders/docker-compose.image.yml.
+# The deploy script pulls the GHCR SHA image and tags it locally with this name.
+services:
+  php:
+    image: laravel-app-php:latest
+    build: !reset null
