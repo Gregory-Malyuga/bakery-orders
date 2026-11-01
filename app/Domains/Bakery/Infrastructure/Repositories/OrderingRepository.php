@@ -36,6 +36,14 @@ class OrderingRepository implements OrderingRepositoryInterface
             $prices[(int) $price->product_id] = (int) $price->kopecks;
         }
 
+        $discount = $store->discount_enabled ? (int) $store->discount_percent : 0;
+        if ($discount > 0) {
+            foreach ($prices as $productId => $kopecks) {
+                // Round the discounted unit price to whole kopecks before order snapshots.
+                $prices[$productId] = intdiv($kopecks * (100 - $discount) + 50, 100);
+            }
+        }
+
         return $prices;
     }
 
