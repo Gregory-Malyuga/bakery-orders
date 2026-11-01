@@ -40,7 +40,7 @@ class UserRepository extends BaseRepository
 }
 ```
 
-`list()` строит запрос через `BaseQueryBuilder` + `BaseFilterBuilder`, прогоняет `BaseQueryBuilderPostprocessor` (orderBy + paginate) и возвращает `LengthAwarePaginator`. Для Elasticsearch хук `postProcessBuilder()` переопределяется трейтом — см. [Search](search.md).
+`list()` строит запрос через `BaseQueryBuilder` + `BaseFilterBuilder`, прогоняет `BaseQueryBuilderPostprocessor` (orderBy + paginate) и возвращает `LengthAwarePaginator`. Поиск пользователей описан в [Search](search.md).
 
 ---
 

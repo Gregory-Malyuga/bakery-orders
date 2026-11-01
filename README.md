@@ -153,7 +153,6 @@ docker compose exec -T php sh -c "cd /var/www/app && php artisan make:domain Pos
 - **Unit + Feature тесты** с покрытием CRUD, пагинации, сортировки, фильтров
 
 Опции:
-- `--with-elasticsearch` — добавляет `InteractsWithElasticsearch` в модель и репозиторий
 - `--with-cache-warmer` — генерирует `{Name}CacheWarmer`
 
 Все операции идемпотентны — существующие файлы пропускаются.

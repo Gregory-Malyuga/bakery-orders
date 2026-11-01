@@ -82,16 +82,6 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertFileExists("{$this->domainBase}/Infrastructure/Cache/StubIsoCacheWarmer.php");
     }
 
-    public function test_repository_includes_elasticsearch_with_flag(): void
-    {
-        $this->artisan('make:domain StubIso --with-elasticsearch')->assertSuccessful();
-
-        $content = $this->files->get("{$this->domainBase}/Infrastructure/Repositories/StubIsoRepository.php");
-
-        $this->assertStringContainsString('ElasticsearchSearchable', $content);
-        $this->assertStringContainsString('InteractsWithElasticsearch', $content);
-    }
-
     public function test_skips_existing_files_on_second_run(): void
     {
         $this->artisan('make:domain StubIso')->assertSuccessful();

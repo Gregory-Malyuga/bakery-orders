@@ -16,7 +16,6 @@ readonly class DomainContext
         public string $basePath,
         public string $unitTestPath,
         public string $featureTestPath,
-        public bool $withElasticsearch,
         public bool $withCacheWarmer,
     ) {}
 }

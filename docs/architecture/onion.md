@@ -95,7 +95,7 @@ readonly class CreateUserHandler implements HandlerInterface
 
 Доступ к данным. Возвращает Eloquent-модели.
 
-**Разрешено:** `Repository extends BaseRepository`, обращение к Elasticsearch через `InteractsWithElasticsearch`, кеш-прогрев.
+**Разрешено:** `Repository extends BaseRepository`, запросы к PostgreSQL, кеш-прогрев.
 
 Репозиторий обычно тривиален — вся базовая логика в `Shared\Repository\BaseRepository`:
 

@@ -17,7 +17,7 @@
 | `Filters/` | `FilterInterface` — кастомные фильтры |
 | `Http/Data/` | `BaseData`, `BaseDataCollection` — основа Spatie Data DTO |
 | `Data/` | `PaginationData`, `SortData` (`fromRequest()`) |
-| `Elasticsearch/` | `ElasticsearchSearchable` + `InteractsWithElasticsearch` — см. [Search](search.md) |
+| `Elasticsearch/` | Неиспользуемые команды и интерфейс прежнего каркаса; поиск текущего приложения описан в [Search](search.md) |
 | `Cache/` | `CacheWarmerInterface`, `CacheWarmCommand` (`php artisan cache:warm`) |
 | `Console/Commands/` | `MakeDomainCommand` (`make:domain`), `GenerateOpenApiDocsCommand` (`openapi:generate`) |
 | `Testing/` | `BaseRepositoryTest`, `BaseApiTest` + трейты `HasRepositoryTests`, `HasApiTests`, `InteractsWith*`, `MakesApiAssertions` |
