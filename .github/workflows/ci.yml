@@ -434,6 +434,11 @@ jobs:
       DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
       GHCR_ACTOR: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_KEY: ${{ secrets.APP_KEY }}
+      APP_URL: ${{ secrets.APP_URL }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SESSION_SECURE_COOKIE: ${{ secrets.SESSION_SECURE_COOKIE }}
+      APP_NAME: ${{ vars.APP_NAME }}
     steps:
       - name: Prepare SSH
         shell: bash
@@ -456,11 +461,13 @@ jobs:
           set -euo pipefail
           ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
           remote="$DEPLOY_USER@$DEPLOY_HOST"
-          {
-            printf '%s %s\n' "$GITHUB_SHA" "$IMAGE"
-            printf '%s\n' "$GHCR_TOKEN"
-            printf '%s\n' "$GHCR_ACTOR"
-          } | ssh "${ssh_opts[@]}" "$remote" bakery-release
+          python3 - <<'PY' | ssh "${ssh_opts[@]}" "$remote" bakery-release
+          import json, os
+          keys = ('APP_KEY', 'APP_URL', 'DB_PASSWORD', 'SESSION_SECURE_COOKIE', 'APP_NAME', 'GHCR_TOKEN', 'GHCR_ACTOR')
+          payload = {key: os.environ[key] for key in keys}
+          payload.update(commit=os.environ['GITHUB_SHA'], image=os.environ['IMAGE'])
+          print(json.dumps(payload))
+          PY
 
   release-semver:
     name: Release / semver tag

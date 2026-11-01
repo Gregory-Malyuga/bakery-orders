@@ -1,0 +1,4 @@
+xn----8sbfmclbpnvckotr1m.xn--p1ai {
+    encode zstd gzip
+    reverse_proxy php:8000
+}
