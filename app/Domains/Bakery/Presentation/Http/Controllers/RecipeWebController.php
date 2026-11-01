@@ -38,7 +38,12 @@ class RecipeWebController
             'samsaDough' => $section === 'dough' ? $this->calculator->doughDefinition('samsa_dough') : null,
             'ingredientOptions' => $this->catalog->all(),
             'activeIngredientOptions' => $this->catalog->all()->filter(fn ($item): bool => (bool) $item->is_active)
-                ->map(fn ($item): array => ['id' => (int) $item->id, 'name' => $item->name, 'unit' => $item->unit])->values()->all(),
+                ->map(function ($item): array {
+                    /** @var int $id */
+                    $id = $item->id;
+
+                    return ['id' => $id, 'name' => $item->name, 'unit' => $item->unit];
+                })->values()->all(),
         ]);
     }
 

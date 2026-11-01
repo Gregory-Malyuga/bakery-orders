@@ -151,10 +151,14 @@ class ProductionCalculator
      */
     private function withDoughType(array $definition, string $key): array
     {
-        $definition['dough_type'] ??= ($definition['dough_grams'] ?? 0) > 0 ? 'main' : $this->defaultDoughType($key);
-        $definition['dough_grams'] ??= null;
+        $doughGrams = $definition['dough_grams'] ?? null;
+        $doughType = $definition['dough_type'] ?? null;
 
-        return $definition;
+        return [
+            'dough_type' => $doughType ?? ($doughGrams !== null && $doughGrams > 0 ? 'main' : $this->defaultDoughType($key)),
+            'dough_grams' => $doughGrams,
+            'ingredients' => $definition['ingredients'],
+        ];
     }
 
     /** @param array<string, int> $quantities
