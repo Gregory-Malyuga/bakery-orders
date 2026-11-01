@@ -6,6 +6,8 @@ use Domains\Bakery\Application\AnalyticsService;
 use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Bakery\Domain\Models\Order;
+use Domains\Bakery\Domain\Models\OrderItem;
 use Domains\Bakery\Domain\Models\Price;
 use Domains\Bakery\Domain\Models\Product;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -49,13 +51,19 @@ class StoreDiscountTest extends TestCase
         $quote = $service->quote($discounted->id, [$product->id => 3]);
         $this->assertSame(33333, $quote['total']);
         $order = $service->place($discounted->id, (string) Str::uuid(), [$product->id => 3], $quote['hash'])['order'];
-        $this->assertNotNull($order);
-        $this->assertSame(11111, (int) $order->items->first()->unit_kopecks);
+        $this->assertInstanceOf(Order::class, $order);
+        $item = $order->items->first();
+        $this->assertInstanceOf(OrderItem::class, $item);
+        $this->assertSame(11111, (int) $item->unit_kopecks);
         $this->assertSame(33333, (int) $order->total_kopecks);
 
         $discounted->update(['discount_enabled' => false, 'discount_percent' => 0]);
         $this->assertSame(12345, $repo->prices($discounted->id)[$product->id]);
-        $this->assertSame(11111, (int) $order->fresh()->items->first()->unit_kopecks);
+        $reloaded = $order->fresh();
+        $this->assertInstanceOf(Order::class, $reloaded);
+        $reloadedItem = $reloaded->items->first();
+        $this->assertInstanceOf(OrderItem::class, $reloadedItem);
+        $this->assertSame(11111, (int) $reloadedItem->unit_kopecks);
         $result = app(AnalyticsService::class)->build($quote['date'], $quote['date'], $discounted->id);
         $this->assertSame(33333, $result['summary']['gross']);
     }
