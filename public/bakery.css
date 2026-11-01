@@ -217,4 +217,6 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     .invoice h2 { font-size: 26px; }
     .invoice p { font-size: 20px; }
     .invoice th, .invoice td { font-size: 18px; padding: 4px 8px; }
+    .group-invoice { break-inside: auto; page-break-inside: auto; }
+    .group-invoice thead { display: table-header-group; }
 }

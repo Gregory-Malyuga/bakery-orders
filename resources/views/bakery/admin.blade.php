@@ -23,6 +23,14 @@
     </tbody>
 </table></div></div>
 @include('bakery.pagination', ['url' => route('bakery.admin'), 'query' => ['date' => $date, 'tab' => 'orders']])
+@if($groups !== [])
+<div class="section-head"><h2>Сводные накладные групп</h2></div>
+<div class="panel data-panel"><div class="table-scroll"><table><thead><tr><th>Группа</th><th>Точек</th><th>Статус</th><th></th></tr></thead><tbody>
+@foreach($groups as $group)
+<tr><td>{{ $group['name'] }}</td><td>{{ count($group['members']) }}</td><td>{{ $group['has_orders'] ? 'Есть заказы' : 'Нет заказов' }}</td><td>@if($group['has_orders'])<a href="{{ route('bakery.group-print', ['group' => $group['id'], 'date' => $date]) }}">Печать</a> · <a href="{{ route('bakery.group-xlsx', ['group' => $group['id'], 'date' => $date]) }}">Excel</a>@else—@endif</td></tr>
+@endforeach
+</tbody></table></div></div>
+@endif
 <div class="section-head"><h2>Ещё не заказали</h2></div><div class="panel data-panel"><p>@forelse($activeStores->whereNotIn('id',$orderedStoreIds) as $store)<span class="date-pill" style="display:inline-block;margin:4px">{{ $store->name }}</span>@empty<span class="muted">Все активные магазины заказали.</span>@endforelse</p></div>
 @elseif($tab === 'production')
 <div class="section-head"><h2>Производственная сводка</h2><span class="muted">Количество, шт.</span></div><div class="panel data-panel summary-scroll"><table class="summary-table"><thead><tr><th>Товар</th>@foreach($matrixStores as $store)<th title="{{ $store->address }}">{{ $store->name }}</th>@endforeach<th>Всего</th></tr></thead><tbody>@foreach($products as $product)@if(isset($totals[$product->id]))<tr><th>{{ $product->name }}</th>@foreach($matrixStores as $store)<td>{{ $quantities[$product->id][$store->id] ?? '—' }}</td>@endforeach<td>{{ $totals[$product->id] }}</td></tr>@endif @endforeach</tbody></table></div>

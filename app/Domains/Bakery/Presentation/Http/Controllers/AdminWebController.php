@@ -4,6 +4,7 @@ namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\Exports\PeriodReportWorkbookInterface;
+use Domains\Bakery\Application\GroupInvoiceService;
 use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\OrderReturnSummary;
@@ -21,7 +22,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
 
     private function adminId(Request $request): int
     {
@@ -101,8 +102,9 @@ class AdminWebController
         $page = min((int) ($input['page'] ?? 1), $pageCount);
         $visibleOrders = $orders->forPage($page, 20);
         $orderReturns = $this->returnSummary->forOrders($visibleOrders);
+        $groups = $tab === 'orders' ? $this->groupInvoices->forOrders($orders) : [];
 
-        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
+        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'groups', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
     }
 
     public function catalog(Request $request): View
@@ -325,7 +327,7 @@ class AdminWebController
 
         $orders = $this->orders->orders($date);
 
-        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnSummary->forOrders($orders), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
+        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnSummary->forOrders($orders), 'groups' => $this->groupInvoices->forOrders($orders), 'date' => $date, 'generatedAt' => now('Europe/Moscow'), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse
@@ -342,7 +344,9 @@ class AdminWebController
     {
         $date = $this->date($request);
 
-        return response()->download($this->workbook->create($this->orders->orders($date), $this->orders->products()), "nakladnye-{$date}.xlsx", [
+        $orders = $this->orders->orders($date);
+
+        return response()->download($this->workbook->create($orders, $this->orders->products(), $this->groupInvoices->forOrders($orders), $date, now('Europe/Moscow')->format('d.m.Y H:i')), "nakladnye-{$date}.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
