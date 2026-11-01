@@ -86,6 +86,11 @@ docker compose exec php php artisan bakery:create-admin admin@backery.com
 
 Последующие релизы на `backery` выполняет [BAK-14](docs/process/BAK-14-release.md): CI скачивает готовый образ по SHA, ставит рабочий Docker-тег `laravel-app-php:latest`, поднимает три сервиса из `/opt/bakery/compose.yml` без сборки и удаляет прежний образ. Git checkout и `.env` на хосте не требуются; runtime-переменные поступают из GitHub Environment во время команды Compose. Миграции в этом релизе не выполняются; изменения схемы БД нужно планировать отдельно.
 
+Для восстановления после удаления контейнеров запустите `CI/CD` на ветке `main`
+через кнопку `Run workflow` в GitHub Actions. Compose использует прежние внешние
+тома PostgreSQL и Caddy; отсутствие тома останавливает релиз, не создавая
+пустую БД.
+
 Для резервной копии остановка приложения не требуется. Пример для локального Compose:
 
 ```bash
