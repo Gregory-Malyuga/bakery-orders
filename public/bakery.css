@@ -490,3 +490,32 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
     .group-store-grid { grid-template-columns: minmax(0, 1fr); max-height: 360px; }
     .app-page .data-panel { padding: 16px; }
 }
+
+/* Account row actions: identical button geometry and a consistent vertical stack. */
+.app-page .accounts-table td:last-child { min-width: 210px; text-align: center; }
+.app-page .accounts-table .account-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    align-items: stretch;
+    gap: 8px;
+    width: 100%;
+    min-width: 186px;
+}
+.app-page .accounts-table .account-actions > form {
+    display: block;
+    width: 100%;
+    margin: 0;
+}
+.app-page .accounts-table .account-actions .button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    margin: 0;
+    line-height: 1.3;
+    text-align: center;
+    white-space: normal;
+}
