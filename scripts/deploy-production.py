@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Image-only production release. Installed as /usr/local/sbin/bakery-deploy-production."""
+"""Image-only production release from the checked-out GitHub commit."""
 
 import fcntl
 import json
@@ -11,7 +11,7 @@ import tempfile
 
 
 PROJECT = "laravel-app"
-COMPOSE = "/opt/bakery/compose.yml"
+COMPOSE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "compose.yml")
 WORKING_TAG = "laravel-app-php:latest"
 DATABASE_VOLUME = "laravel-app_postgres_data"
 CERTIFICATE_VOLUME = "laravel-app_caddy_data"
@@ -48,7 +48,8 @@ def main() -> None:
     if not re.fullmatch(r"[A-Za-z0-9-]+", actor):
         raise ValueError("Invalid GHCR actor")
 
-    with open("/run/lock/bakery-release.lock", "w", encoding="ascii") as lock:
+    lock_path = os.path.join(os.path.expanduser("~"), ".bakery-release.lock")
+    with open(lock_path, "w", encoding="ascii") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         for volume in (DATABASE_VOLUME, CERTIFICATE_VOLUME):
             run("docker", "volume", "inspect", volume)
@@ -64,7 +65,7 @@ def main() -> None:
         except subprocess.CalledProcessError:
             pass
 
-        with tempfile.TemporaryDirectory(prefix="bakery-docker-", dir="/run") as docker_config:
+        with tempfile.TemporaryDirectory(prefix="bakery-docker-") as docker_config:
             runtime["DOCKER_CONFIG"] = docker_config
             run("docker", "login", "ghcr.io", "-u", actor, "--password-stdin", env=runtime,
                 input_text=request["GHCR_TOKEN"] + "\n")
