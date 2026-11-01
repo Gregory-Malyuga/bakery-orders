@@ -1,6 +1,7 @@
 <?php
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
+use Domains\Bakery\Presentation\Http\Controllers\ClosedDateController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
 use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
 use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
@@ -39,6 +40,9 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/groups', [StoreGroupController::class, 'save'])->name('bakery.groups-save');
     Route::get('/groups/{group}/print', [StoreGroupController::class, 'print'])->name('bakery.group-print');
     Route::get('/groups/{group}/xlsx', [StoreGroupController::class, 'download'])->name('bakery.group-xlsx');
+    Route::get('/closed-dates', [ClosedDateController::class, 'index'])->name('bakery.closed-dates');
+    Route::post('/closed-dates', [ClosedDateController::class, 'save'])->name('bakery.closed-dates-save');
+    Route::post('/closed-dates/{date}/open', [ClosedDateController::class, 'open'])->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')->name('bakery.closed-dates-open');
     Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
     Route::get('/ingredients', [IngredientCatalogWebController::class, 'index'])->name('bakery.ingredients');
     Route::post('/ingredients', [IngredientCatalogWebController::class, 'create'])->name('bakery.ingredients-create');
