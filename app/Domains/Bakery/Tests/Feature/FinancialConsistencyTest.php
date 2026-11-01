@@ -157,7 +157,13 @@ class FinancialConsistencyTest extends TestCase
         $url = '/admin/orders/'.$order->id.'/returns';
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
-        $returnIds = array_map(fn (mixed $id): int => (int) $id, DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id')->all());
+        $returnIds = array_map(static function (mixed $id): int {
+            if (! is_int($id) && ! is_string($id)) {
+                throw new \UnexpectedValueException('Некорректный ID возврата.');
+            }
+
+            return (int) $id;
+        }, DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id')->all());
         $this->assertCount(2, $returnIds);
         $cancelUrl = $url.'/'.$returnIds[0].'/cancel';
 
