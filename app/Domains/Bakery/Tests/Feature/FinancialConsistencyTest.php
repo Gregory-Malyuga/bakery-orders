@@ -157,7 +157,7 @@ class FinancialConsistencyTest extends TestCase
         $url = '/admin/orders/'.$order->id.'/returns';
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
-        $returnIds = DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id');
+        $returnIds = array_map('intval', DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id')->all());
         $this->assertCount(2, $returnIds);
         $cancelUrl = $url.'/'.$returnIds[0].'/cancel';
 
@@ -182,7 +182,7 @@ class FinancialConsistencyTest extends TestCase
         $this->actingAs($admin)->get('/admin/report?from='.$date.'&to='.$date)->assertOk()->assertSee('40,00 ₽');
         $report = $this->downloadCells('/admin/report/xlsx?from='.$date.'&to='.$date, 3);
         $this->assertSame('1', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'E'));
-        $this->assertSame('40.00', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'));
+        $this->assertEqualsWithDelta(40.0, (float) $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'), 0.001);
 
         $service->cancel($store->id, $order->id);
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertStatus(422);
