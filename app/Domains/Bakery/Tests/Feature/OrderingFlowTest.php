@@ -375,7 +375,7 @@ class OrderingFlowTest extends TestCase
 
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $response = $this->actingAs($admin)->get('/admin/xlsx?date=2026-10-07')->assertOk();
-        $this->assertInstanceOf(\Symfony\Component\HttpFoundation\BinaryFileResponse::class, $response->baseResponse);
+        $this->assertInstanceOf(BinaryFileResponse::class, $response->baseResponse);
         $path = $response->baseResponse->getFile()->getPathname();
         $archive = new PharData($path);
         $workbook = $archive['xl/workbook.xml']->getContent();

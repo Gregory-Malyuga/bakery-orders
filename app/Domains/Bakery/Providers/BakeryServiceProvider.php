@@ -23,8 +23,8 @@ use Domains\Bakery\Infrastructure\Exports\PeriodReportWorkbook;
 use Domains\Bakery\Infrastructure\Repositories\AdminRepository;
 use Domains\Bakery\Infrastructure\Repositories\BakeryRepository;
 use Domains\Bakery\Infrastructure\Repositories\OrderingRepository;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\ServiceProvider;
 
 class BakeryServiceProvider extends ServiceProvider
 {

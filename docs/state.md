@@ -3,11 +3,11 @@
 ## Current — 2026-11-01
 
 - **CI / BUG-01:** по сообщению о падении Deptrac на `670aea7` установлен прямой импорт `Infrastructure\\Exports\\PeriodReportWorkbook` из `Presentation\\Http\\Controllers\\AdminWebController`. В отдельном worktree контроллер переведён на интерфейс Application, реализация привязана в `BakeryServiceProvider`; локальный кодовый коммит `fe6b5eb`. Проверка `git diff --check` прошла; на этом ПК недоступны PHP и Docker, поэтому Deptrac, `composer pre-push` и тесты пока не запускались. Push, CI и production-деплой на момент записи не выполнялись.
-- **Now:** исправление BUG-02 (право `actions: read` для загрузки Trivy SARIF) внесено в отдельном worktree; ожидается проверка в CI. Реализация BAK-01…BAK-12 не начата.
-- **BUG-03 in progress:** в GitHub Actions `analyze-phpstan` для `main` упал с 105 ошибками типов. Исправления готовятся в отдельном worktree `g.malyuga/fix-phpstan-ci`; повторный PHPStan и CI ещё не проверены. Локальный PHP/Composer/Docker недоступен.
+- **Now:** на локальную `main` перенесены коммиты `0dfa47c` и `5d74858` из `origin/main`. После повторного сбоя BUG-02 с отключённым Code Scanning отчёты Trivy FS/Image сохраняются как артефакты workflow; исправлены три замечания Pint (BUG-04). Правки ожидают проверки CI. Реализация BAK-01…BAK-12 не начата.
+- **BUG-03:** исправления PHPStan из коммита `5d74858` теперь в `main`; повторный PHPStan и CI ещё не проверены. Локальный PHP/Composer/Docker недоступен.
 - **Next:** BAK-01 — отмена ошибочного возврата; затем BAK-02 — итоги и комментарии в списке принятых заказов. Очередь: [roadmap](process/roadmap.md), подробности: [backlog](backlog-2026-11-01.md).
 - **Blocked:** подтверждённых блокеров для записи плана нет. Вопросы, требующие решения перед отдельными задачами, перечислены в бэклоге.
-- **Verification:** для BUG-02 выполнен `git diff --check`; выполнение SARIF upload в CI ещё не проверено. Проверка приложения, печати и Excel для BAK-задач ещё не выполнялась. Перед отправкой документационных коммитов 2026-11-01 полный `composer pre-push` не запущен: на этом ПК недоступны `docker`, `php` и `composer`. Не проверены lint, CS, PHPStan, архитектура, документация и тесты.
+- **Verification:** для BUG-02 и BUG-04 выполнен `git diff --check`. PHP, Composer и Docker на этом ПК недоступны; Pint, `composer pre-push`, PHPStan, Deptrac, тесты и CI пока не запускались после правок. Результат локального коммита и push фиксируется отдельно; production-деплой не выполнялся. Проверка приложения, печати и Excel для BAK-задач ещё не выполнялась.
 
 Новые краткие статусы добавлять сюда с датой и ссылкой на ID. Исторические записи ниже не описывают текущее состояние рабочего дерева или production.
 

@@ -9,10 +9,8 @@ on:
     branches: [main]
 
 permissions:
-  actions: read
   contents: read
   packages: write
-  security-events: write
 
 env:
   BASE_IMAGE: dunglas/frankenphp:1-php8.5-alpine@sha256:2e95565f69e5295e1a0a5ceb5dc81b6039c9e552e819da47f8c313f466926a83
@@ -198,11 +196,12 @@ jobs:
           format: sarif
           output: trivy-fs.sarif
 
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - name: Save filesystem scan report
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: trivy-fs.sarif
-          category: trivy-fs
+          name: trivy-fs-sarif
+          path: trivy-fs.sarif
+          if-no-files-found: error
 
       - name: Fail on secrets
         uses: aquasecurity/trivy-action@v0.36.0
@@ -371,11 +370,12 @@ jobs:
           format: sarif
           output: trivy-image.sarif
 
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      - name: Save image scan report
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: trivy-image.sarif
-          category: trivy-image
+          name: trivy-image-sarif
+          path: trivy-image.sarif
+          if-no-files-found: error
 
       - name: Fail on fixable CRITICAL
         uses: aquasecurity/trivy-action@v0.36.0

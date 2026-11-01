@@ -1,6 +1,6 @@
-# BUG-02 — SARIF upload не может прочитать workflow run
+# BUG-02 — SARIF upload падает в CI
 
-**Статус:** исправление внесено, ожидается проверка в CI
+**Статус:** прежняя попытка с `actions: read` не устранила сбой; новое исправление ожидает проверки в CI
 
 **Приоритет:** P1
 
@@ -14,15 +14,16 @@
 - Получилось: после `Post-processing sarif files: ["trivy-fs.sarif"]` шаг завершается ошибкой `Resource not accessible by integration` при вызове API получения workflow run.
 - Влияние: job проверки файловой системы помечается неуспешным; результаты сканирования не публикуются. Ошибка не относится к сборке PHP.
 - Источник: переданный пользователем фрагмент журнала CI.
+- Повторный симптом после добавления `actions: read`: `Code scanning is not enabled for this repository` в шаге `upload-sarif@v3` при обработке `trivy-fs.sarif`. Шаг завершился кодом 1. В журнале также есть предупреждение о прекращении поддержки v3 в декабре 2026 года.
 
 ## Диагностика
 
 - В workflow уже есть `security-events: write` и `contents: read`, но отсутствует `actions: read`.
 - [Документация GitHub](https://docs.github.com/en/code-security/how-tos/find-and-fix-code-vulnerabilities/integrate-with-existing-tools/upload-sarif-file) указывает `actions: read` для загрузки SARIF в приватном репозитории.
-- Ошибка API чтения workflow run согласуется с отсутствующим правом. Подтверждение на текущем CI run ещё требуется.
+- Новое сообщение GitHub указывает на отключённый Code Scanning; увеличение прав токена не включает эту функцию.
 
 ## Исправление и приёмка
 
-- Добавить `actions: read` к правам workflow для обоих шагов загрузки SARIF: Trivy FS и Trivy Image.
-- Проверить `git diff --check`, затем успешное выполнение SARIF upload и обоих security jobs в CI на `main`.
+- Сохранять оба SARIF-отчёта как артефакты workflow через `actions/upload-artifact@v4`; оставить проверки, падающие при секретах и исправимых CRITICAL уязвимостях. Убрать неиспользуемые права `actions: read` и `security-events: write`.
+- Проверить `git diff --check`, затем успешное сохранение обоих артефактов и выполнение обоих security jobs в CI на `main`.
 - Функциональность страниц, заказов, печати и выгрузок не затронута.
