@@ -6,6 +6,8 @@
 
 ### Открытая ошибка
 
+- [ ] **BUG-08 · P1** — [web-сессии клиентов теряются после релиза](bugs/BUG-08.md). Воспроизведение со слов пользователя: войти, перезапустить Docker Compose при релизе, открыть `/orders` — требуется повторный вход. На `backery` подтверждены PostgreSQL-сессии и срок неактивности 120 минут; потеря активной сессии при перезапуске не воспроизведена. Подготовлены 30-дневный срок и регрессионный тест; нужны прогон тестов и проверка после релиза.
+
 - [ ] **BUG-07 · P1** — Pint в CI на `93cd359` сообщает 1 style issue в `app/Shared/Console/DomainGenerator/Contracts/AbstractGenerator.php` (`no_unu…`; 275 файлов, exit 1). Воспроизведение: `php vendor/bin/pint --test`. После удаления Elasticsearch-хелперов остался импорт `DomainContext`; импорт удалён. Требуется повторный Pint и полный CI.
 - [ ] **BUG-06 · P1** — PHPStan в CI на `0655758` завершается кодом 1 с двумя `trait.unused`: `InteractsWithElasticsearch.php:13` и `RefreshElasticsearch.php:8`. Воспроизведение: `php vendor/bin/phpstan analyse --memory-limit=512M` после удаления Elasticsearch из рабочего стека. Удалены неиспользуемые трейты и флаг генератора `--with-elasticsearch`; требуется повторный PHPStan и полный CI.
 - [ ] **BUG-05 · P1** — ParaTest в CI: `UserStatusGateTest::test_flag_off_pending_user_passes` иногда получает 403 вместо 200. Воспроизведение: `php vendor/bin/paratest --processes=2 --runner=WrapperRunner --log-junit=report.xml` на `6d79477` (192 теста, 1 сбой). Фабрика случайно назначает роль `user`, которую отдельно запрещает `bakery.role:legacy-api`. Во всех сценариях теста задана роль `manager`; требуется повторный прогон CI, включая этот тест и полный набор.

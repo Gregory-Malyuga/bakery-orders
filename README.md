@@ -39,6 +39,10 @@ docker compose exec php php artisan bakery:create-admin admin@example.com
 
 `APP_KEY` должен быть задан в `.env` до запуска Compose. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
 
+При каждом релизе сохраняйте прежние `APP_KEY`, имя Compose-проекта и том `postgres_data`. Не запускайте `php artisan key:generate`, `docker compose down -v` или `docker volume prune` для рабочего стека: смена ключа делает существующие cookie недействительными, удаление тома уничтожает таблицу сессий вместе с остальными данными. `SESSION_DRIVER=database` уже задан в Compose; web-сессии находятся в таблице `sessions`, а API-токены Sanctum — в `personal_access_tokens`. Пароли пользователей при пересборке образа не меняются.
+
+Для проверки релиза войдите в браузере под тестовым магазином, выполните `docker compose up -d --build --remove-orphans` с тем же `.env` и откройте `/orders` без повторного входа. Срок бездействия по умолчанию в `config/session.php` составляет 43200 минут (30 дней). До релиза проверьте, что таблица сессий существует: `docker compose exec -T php php artisan migrate:status`.
+
 ### Начальная загрузка из «Лист1»
 
 Файл `resources/data/Накладные 10.09.xlsx` используется как источник 72 магазинов, 23 товаров и персональных цен. Проверка без записи и загрузка:
