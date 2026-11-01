@@ -39,7 +39,7 @@
     </tbody></table></div>
 </div>
 @elseif($tab === 'prices')
-<p class="muted small">Если магазин входит в точку с общим прайсом, цены берутся из первого магазина этой точки. Изменение цены обновляет общий прайс.</p>
+<p class="muted small">Если магазин входит в точку с общим прайсом, цены берутся из первого магазина этой точки. Изменение цены обновляет общий прайс. Здесь редактируются цены до персональной скидки точки; скидка применяется при оформлении заказа.</p>
 <div class="section-head"><h2>Персональные цены и ассортимент магазина</h2></div>
 <div class="panel data-panel">
     <form method="get" action="{{ route('bakery.catalog') }}" class="form-grid"><input type="hidden" name="tab" value="prices"><label>Магазин<select name="store">@foreach($stores as $store)<option value="{{ $store->id }}" @selected($selectedStore===$store->id)>{{ $store->name }} — {{ $store->address }}</option>@endforeach</select></label><button class="button secondary">Выбрать</button></form>
