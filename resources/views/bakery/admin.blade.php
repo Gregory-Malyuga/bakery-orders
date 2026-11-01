@@ -39,7 +39,20 @@
 <div class="section-head"><h2>Фасовка</h2></div><div class="panel data-panel"><p class="muted small">Пакеты рассчитаны отдельно для каждого магазина. Остаток означает штуки, которые нельзя разложить по выбранным размерам упаковки.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Остаток, шт.</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($packaging[$p->id])) as $product)<tr><th>{{ $product->name }}</th><td>{{ $packaging[$product->id]['one'] ?: '—' }}</td><td>{{ $packaging[$product->id]['two'] ?: '—' }}</td><td>{{ $packaging[$product->id]['three'] ?: '—' }}</td><td>{{ $packaging[$product->id]['five'] ?: '—' }}</td><td>{{ $packaging[$product->id]['loose'] ?: '—' }}</td></tr>@empty<tr><td colspan="6" class="muted">Нет продукции к фасовке.</td></tr>@endforelse</tbody></table></div></div>
 @elseif($tab === 'labels')
 <div class="section-head"><h2>Наклейки</h2><span class="muted">Всего {{ $labelTotal }} шт.</span></div>
-<div class="panel data-panel"><p class="muted small">Одна наклейка на каждый пакет. Фасовка рассчитана отдельно для каждого магазина; размеры пакетов нельзя объединять между точками.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Всего наклеек</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($labels[$p->id])) as $product)<tr><td>{{ $product->name }}</td><td>{{ $packaging[$product->id]['one'] ?: '—' }}</td><td>{{ $packaging[$product->id]['two'] ?: '—' }}</td><td>{{ $packaging[$product->id]['three'] ?: '—' }}</td><td>{{ $packaging[$product->id]['five'] ?: '—' }}</td><td>{{ $labels[$product->id] }}</td></tr>@empty<tr><td colspan="6" class="muted">Нет продукции.</td></tr>@endforelse</tbody></table></div></div>
+<div class="panel data-panel">
+    <p class="muted small">Одна наклейка на каждый пакет точки, если она не исключена настройкой группы. Фасовка считается для всех заказов: {{ $packageTotal }} пакетов; наклеек — {{ $labelTotal }}.</p>
+    <div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Всего наклеек</th></tr></thead><tbody>
+    @forelse($products->filter(fn($p)=>isset($labels[$p->id])) as $product)
+        <tr><td>{{ $product->name }}</td><td>{{ $labelPackaging[$product->id]['one'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['two'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['three'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['five'] ?: '—' }}</td><td>{{ $labels[$product->id] }}</td></tr>
+    @empty<tr><td colspan="6" class="muted">Нет продукции.</td></tr>
+    @endforelse
+    </tbody></table></div>
+    @if($excludedStores !== [])
+        <h3>Точки без этикеток</h3>
+        <p class="muted small">Эти точки остаются в выпуске и фасовке. Их пакеты не входят в число этикеток.</p>
+        <ul>@foreach($excludedStores as $store)<li>{{ $store['name'] }} — {{ $store['packages'] }} пакетов; группы: {{ implode(', ', $store['groups']) }}</li>@endforeach</ul>
+    @endif
+</div>
 @else
 <div class="section-head"><h2>Заготовки по рецептурам</h2></div>
 <div class="panel data-panel">
