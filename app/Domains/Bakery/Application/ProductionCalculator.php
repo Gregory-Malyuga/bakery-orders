@@ -97,7 +97,7 @@ class ProductionCalculator
             return $default;
         }
 
-        /** @var array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}|null $override */
+        /** @var array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}|null $override */
         $override = $this->store->overrides(['product:'.$productId])['product:'.$productId] ?? null;
 
         if ($override !== null) {
@@ -146,12 +146,13 @@ class ProductionCalculator
         return isset(self::DOUGH[$key]) ? 'main' : 'none';
     }
 
-    /** @param array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>} $definition
-     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}
+    /** @param array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>} $definition
+     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}
      */
     private function withDoughType(array $definition, string $key): array
     {
         $definition['dough_type'] ??= ($definition['dough_grams'] ?? 0) > 0 ? 'main' : $this->defaultDoughType($key);
+        $definition['dough_grams'] ??= null;
 
         return $definition;
     }
@@ -180,7 +181,7 @@ class ProductionCalculator
         foreach ($quantities as $name => $quantity) {
             $key = $this->normalize($name);
             $productKey = isset($productIdsByName[$name]) ? 'product:'.$productIdsByName[$name] : null;
-            /** @var array{dough_type?:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>}|null $productOverride */
+            /** @var array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}|null $productOverride */
             $productOverride = $productKey !== null ? ($overrides[$productKey] ?? null) : null;
             $definition = $productOverride !== null
                 ? $this->withDoughType($productOverride, $key)

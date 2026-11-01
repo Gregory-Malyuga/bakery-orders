@@ -24,8 +24,9 @@ class RecipeWebController
         ]);
         $section = $input['section'] ?? 'products';
         $products = $this->orders->products();
-        $selected = $section === 'products'
-            ? $products->firstWhere('id', (int) ($input['product'] ?? $products->first()?->id))
+        $selectedProductId = $input['product'] ?? $products->first()?->id;
+        $selected = $section === 'products' && is_numeric($selectedProductId)
+            ? $products->firstWhere('id', (int) $selectedProductId)
             : null;
 
         return view('bakery.recipes', [
