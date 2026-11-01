@@ -39,9 +39,9 @@ docker compose exec php php artisan bakery:create-admin admin@example.com
 
 `APP_KEY` должен быть задан в `.env` до запуска Compose. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
 
-При каждом релизе сохраняйте прежние `APP_KEY`, имя Compose-проекта и том `postgres_data`. Не запускайте `php artisan key:generate`, `docker compose down -v` или `docker volume prune` для рабочего стека: смена ключа делает существующие cookie недействительными, удаление тома уничтожает таблицу сессий вместе с остальными данными. `SESSION_DRIVER=database` уже задан в Compose; web-сессии находятся в таблице `sessions`, а API-токены Sanctum — в `personal_access_tokens`. Пароли пользователей при пересборке образа не меняются.
+При каждом релизе сохраняйте прежние `APP_KEY`, имя Compose-проекта и том `postgres_data`. Не запускайте `php artisan key:generate`, `docker compose down -v` или `docker volume prune` для рабочего стека: смена ключа делает существующие cookie недействительными, удаление тома уничтожает таблицу сессий вместе с остальными данными. `SESSION_DRIVER=database` уже задан в Compose; web-сессии находятся в таблице `sessions`, а API-токены Sanctum — в `personal_access_tokens`. Пароли пользователей при смене образа не меняются.
 
-Для проверки релиза войдите в браузере под тестовым магазином, выполните `docker compose up -d --build --remove-orphans` с тем же `.env` и откройте `/orders` без повторного входа. Срок бездействия по умолчанию в `config/session.php` составляет 43200 минут (30 дней). До релиза проверьте, что таблица сессий существует: `docker compose exec -T php php artisan migrate:status`.
+Для проверки релиза войдите в браузере под тестовым магазином, дождитесь image-only релиза из CI и откройте `/orders` без повторного входа. Срок бездействия по умолчанию в `config/session.php` составляет 43200 минут (30 дней). До релиза проверьте, что таблица сессий существует: `docker compose exec -T php php artisan migrate:status`.
 
 ### Начальная загрузка из «Лист1»
 
@@ -73,7 +73,7 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 
 ### Развёртывание и резервное копирование
 
-Для рабочего окружения используйте тот же `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
+Для первого запуска рабочего окружения используйте `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
 
 ```bash
 docker compose up -d --build --remove-orphans
@@ -83,6 +83,8 @@ docker compose exec php php artisan bakery:create-admin admin@backery.com
 ```
 
 Приложение использует постоянный том PostgreSQL. После запуска проверьте `/health`, вход, оформление и печать.
+
+Последующие релизы на `backery` выполняет [BAK-14](docs/process/BAK-14-release.md): CI скачивает готовый образ по SHA, ставит рабочий Docker-тег `laravel-app-php:latest`, обновляет только `php` через существующий Compose и удаляет прежний образ. Git checkout на хосте и миграции в этом релизе не выполняются; текущий `.env` хоста остаётся источником runtime-переменных. Перед релизом миграции, требующие изменения схемы БД, нужно планировать отдельно.
 
 Для резервной копии остановка приложения не требуется. Пример для локального Compose:
 

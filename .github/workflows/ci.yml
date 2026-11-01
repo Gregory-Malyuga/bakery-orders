@@ -418,6 +418,48 @@ jobs:
           docker tag  $IMAGE:${{ github.sha }} $IMAGE:latest
           docker push $IMAGE:latest
 
+  deploy-production:
+    name: Release / deploy production
+    needs: [build, security-image, smoke, release-latest]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: bakery-production
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: 153.80.246.224
+      DEPLOY_USER: bakery-deploy
+      DEPLOY_SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      GHCR_ACTOR: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Prepare SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$DEPLOY_SSH_PRIVATE_KEY"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_PRIVATE_KEY" > ~/.ssh/bakery_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Pull, tag, update PHP and clean old image
+        shell: bash
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}:${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
+          remote="$DEPLOY_USER@$DEPLOY_HOST"
+          {
+            printf '%s %s\n' "$GITHUB_SHA" "$IMAGE"
+            printf '%s\n' "$GHCR_TOKEN"
+            printf '%s\n' "$GHCR_ACTOR"
+          } | ssh "${ssh_opts[@]}" "$remote" bakery-release
+
   release-semver:
     name: Release / semver tag
     needs: [build, security-image, smoke]
