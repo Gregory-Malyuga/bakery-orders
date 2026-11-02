@@ -166,7 +166,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     private function groupSheet(array $group, string $date, string $generatedAt): string
     {
         $cells = [];
-        $hasReturns = $group['returned_quantity'] > 0;
+        $hasReturns = $group['show_return_columns'] && $group['returned_quantity'] > 0;
         $widths = [];
         foreach ($hasReturns ? [10, 43, 16, 16, 16, 17, 20] : [10, 43, 16, 16, 17] as $index => $width) {
             $column = $index + 1;
@@ -191,7 +191,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
                 $this->put($cells, $row, $this->number(4, $row, (string) $product['returned'], 4));
             }
             $this->put($cells, $row, $this->number($hasReturns ? 5 : 4, $row, $this->rubles($product['unit_kopecks']), 6));
-            $this->put($cells, $row, $this->number($hasReturns ? 6 : 5, $row, $this->rubles($product['gross']), 6));
+            $this->put($cells, $row, $this->number($hasReturns ? 6 : 5, $row, $this->rubles($group['show_return_columns'] ? $product['gross'] : $product['net']), 6));
             if ($hasReturns) {
                 $this->put($cells, $row, $this->number(7, $row, $this->rubles($product['net']), 6));
             }
@@ -207,7 +207,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, $totalRow, $this->number(7, $totalRow, $this->rubles($group['net']), 8));
         } else {
             $this->put($cells, $totalRow, $this->blank(4, $totalRow, 7));
-            $this->put($cells, $totalRow, $this->number(5, $totalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $totalRow, $this->number(5, $totalRow, $this->rubles($group['show_return_columns'] ? $group['gross'] : $group['net']), 8));
         }
 
         $memberTitleRow = $totalRow + 2;
@@ -219,8 +219,12 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             if ($member['ordered']) {
                 $this->put($cells, $row, $this->number(2, $row, (string) $member['quantity']));
                 $this->put($cells, $row, $this->number(3, $row, $this->rubles($member['gross'])));
-                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['returns'])));
-                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net'])));
+                if ($group['show_return_columns']) {
+                    $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['returns'])));
+                    $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net'])));
+                } else {
+                    $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['net'])));
+                }
             }
             if ($member['comment']) {
                 $this->put($cells, $row + count($group['members']) + 1, $this->label(1, $row + count($group['members']) + 1, 'Комментарий · '.$member['name'].': '.$member['comment']));
