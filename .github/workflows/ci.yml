@@ -314,7 +314,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
     env:
-      APP_KEY: ${{ vars.APP_KEY_TESTING }}
+      APP_KEY: base64:nzndTDnKTcSI51xvwTFZiLwU9AM5MLWqhnSr456y44A=
       APP_ENV: testing
       APP_DEBUG: "1"
       DB_CONNECTION: pgsql
