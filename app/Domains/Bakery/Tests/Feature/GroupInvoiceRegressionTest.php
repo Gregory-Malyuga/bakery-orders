@@ -73,7 +73,7 @@ class GroupInvoiceRegressionTest extends TestCase
         ])->render();
     }
 
-    /** @param array<string, mixed> $group */
+    /** @param GroupInvoice $group */
     private function xlsx(array $group, string $date): string
     {
         $path = app(MatrixInvoiceWorkbook::class)->create([], [], [$group], $date, '02.11.2026 12:00');
