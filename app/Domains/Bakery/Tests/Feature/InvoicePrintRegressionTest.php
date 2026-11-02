@@ -2,8 +2,8 @@
 
 namespace Domains\Bakery\Tests\Feature;
 
-use Domains\Bakery\Application\OrderReturnSummary;
 use Domains\Bakery\Application\OrderingService;
+use Domains\Bakery\Application\OrderReturnSummary;
 use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\Price;
