@@ -55,7 +55,7 @@ class InvoicePrintRegressionTest extends TestCase
             'reason' => 'Проверка',
             'product_name' => $product->name,
             'unit_kopecks' => 1234,
-            'is_order_item' => ! $extra,
+            'is_order_item' => !$extra,
             'status' => $status,
             'created_at' => now(),
         ]);
