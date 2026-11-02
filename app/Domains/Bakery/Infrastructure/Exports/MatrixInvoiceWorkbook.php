@@ -216,7 +216,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         $memberHasReturns = $group['show_return_columns'];
         $memberHeaders = $memberHasReturns
             ? ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'Возврат, ₽', 'К оплате, ₽']
-            : ['№', 'Торговая точка', 'Изделий, шт.', 'К оплате, ₽'];
+            : ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'К оплате, ₽'];
         // No independent return columns for Baltic/Kolpino; only the payable net amount.
         foreach ($memberHeaders as $index => $heading) {
             $this->put($cells, $memberHeaderRow, $this->label($index + 1, $memberHeaderRow, $heading, 5));
@@ -232,7 +232,8 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
                 $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['returns']), 6));
                 $this->put($cells, $row, $this->number(6, $row, $this->rubles($member['net']), 6));
             } else {
-                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['net']), 6));
+                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['gross']), 6));
+                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net']), 6));
             }
         }
         $memberTotalRow = $memberHeaderRow + count($group['members']) + 1;
@@ -244,12 +245,14 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, $memberTotalRow, $this->number(5, $memberTotalRow, $this->rubles($group['returns']), 8));
             $this->put($cells, $memberTotalRow, $this->number(6, $memberTotalRow, $this->rubles($group['net']), 8));
         } else {
-            $this->put($cells, $memberTotalRow, $this->number(4, $memberTotalRow, $this->rubles($group['net']), 8));
+            $this->put($cells, $memberTotalRow, $this->number(4, $memberTotalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $memberTotalRow, $this->number(5, $memberTotalRow, $this->rubles($group['net']), 8));
         }
         $commentRow = $memberTotalRow + 2;
         foreach ($group['members'] as $member) {
             if ($member['comment']) {
-                $this->put($cells, $commentRow++, $this->label(2, $commentRow - 1, 'Комментарий · '.$member['name'].': '.$member['comment']));
+                $this->put($cells, $commentRow, $this->label(2, $commentRow, 'Комментарий · '.$member['name'].': '.$member['comment']));
+                $commentRow++;
             }
         }
 
