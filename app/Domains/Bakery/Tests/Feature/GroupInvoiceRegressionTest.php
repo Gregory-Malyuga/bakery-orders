@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PharData;
 
+/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
 class GroupInvoiceRegressionTest extends TestCase
 {
     use DatabaseTransactions;
@@ -54,7 +55,7 @@ class GroupInvoiceRegressionTest extends TestCase
         return [$order, $product->id, $quote['date']];
     }
 
-    /** @return array<string, mixed> */
+    /** @return GroupInvoice */
     private function group(Order $order): array
     {
         $groups = app(GroupInvoiceService::class)->forOrders([$order]);
@@ -64,7 +65,7 @@ class GroupInvoiceRegressionTest extends TestCase
         return $activeGroups[0];
     }
 
-    /** @param array<string, mixed> $group */
+    /** @param GroupInvoice $group */
     private function html(array $group, string $date): string
     {
         return view('bakery.group-invoice', [
