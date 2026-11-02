@@ -213,7 +213,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         $memberTitleRow = $totalRow + 2;
         $this->put($cells, $memberTitleRow, $this->label(2, $memberTitleRow, 'Состав группы на момент формирования', 9));
         $memberHeaderRow = $memberTitleRow + 1;
-        $memberHasReturns = $group['show_return_columns'];
+        $memberHasReturns = $hasReturns;
         $memberHeaders = $memberHasReturns
             ? ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'Возврат, ₽', 'К оплате, ₽']
             : ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'К оплате, ₽'];
