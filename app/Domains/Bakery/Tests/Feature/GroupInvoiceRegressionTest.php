@@ -9,6 +9,9 @@ use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\Price;
 use Domains\Bakery\Domain\Models\Product;
 use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\User\Domain\Enums\UserRole;
+use Domains\User\Domain\Enums\UserStatus;
+use Domains\User\Domain\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Carbon;
@@ -55,9 +58,10 @@ class GroupInvoiceRegressionTest extends TestCase
     private function group(Order $order): array
     {
         $groups = app(GroupInvoiceService::class)->forOrders([$order]);
-        $this->assertCount(1, $groups);
+        $activeGroups = array_values(array_filter($groups, static fn (array $group): bool => $group['has_orders']));
+        $this->assertCount(1, $activeGroups);
 
-        return $groups[0];
+        return $activeGroups[0];
     }
 
     /** @param array<string, mixed> $group */
@@ -152,11 +156,13 @@ class GroupInvoiceRegressionTest extends TestCase
 
     private function addReturn(Order $order, int $productId): void
     {
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         DB::table('bakery_returns')->insert([
+            'admin_user_id' => $admin->id,
             'order_id' => $order->id, 'product_id' => $productId, 'quantity' => 1,
             'unit_kopecks' => 1000, 'product_name' => 'Регрессионная булочка',
             'is_order_item' => true, 'status' => 'active',
-            'created_at' => now(), 'updated_at' => now(),
+            'created_at' => now(),
         ]);
     }
 }
