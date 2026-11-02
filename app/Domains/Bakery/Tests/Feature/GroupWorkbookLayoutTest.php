@@ -7,10 +7,11 @@ use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
 use Illuminate\Foundation\Testing\TestCase;
 use PharData;
 
+/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
 class GroupWorkbookLayoutTest extends TestCase
 {
     /**
-     * @return array<string, mixed>
+     * @return GroupInvoice
      */
     private function group(bool $showReturns): array
     {
