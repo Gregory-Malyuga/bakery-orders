@@ -10,15 +10,15 @@
     </tbody></table>
     <div class="invoice-footer">Итого: {{ number_format(($group['show_return_columns'] ? $group['gross'] : $group['net']) / 100, 2, ',', ' ') }} ₽@if($hasReturns) · Возврат: {{ number_format($group['returns'] / 100, 2, ',', ' ') }} ₽ · После возврата: {{ number_format($group['net'] / 100, 2, ',', ' ') }} ₽@endif</div>
     <h3>Точки группы</h3>
-    <table><thead><tr><th>Точка</th><th>Изделий, шт.</th><th>Заказ, ₽</th>@if($group['show_return_columns'])<th>Возврат, ₽</th>@endif<th>К оплате, ₽</th></tr></thead><tbody>
+    <table><thead><tr><th>Точка</th><th>Изделий, шт.</th><th>Заказ, ₽</th>@if($hasReturns)<th>Возврат, ₽</th>@endif<th>К оплате, ₽</th></tr></thead><tbody>
         @foreach($group['members'] as $member)
             <tr><td>{{ $member['name'] }} · {{ $member['address'] }}@if(!$member['ordered']) · нет заказа@endif</td>
                 <td>{{ $member['ordered'] ? $member['quantity'] : '—' }}</td>
                 <td>{{ $member['ordered'] ? number_format($member['gross'] / 100, 2, ',', ' ') : '—' }}</td>
-                @if($group['show_return_columns'])<td>{{ $member['ordered'] ? number_format($member['returns'] / 100, 2, ',', ' ') : '—' }}</td>@endif
+                @if($hasReturns)<td>{{ $member['ordered'] ? number_format($member['returns'] / 100, 2, ',', ' ') : '—' }}</td>@endif
                 <td>{{ $member['ordered'] ? number_format($member['net'] / 100, 2, ',', ' ') : '—' }}</td></tr>
         @endforeach
-        <tr><th>Итого</th><th>{{ $group['quantity'] }}</th><th>{{ number_format($group['gross'] / 100, 2, ',', ' ') }}</th>@if($group['show_return_columns'])<th>{{ number_format($group['returns'] / 100, 2, ',', ' ') }}</th>@endif<th>{{ number_format($group['net'] / 100, 2, ',', ' ') }}</th></tr>
+        <tr><th>Итого</th><th>{{ $group['quantity'] }}</th><th>{{ number_format($group['gross'] / 100, 2, ',', ' ') }}</th>@if($hasReturns)<th>{{ number_format($group['returns'] / 100, 2, ',', ' ') }}</th>@endif<th>{{ number_format($group['net'] / 100, 2, ',', ' ') }}</th></tr>
     </tbody></table>
     @foreach($group['members'] as $member)
         @if($member['comment'])<p class="invoice-comment"><strong>Комментарий · {{ $member['name'] }}:</strong> {{ $member['comment'] }}</p>@endif
