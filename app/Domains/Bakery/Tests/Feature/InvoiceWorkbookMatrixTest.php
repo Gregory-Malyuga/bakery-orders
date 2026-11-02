@@ -126,8 +126,9 @@ class InvoiceWorkbookMatrixTest extends TestCase
         $nodes = $xpath->query('//x:sheet');
         $this->assertNotFalse($nodes);
         $this->assertCount(1, $nodes);
-        $sheetName = $nodes->item(0)?->attributes?->getNamedItem('name')?->nodeValue;
-        $this->assertNotNull($sheetName);
+        $sheetElement = $nodes->item(0);
+        $this->assertInstanceOf(\DOMElement::class, $sheetElement);
+        $sheetName = $sheetElement->getAttribute('name');
         $this->assertLessThanOrEqual(31, mb_strlen($sheetName));
         $this->assertSame(0, preg_match('~[\\\\/?:*\[\]]~u', $sheetName));
         $this->assertStringContainsString('Булочка', $sheet);
