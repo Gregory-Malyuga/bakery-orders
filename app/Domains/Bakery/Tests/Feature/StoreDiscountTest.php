@@ -81,4 +81,51 @@ class StoreDiscountTest extends TestCase
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1]);
         $this->assertSame(1, app(OrderingRepositoryInterface::class)->prices($store->id)[$product->id]);
     }
+    public function test_shared_base_price_only_discounts_selected_store(): void
+    {
+        $source = Bakery::query()->create([
+            'name' => 'Общий прайс', 'address' => 'Адрес 1', 'is_active' => true,
+        ]);
+        $discounted = Bakery::query()->create([
+            'name' => 'Точка со скидкой', 'address' => 'Адрес 2', 'is_active' => true,
+            'discount_enabled' => true, 'discount_percent' => 10,
+        ]);
+        $discounted->price_source_id = $source->id;
+        $discounted->save();
+        $product = Product::query()->create([
+            'name' => 'Изделие с общим прайсом', 'sort_order' => 1,
+            'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true,
+        ]);
+        Price::query()->create([
+            'bakery_id' => $source->id, 'product_id' => $product->id, 'kopecks' => 1099,
+        ]);
+
+        $prices = app(OrderingRepositoryInterface::class);
+        $this->assertSame(1099, $prices->prices($source->id)[$product->id]);
+        $this->assertSame(989, $prices->prices($discounted->id)[$product->id]);
+        $this->assertSame(1099, $prices->prices($discounted->id, true, false)[$product->id]);
+    }
+
+    public function test_zero_and_full_discount_boundaries(): void
+    {
+        $store = Bakery::query()->create([
+            'name' => 'Граничные скидки', 'address' => 'Адрес', 'is_active' => true,
+            'discount_enabled' => true, 'discount_percent' => 0,
+        ]);
+        $product = Product::query()->create([
+            'name' => 'Товар для границ', 'sort_order' => 1,
+            'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true,
+        ]);
+        Price::query()->create([
+            'bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 12345,
+        ]);
+        $prices = app(OrderingRepositoryInterface::class);
+
+        $this->assertSame(12345, $prices->prices($store->id)[$product->id]);
+        $store->update(['discount_percent' => 100]);
+        $this->assertSame(0, $prices->prices($store->id)[$product->id]);
+        $store->update(['discount_enabled' => false]);
+        $this->assertSame(12345, $prices->prices($store->id)[$product->id]);
+    }
+
 }
