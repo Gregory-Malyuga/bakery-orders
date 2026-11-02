@@ -4,8 +4,8 @@ namespace Domains\Bakery\Tests\Feature;
 
 use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
 use Illuminate\Foundation\Testing\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use PharData;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
 class InvoiceWorkbookMatrixTest extends TestCase
