@@ -42,6 +42,7 @@ class GroupWorkbookLayoutTest extends TestCase
 
         try {
             $archive = new PharData($path);
+
             return $archive['xl/worksheets/sheet1.xml']->getContent();
         } finally {
             unset($archive);
