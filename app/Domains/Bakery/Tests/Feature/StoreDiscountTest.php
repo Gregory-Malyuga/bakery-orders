@@ -91,8 +91,7 @@ class StoreDiscountTest extends TestCase
             'name' => 'Точка со скидкой', 'address' => 'Адрес 2', 'is_active' => true,
             'discount_enabled' => true, 'discount_percent' => 10,
         ]);
-        $discounted->price_source_id = $source->id;
-        $discounted->save();
+        $discounted->update(['price_source_id' => $source->id]);
         $product = Product::query()->create([
             'name' => 'Изделие с общим прайсом', 'sort_order' => 1,
             'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true,
