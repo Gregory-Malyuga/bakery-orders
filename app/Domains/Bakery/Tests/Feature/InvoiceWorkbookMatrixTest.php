@@ -93,8 +93,9 @@ class InvoiceWorkbookMatrixTest extends TestCase
         ];
     }
 
-    /** @param GroupInvoice $group
-     *  @return array{string, string}
+    /**
+     * @param  GroupInvoice  $group
+     * @return array{string, string}
      */
     private function workbookParts(array $group): array
     {
@@ -118,7 +119,8 @@ class InvoiceWorkbookMatrixTest extends TestCase
         [$workbook, $sheet] = $this->workbookParts($this->group($name, true, 0));
         $doc = new \DOMDocument;
         $this->assertTrue($doc->loadXML($workbook));
-        $this->assertNotFalse($doc->loadXML($sheet));
+        $sheetDoc = new \DOMDocument;
+        $this->assertTrue($sheetDoc->loadXML($sheet));
         $xpath = new \DOMXPath($doc);
         $xpath->registerNamespace('x', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
         $nodes = $xpath->query('//x:sheet');
