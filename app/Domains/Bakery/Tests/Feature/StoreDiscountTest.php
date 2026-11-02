@@ -81,6 +81,7 @@ class StoreDiscountTest extends TestCase
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1]);
         $this->assertSame(1, app(OrderingRepositoryInterface::class)->prices($store->id)[$product->id]);
     }
+
     public function test_shared_base_price_only_discounts_selected_store(): void
     {
         $source = Bakery::query()->create([
@@ -127,5 +128,4 @@ class StoreDiscountTest extends TestCase
         $store->update(['discount_enabled' => false]);
         $this->assertSame(12345, $prices->prices($store->id)[$product->id]);
     }
-
 }
