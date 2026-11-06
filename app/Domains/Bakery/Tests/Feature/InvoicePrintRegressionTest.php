@@ -149,4 +149,89 @@ class InvoicePrintRegressionTest extends TestCase
         $this->assertStringContainsString('Печатный адрес', $html);
         $this->assertStringContainsString('Проверочная булочка', $html);
     }
+    public function test_xlsx_without_returns_uses_correct_cell_coordinates_and_formulas(): void
+    {
+        [$order] = $this->fixture();
+        $xml = $this->xlsx($order);
+
+        $this->assertStringContainsString('<c r="D7" s="6"><v>12.34</v></c>', $xml);
+        $this->assertStringContainsString('<c r="E7" s="6"><f>C7*D7</f><v>37.02</v></c>', $xml);
+        $this->assertStringContainsString('<c r="E8" s="8"><f>SUM(E7:E7)</f><v>37.02</v></c>', $xml);
+        $this->assertStringNotContainsString('<c r="F6"', $xml);
+        $this->assertStringContainsString('fitToWidth="1"', $xml);
+        $this->assertStringContainsString('orientation="portrait"', $xml);
+    }
+
+    public function test_xlsx_with_return_preserves_gross_and_net_formulas_in_separate_columns(): void
+    {
+        [$order, $product, $admin] = $this->fixture();
+        $this->addReturn($order, $product, $admin);
+        $xml = $this->xlsx($order);
+
+        $this->assertStringContainsString('<c r="D7" s="4"><v>1</v></c>', $xml);
+        $this->assertStringContainsString('<c r="F7" s="6"><f>C7*E7</f><v>37.02</v></c>', $xml);
+        $this->assertStringContainsString('<c r="G7" s="6"><f>(C7-D7)*E7</f><v>24.68</v></c>', $xml);
+        $this->assertStringContainsString('<c r="F8" s="8"><f>SUM(F7:F7)</f><v>37.02</v></c>', $xml);
+        $this->assertStringContainsString('<c r="G8" s="8"><f>SUM(G7:G7)</f><v>24.68</v></c>', $xml);
+    }
+
+    public function test_generated_xlsx_package_has_valid_xml_and_required_parts(): void
+    {
+        [$order] = $this->fixture();
+        $path = app(MatrixInvoiceWorkbook::class)->create([$order->load('items')], []);
+
+        try {
+            $archive = new PharData($path);
+            foreach ([
+                '[Content_Types].xml',
+                '_rels/.rels',
+                'xl/workbook.xml',
+                'xl/_rels/workbook.xml.rels',
+                'xl/styles.xml',
+                'xl/worksheets/sheet1.xml',
+                'xl/worksheets/sheet2.xml',
+            ] as $part) {
+                $xml = $archive[$part]->getContent();
+                $document = new \DOMDocument;
+                $this->assertTrue($document->loadXML($xml), 'Malformed OOXML part: '.$part);
+            }
+            $workbook = $archive['xl/workbook.xml']->getContent();
+            $this->assertStringContainsString('fullCalcOnLoad="1"', $workbook);
+            $this->assertStringContainsString('name="Заказ"', $workbook);
+            unset($archive);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    public function test_print_escapes_comment_markup_and_displays_original_order_snapshot(): void
+    {
+        [$order, $product] = $this->fixture();
+        $order->update(['comment' => '<script>alert("test")</script>']);
+        Price::query()->where('bakery_id', $order->bakery_id)->where('product_id', $product->id)->update(['kopecks' => 9900]);
+        $html = $this->html($order->fresh());
+
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringContainsString('&lt;script&gt;', $html);
+        $this->assertStringContainsString('12,34', $html);
+        $this->assertStringNotContainsString('99,00', $html);
+    }
+
+    public function test_empty_export_produces_readable_placeholder_invoice_and_summary(): void
+    {
+        $path = app(MatrixInvoiceWorkbook::class)->create([], []);
+
+        try {
+            $archive = new PharData($path);
+            $workbook = $archive['xl/workbook.xml']->getContent();
+            $sheet = $archive['xl/worksheets/sheet1.xml']->getContent();
+            $this->assertStringContainsString('name="Накладная"', $workbook);
+            $this->assertStringContainsString('name="Заказ"', $workbook);
+            $this->assertStringContainsString('На выбранную дату принятых заказов нет.', $sheet);
+            unset($archive);
+        } finally {
+            @unlink($path);
+        }
+    }
+
 }
