@@ -49,6 +49,7 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('bakery.analytics');
     Route::get('/analytics/csv', [AnalyticsController::class, 'download'])->name('bakery.analytics-csv');
     Route::post('/stock/packaging', [StockController::class, 'createPackaging'])->name('bakery.stock-packaging');
+    Route::post('/stock/prices', [StockController::class, 'savePrice'])->name('bakery.stock-price');
     Route::post('/stock/movements', [StockController::class, 'record'])->name('bakery.stock-record');
     Route::post('/stock/movements/{movement}/reverse', [StockController::class, 'reverse'])->name('bakery.stock-reverse');
     Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
