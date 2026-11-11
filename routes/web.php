@@ -61,6 +61,9 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/recipes/reset', [RecipeWebController::class, 'reset'])->name('bakery.recipes-reset');
     Route::post('/stores', [AdminWebController::class, 'saveStore'])->name('bakery.save-store');
     Route::post('/products', [AdminWebController::class, 'saveProduct'])->name('bakery.save-product');
+    Route::get('/products/{product}', [AdminWebController::class, 'product'])->name('bakery.product');
+    Route::post('/products/{product}/prices', [AdminWebController::class, 'bulkPrice'])->name('bakery.bulk-price');
+    Route::post('/products/{product}/prices/{operation}/reverse', [AdminWebController::class, 'reverseBulkPrice'])->name('bakery.bulk-price-reverse');
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');
     Route::post('/minimums', [AdminWebController::class, 'saveMinimum'])->name('bakery.save-minimum');
     Route::post('/availability', [AdminWebController::class, 'saveAvailability'])->name('bakery.save-availability');

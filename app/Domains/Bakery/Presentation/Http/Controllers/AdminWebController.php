@@ -2,6 +2,7 @@
 
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
+use Domains\Bakery\Application\BulkProductPrices;
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\Exports\PeriodReportWorkbookInterface;
 use Domains\Bakery\Application\GroupInvoiceService;
@@ -17,12 +18,13 @@ use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly LabelPlanService $labelPlans, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly LabelPlanService $labelPlans, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff, private readonly BulkProductPrices $bulkPrices) {}
 
     private function adminId(Request $request): int
     {
@@ -164,9 +166,50 @@ class AdminWebController
         $data = $request->validate(['store' => ['required', 'integer', 'exists:bakeries,id'], 'product' => ['required', 'integer', 'exists:bakery_products,id'], 'rubles' => ['required', 'regex:/^\d{1,8}(?:[.,]\d{1,2})?$/']]);
         [$rubles, $kopecks] = array_pad(explode('.', str_replace(',', '.', $data['rubles'])), 2, '0');
         $amount = ((int) $rubles * 100) + (int) str_pad($kopecks, 2, '0');
-        $this->admin->savePrice((int) $data['store'], (int) $data['product'], $amount);
+        $this->bulkPrices->single((int) $data['product'], (int) $data['store'], $amount, $this->adminId($request));
 
         return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Цена сохранена.');
+    }
+
+    public function product(Request $request, int $product): View
+    {
+        $item = $this->orders->products()->firstWhere('id', $product);
+        abort_if($item === null, 404);
+        $stores = $this->orders->stores();
+        $prices = [];
+        $unavailable = DB::table('bakery_store_product_exclusions')->where('product_id', $product)->pluck('bakery_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all();
+        foreach ($stores as $store) {
+            $prices[$store->id] = $this->orders->prices((int) $store->id, true)[$product] ?? null;
+        }
+        $history = DB::table('bakery_price_operations as o')->join('users as u', 'u.id', '=', 'o.user_id')->where('o.product_id', $product)->orderByDesc('o.id')->select('o.*', 'u.name as author')->limit(100)->get();
+        $historyItems = DB::table('bakery_price_operation_items as i')->join('bakeries as b', 'b.id', '=', 'i.bakery_id')->whereIn('i.operation_id', $history->pluck('id'))->select('i.*', 'b.name as store_name')->orderBy('i.bakery_id')->get()->groupBy('operation_id');
+        $reversed = DB::table('bakery_price_operations')->whereIn('reverses_id', $history->pluck('id'))->pluck('reverses_id')->all();
+
+        return view('bakery.product', compact('item', 'stores', 'prices', 'unavailable', 'history', 'historyItems', 'reversed'));
+    }
+
+    public function bulkPrice(Request $request, int $product): RedirectResponse
+    {
+        /** @var array{stores:list<int|string>,direction:string,rubles:string,request_key:string} $data */
+        $data = $request->validate(['stores' => ['required', 'array', 'min:1'], 'stores.*' => ['required', 'integer', 'distinct', 'exists:bakeries,id'], 'direction' => ['required', 'in:increase,decrease'], 'rubles' => ['required', 'regex:/^\d{1,8}(?:[.,]\d{1,2})?$/'], 'request_key' => ['required', 'uuid']]);
+        [$rubles, $kopecks] = array_pad(explode('.', str_replace(',', '.', $data['rubles'])), 2, '0');
+        $delta = ((int) $rubles * 100) + (int) str_pad($kopecks, 2, '0');
+        if ($delta <= 0) {
+            throw ValidationException::withMessages(['rubles' => 'Изменение должно быть больше нуля.']);
+        }
+        $this->bulkPrices->apply($product, array_map('intval', $data['stores']), $delta, $data['direction'], $data['request_key'], $this->adminId($request));
+
+        return redirect()->route('bakery.product', $product)->with('success', 'Цены изменены.');
+    }
+
+    public function reverseBulkPrice(Request $request, int $product, int $operation): RedirectResponse
+    {
+        /** @var array{reason:string} $data */
+        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
+        abort_unless(DB::table('bakery_price_operations')->where('id', $operation)->where('product_id', $product)->exists(), 404);
+        $this->bulkPrices->reverse($operation, $data['reason'], $this->adminId($request));
+
+        return redirect()->route('bakery.product', $product)->with('success', 'Изменение отменено.');
     }
 
     public function saveMinimum(Request $request): RedirectResponse

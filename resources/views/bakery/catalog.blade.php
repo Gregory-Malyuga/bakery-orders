@@ -27,7 +27,7 @@
     <div class="table-scroll"><table><thead><tr><th>Название</th><th>Порядок</th><th>Минимум, шт.</th><th>Фасовка</th><th>Активен</th><th></th></tr></thead><tbody>
         @foreach($products as $product)
             <tr>
-                <td><form id="product-{{ $product->id }}" method="post" action="{{ route('bakery.save-product') }}">@csrf<input type="hidden" name="id" value="{{ $product->id }}"></form><input form="product-{{ $product->id }}" name="name" value="{{ $product->name }}" required></td>
+                <td><form id="product-{{ $product->id }}" method="post" action="{{ route('bakery.save-product') }}">@csrf<input type="hidden" name="id" value="{{ $product->id }}"></form><input form="product-{{ $product->id }}" name="name" value="{{ $product->name }}" required><a href="{{ route('bakery.product', $product->id) }}">Открыть карточку и цены</a></td>
                 <td><input form="product-{{ $product->id }}" type="number" name="sort_order" value="{{ $product->sort_order }}" min="0" required></td>
                 <td><input form="product-{{ $product->id }}" type="number" name="minimum_quantity" value="{{ $product->minimum_quantity }}" min="1" max="100000" required></td>
                 <td><select form="product-{{ $product->id }}" name="packaging_mode"><option value="mixed" @selected($product->packaging_mode === 'mixed')>Пакеты по 3 и 5</option><option value="single" @selected($product->packaging_mode === 'single')>По одной штуке</option><option value="pair" @selected($product->packaging_mode === 'pair')>По две штуки</option></select></td>
