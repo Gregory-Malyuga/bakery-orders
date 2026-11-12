@@ -11,6 +11,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StockLedgerTest extends TestCase
 {
@@ -65,5 +66,41 @@ class StockLedgerTest extends TestCase
         $this->actingAs($admin)->get('/admin/stock')->assertOk()->assertSee('Коробка');
         $this->assertDatabaseHas('bakery_stock_items', ['kind' => 'packaging', 'name' => 'Коробка', 'unit' => 'pcs']);
         $this->assertDatabaseHas('bakery_stock_items', ['kind' => 'product', 'product_id' => $product->id, 'unit' => 'pcs']);
+    }
+
+    public function test_stock_price_measure_starts_tomorrow_and_keeps_daily_history(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-11-10 14:00:00', 'Europe/Moscow'));
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($admin)->get('/admin/stock')->assertOk();
+        $item = DB::table('bakery_stock_items')->where('unit', 'g')->first();
+        $this->assertNotNull($item);
+        $this->actingAs($admin)->post('/admin/stock/movements', [
+            'item' => $item->id, 'kind' => 'opening', 'quantity' => '500', 'reason' => 'Проверка',
+        ])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/stock/prices', [
+            'item' => $item->id, 'price' => '35,00', 'measure' => 'custom', 'custom_quantity' => '70', 'custom_unit' => 'g',
+        ])->assertRedirect();
+        $this->actingAs($admin)->get('/admin/stock?date=2026-11-10')->assertOk()->assertSee('Не задана');
+        Carbon::setTestNow(Carbon::parse('2026-11-11 12:00:00', 'Europe/Moscow'));
+        $this->actingAs($admin)->get('/admin/stock?date=2026-11-11')->assertOk()->assertSee('250,00 ₽');
+        $this->actingAs($admin)->post('/admin/stock/prices', [
+            'item' => $item->id, 'price' => '40', 'measure' => '100g',
+        ])->assertRedirect();
+        $this->actingAs($admin)->get('/admin/stock?date=2026-11-11')->assertOk()->assertSee('250,00 ₽');
+        Carbon::setTestNow(Carbon::parse('2026-11-12 12:00:00', 'Europe/Moscow'));
+        $this->actingAs($admin)->get('/admin/stock?date=2026-11-12')->assertOk()->assertSee('200,00 ₽');
+        $this->assertSame(2, DB::table('bakery_stock_daily_prices')->where('stock_item_id', $item->id)->count());
+        $this->actingAs($admin)->get('/admin/analytics?from=2026-11-10&to=2026-11-12')->assertOk()->assertSee('250,00 ₽')->assertSee('200,00 ₽');
+        $this->actingAs($admin)->get('/admin/analytics/csv?from=2026-11-10&to=2026-11-12')->assertOk()->assertDownload();
+        $this->actingAs($admin)->get('/admin/report?from=2026-11-10&to=2026-11-12')->assertOk()->assertSee('250,00 ₽')->assertSee('200,00 ₽');
+        $response = $this->actingAs($admin)->get('/admin/report/xlsx?from=2026-11-10&to=2026-11-12')->assertOk()->assertDownload();
+        $this->assertInstanceOf(BinaryFileResponse::class, $response->baseResponse);
+        $path = $response->baseResponse->getFile()->getPathname();
+        $archive = new \PharData($path);
+        $this->assertStringContainsString('250', $archive['xl/worksheets/sheet4.xml']->getContent());
+        unset($archive);
+        unlink($path);
     }
 }
