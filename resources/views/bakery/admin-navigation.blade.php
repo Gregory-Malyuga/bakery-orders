@@ -13,6 +13,7 @@
         <a href="{{ route('bakery.ingredients') }}" @if(request()->routeIs('bakery.ingredients*')) aria-current="page" @endif>Ингредиенты</a>
         <a href="{{ route('bakery.report') }}" @if(request()->routeIs('bakery.report')) aria-current="page" @endif>Отчёт</a>
         <a href="{{ route('bakery.groups') }}" @if(request()->routeIs('bakery.groups*')) aria-current="page" @endif>Группы точек</a>
+        <a href="{{ route('bakery.delivery-routes') }}" @if(request()->routeIs('bakery.delivery-*')) aria-current="page" @endif>Маршрутные листы</a>
         <a href="{{ route('bakery.closed-dates') }}" @if(request()->routeIs('bakery.closed-dates*')) aria-current="page" @endif>Нерабочие даты</a>
         <a href="{{ route('bakery.stock') }}" @if(request()->routeIs('bakery.stock*')) aria-current="page" @endif>Склад</a>
         <a href="{{ route('bakery.analytics') }}" @if(request()->routeIs('bakery.analytics*')) aria-current="page" @endif>Аналитика</a>
