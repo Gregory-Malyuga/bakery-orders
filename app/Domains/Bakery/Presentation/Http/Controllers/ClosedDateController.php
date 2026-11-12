@@ -27,6 +27,9 @@ class ClosedDateController
             'delivery_date' => ['required', 'date_format:Y-m-d'],
             'reason' => ['required', 'string', 'max:500'],
             'keep_existing_orders' => ['sometimes', 'boolean'],
+        ], [
+            'delivery_date.required' => 'Выберите дату поставки.',
+            'delivery_date.date_format' => 'Укажите корректную дату поставки.',
         ]);
         $reason = trim($data['reason']);
         if ($reason === '') {
