@@ -2,11 +2,11 @@
 @section('title', 'Аналитика')
 @section('content')
 <div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Аналитика</h1><p class="muted">Период считается по дате поставки. Отменённые заказы и отменённые возвраты исключены. Обновлено {{ $data['updated_at'] }} МСК.</p></div></div>
-<div class="panel data-panel"><form method="get" action="{{ route('bakery.analytics') }}" class="form-grid">
+<div class="panel data-panel"><form method="get" action="{{ route('bakery.analytics') }}" class="form-grid filter-form analytics-filter-form">
 <label>С<input type="date" name="from" value="{{ $filters['from'] }}" required></label><label>По<input type="date" name="to" value="{{ $filters['to'] }}" required></label>
 <label>Точка<select name="store"><option value="">Все</option>@foreach($stores as $store)<option value="{{ $store->id }}" @selected($filters['store'] == $store->id)>{{ $store->name }}</option>@endforeach</select></label>
 <label>Товар<select name="product"><option value="">Все</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected($filters['product'] == $product->id)>{{ $product->name }}</option>@endforeach</select></label>
-<button class="button primary">Показать</button></form><p><a class="button secondary" href="{{ route('bakery.analytics-csv', array_filter($filters, fn ($value) => $value !== null)) }}">Скачать CSV</a></p></div>
+<button class="button primary">Показать</button><a class="button secondary analytics-download" href="{{ route('bakery.analytics-csv', array_filter($filters, fn ($value) => $value !== null)) }}">Скачать CSV</a></form></div>
 <div class="panel data-panel"><h2>Итоги периода</h2><div class="table-scroll"><table><thead><tr><th>Заказы</th><th>Заказано, шт.</th><th>Возвращено, шт.</th><th>Выручка до возвратов</th><th>Возвраты</th><th>Выручка после возвратов</th><th>Доля возвратов</th></tr></thead><tbody><tr>
 <td>{{ $data['summary']['orders'] }}</td><td>{{ $data['summary']['pieces'] }}</td><td>{{ $data['summary']['returned_pieces'] }}</td>
 <td>{{ number_format($data['summary']['gross'] / 100, 2, ',', ' ') }} ₽</td><td>{{ number_format($data['summary']['returns'] / 100, 2, ',', ' ') }} ₽</td><td>{{ number_format($data['summary']['net'] / 100, 2, ',', ' ') }} ₽</td><td>{{ number_format($data['summary']['return_share'], 1, ',', ' ') }}%</td>

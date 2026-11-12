@@ -5,7 +5,7 @@
     <title>@yield('title', 'Пекарня') · Заказы</title>
     <link rel="stylesheet" href="/bakery.css?v={{ filemtime(public_path('bakery.css')) }}">
 </head>
-<body class="app-page">
+<body class="app-page @auth @if(auth()->user()->role->value === 'admin') admin-page @endif @endauth">
 <header class="topbar"><div class="wrap topbar-inner"><a class="brand" href="{{ auth()->check() ? (auth()->user()->role->value === 'admin' ? route('bakery.admin') : route('bakery.store')) : route('bakery.login') }}">✳ Пекарня <span>заказы</span></a>@auth<form method="post" action="{{ route('bakery.logout') }}">@csrf<button class="link-button">Выйти</button></form>@endauth</div></header>
 @auth
     @if(auth()->user()->role->value === 'admin')

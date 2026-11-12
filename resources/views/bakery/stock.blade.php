@@ -2,7 +2,7 @@
 @section('title', 'Склад')
 @section('content')
 <div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Склад</h1><p class="muted">Фактические остатки сырья, упаковки и готовых изделий. <a href="{{ route('bakery.admin', ['tab' => 'prep']) }}">Заготовки</a> показывают плановую потребность и не списывают склад.</p></div></div>
-<div class="panel data-panel"><form method="get" action="{{ route('bakery.stock') }}"><label>Остатки на дату<input type="date" name="date" value="{{ $date }}"></label><button class="button secondary">Показать</button></form></div>
+<div class="panel data-panel"><form method="get" action="{{ route('bakery.stock') }}" class="stock-date-form"><label>Остатки на дату<input type="date" name="date" value="{{ $date }}"></label><button class="button secondary">Показать</button></form></div>
 <div class="panel data-panel"><h2>Остатки на {{ \Carbon\Carbon::parse($date)->format('d.m.Y') }}</h2><p class="muted small">Цена в выбранный день сохраняется отдельно от цены продажи магазинам. Изменённая сегодня цена действует с завтрашнего дня.</p><div class="table-scroll"><table><thead><tr><th>Тип</th><th>Позиция</th><th>Единица</th><th>Остаток</th><th>Цена на дату</th><th>Стоимость остатка</th><th>Назначена на завтра</th><th>Изменить цену</th></tr></thead><tbody>
 @foreach($items as $item)
 @php($price = $prices[$item->id] ?? null)

@@ -6,12 +6,13 @@
 <div class="section-head"><h2>Магазины</h2></div>
 <div class="panel data-panel">
     <h3>Новый магазин</h3>
-    <form method="post" action="{{ route('bakery.save-store') }}" class="form-grid">@csrf<label>Название<input name="name" required></label><label>Адрес<input name="address" required></label><input type="hidden" name="is_active" value="1"><button class="button primary">Добавить</button></form>
-    <div class="table-scroll"><table><thead><tr><th>Название</th><th>Адрес</th><th>Активен</th><th></th></tr></thead><tbody>
+    <form method="post" action="{{ route('bakery.save-store') }}" class="form-grid">@csrf<label>Название<input name="name" required></label><label>Адрес<input name="address" required></label><input type="hidden" name="is_active" value="1"><label>Скидка, % (необязательно)<input type="number" name="discount_percent" min="0" max="100" step="1" placeholder="Без скидки"></label><button class="button primary">Добавить</button></form>
+    <div class="table-scroll"><table><thead><tr><th>Название</th><th>Адрес</th><th>Скидка, %</th><th>Активен</th><th></th></tr></thead><tbody>
         @foreach($visibleStores as $store)
             <tr>
                 <td><form id="store-{{ $store->id }}" method="post" action="{{ route('bakery.save-store') }}">@csrf<input type="hidden" name="id" value="{{ $store->id }}"></form><input form="store-{{ $store->id }}" name="name" value="{{ $store->name }}" required></td>
                 <td><input form="store-{{ $store->id }}" name="address" value="{{ $store->address }}" required></td>
+                <td><input form="store-{{ $store->id }}" type="number" name="discount_percent" min="0" max="100" step="1" value="{{ $store->discount_enabled && $store->discount_percent > 0 ? $store->discount_percent : '' }}" placeholder="Без скидки" aria-label="Скидка для {{ $store->name }}, процентов"></td>
                 <td><select form="store-{{ $store->id }}" name="is_active"><option value="1" @selected($store->is_active)>Да</option><option value="0" @selected(!$store->is_active)>Нет</option></select></td>
                 <td><button form="store-{{ $store->id }}" class="button secondary">Сохранить</button></td>
             </tr>
@@ -38,7 +39,7 @@
     </tbody></table></div>
 </div>
 @elseif($tab === 'prices')
-<p class="muted small">Если магазин входит в точку с общим прайсом, цены берутся из первого магазина этой точки. Изменение цены обновляет общий прайс.</p>
+<p class="muted small">Если магазин входит в точку с общим прайсом, цены берутся из первого магазина этой точки. Изменение цены обновляет общий прайс. Здесь редактируются цены до персональной скидки точки; скидка применяется при оформлении заказа.</p>
 <div class="section-head"><h2>Персональные цены и ассортимент магазина</h2></div>
 <div class="panel data-panel">
     <form method="get" action="{{ route('bakery.catalog') }}" class="form-grid"><input type="hidden" name="tab" value="prices"><label>Магазин<select name="store">@foreach($stores as $store)<option value="{{ $store->id }}" @selected($selectedStore===$store->id)>{{ $store->name }} — {{ $store->address }}</option>@endforeach</select></label><button class="button secondary">Выбрать</button></form>
