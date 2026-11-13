@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property string $address
  * @property bool $is_active
+ * @property bool $is_cashless
  * @property int|null $price_source_id
  * @property bool $discount_enabled
  * @property int $discount_percent
@@ -42,11 +43,11 @@ class Bakery extends Model
     protected $table = 'bakeries';
 
     /** @var list<string> */
-    protected $fillable = ['name', 'address', 'is_active', 'discount_enabled', 'discount_percent'];
+    protected $fillable = ['name', 'address', 'is_active', 'is_cashless', 'discount_enabled', 'discount_percent'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
+        return ['is_active' => 'boolean', 'is_cashless' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
     }
 
     protected static function newFactory(): BakeryFactory

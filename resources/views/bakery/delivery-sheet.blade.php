@@ -14,10 +14,11 @@
 @endif
 </div>
 <section class="invoice"><h1>Маршрутный лист · {{ \Illuminate\Support\Carbon::parse($sheet['date'])->format('d.m.Y') }}</h1><p><strong>{{ $sheet['route'] }}</strong> · водитель {{ $sheet['driver'] }}</p>
-@if(($sheet['salary_kopecks'] ?? null) !== null)<p><strong>Оплата водителю:</strong> {{ number_format($sheet['salary_kopecks'] / 100, 2, ',', ' ') }} ₽</p>@endif
+@if(($sheet['salary_kopecks'] ?? null) !== null)<p><strong>Зарплата водителя:</strong> {{ number_format($sheet['salary_kopecks'] / 100, 2, ',', ' ') }} ₽</p>@endif
+@if(($sheet['bonus_kopecks'] ?? null) !== null)<p><strong>Бонус водителя:</strong> {{ number_format($sheet['bonus_kopecks'] / 100, 2, ',', ' ') }} ₽</p>@endif
 @if($sheet['closed'])<p><strong>Дата поставки закрыта</strong></p>@endif
 <table><thead><tr><th>№</th><th>Точка</th><th>Адрес</th><th>Заказ, ₽</th><th>Возврат, ₽</th><th>К получению, ₽</th></tr></thead><tbody>
-@foreach($sheet['rows'] as $row)<tr><td>{{ $loop->iteration }}</td><td>{{ $row['name'] }}</td><td>{{ $row['address'] }}</td>@if($row['has_order'])<td>{{ number_format($row['order']/100, 2, ',', ' ') }}</td><td>{{ number_format($row['returns']/100, 2, ',', ' ') }}</td><td>{{ number_format($row['due']/100, 2, ',', ' ') }}</td>@else<td colspan="3">Нет заказа</td>@endif</tr>@endforeach
-</tbody><tfoot><tr><th colspan="3">Итого</th><th>{{ number_format($sheet['order']/100, 2, ',', ' ') }}</th><th>{{ number_format($sheet['returns']/100, 2, ',', ' ') }}</th><th>{{ number_format($sheet['due']/100, 2, ',', ' ') }}</th></tr></tfoot></table></section>
+@foreach($sheet['rows'] as $row)<tr><td>{{ $loop->iteration }}</td><td>{{ $row['name'] }}</td><td>{{ $row['address'] }}</td>@if($row['has_order'])<td>{{ number_format($row['order']/100, 2, ',', ' ') }}</td><td>{{ number_format($row['returns']/100, 2, ',', ' ') }}</td><td>{{ ($row['cashless'] ?? false) ? 'Безналичный расчёт' : number_format($row['due']/100, 2, ',', ' ') }}</td>@else<td colspan="3">Нет заказа</td>@endif</tr>@endforeach
+</tbody><tfoot><tr><th colspan="3">Итого заказ / возврат / наличные</th><th>{{ number_format($sheet['order']/100, 2, ',', ' ') }}</th><th>{{ number_format($sheet['returns']/100, 2, ',', ' ') }}</th><th>{{ number_format(($sheet['cash_due'] ?? $sheet['due'])/100, 2, ',', ' ') }}</th></tr><tr><th colspan="5">Итого наличными за вычетом зарплаты и бонуса</th><th>{{ number_format(($sheet['net_cash'] ?? (($sheet['cash_due'] ?? $sheet['due']) - ($sheet['salary_kopecks'] ?? 0) - ($sheet['bonus_kopecks'] ?? 0)))/100, 2, ',', ' ') }}</th></tr></tfoot></table></section>
 @if(isset($autoPrint))<script>window.addEventListener('load', () => window.print());</script>@endif
 </main></body></html>

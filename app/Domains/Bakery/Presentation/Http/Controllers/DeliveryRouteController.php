@@ -23,12 +23,11 @@ class DeliveryRouteController
             'date' => ['nullable', 'date_format:Y-m-d'],
             'copy' => ['nullable', 'integer', Rule::exists('bakery_delivery_sheets', 'id')],
         ]);
-        $now = now('Europe/Moscow');
-        $date = $input['date'] ?? ($now->lt($now->copy()->setTimeFromTimeString($this->cutoffTime())) ? $now->toDateString() : $now->copy()->addDay()->toDateString());
+        $date = $input['date'] ?? $this->printDate();
         $copyId = isset($input['copy']) ? (int) $input['copy'] : null;
         /** @var object{snapshot:string}|null $copySheet */
         $copySheet = $copyId !== null ? DB::table('bakery_delivery_sheets')->find($copyId) : null;
-        /** @var array{route:string,driver:string,salary_kopecks:int|null,rows:list<array{store_id:int}>}|null $copySnapshot */
+        /** @var array{route:string,driver:string,salary_kopecks:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,cashless?:bool}>}|null $copySnapshot */
         $copySnapshot = $copySheet !== null ? json_decode((string) $copySheet->snapshot, true, 512, JSON_THROW_ON_ERROR) : null;
 
         return view('bakery.delivery-routes', [
@@ -42,8 +41,8 @@ class DeliveryRouteController
     }
 
     /**
-     * @param  array{date:string,name:string,driver:string,salary?:string,stores:list<int|string>}  $data
-     * @return array{date:string,driver:string,route:string,salary_kopecks:int|null,closed:bool,rows:list<array{store_id:int,name:string,address:string,order:int,returns:int,due:int,has_order:bool}>,order:int,returns:int,due:int}
+     * @param  array{date:string,name:string,driver:string,salary?:string,bonus?:string,stores:list<int|string>}  $data
+     * @return array{date:string,driver:string,route:string,salary_kopecks:int|null,bonus_kopecks:int|null,closed:bool,rows:list<array{store_id:int,name:string,address:string,order:int,returns:int,due:int,has_order:bool,cashless:bool}>,order:int,returns:int,due:int,cash_due:int,net_cash:int}
      */
     private function build(array $data): array
     {
@@ -70,21 +69,24 @@ class DeliveryRouteController
             $order = $byStore->get((int) $id);
             $amount = $order ? (int) $order->total_kopecks : 0;
             $returned = $order ? ($returns[$order->id]['amount'] ?? 0) : 0;
-            $rows[] = ['store_id' => (int) $id, 'name' => (string) $store->name, 'address' => (string) $store->address, 'order' => $amount, 'returns' => $returned, 'due' => $amount - $returned, 'has_order' => $order !== null];
+            $rows[] = ['store_id' => (int) $id, 'name' => (string) $store->name, 'address' => (string) $store->address, 'order' => $amount, 'returns' => $returned, 'due' => $amount - $returned, 'has_order' => $order !== null, 'cashless' => (bool) $store->is_cashless];
         }
         $salary = isset($data['salary']) && $data['salary'] !== '' ? (int) round((float) str_replace(',', '.', $data['salary']) * 100) : null;
+        $bonus = isset($data['bonus']) && $data['bonus'] !== '' ? (int) round((float) str_replace(',', '.', $data['bonus']) * 100) : null;
+        $cashDue = array_sum(array_map(static fn (array $row): int => $row['cashless'] ? 0 : $row['due'], $rows));
 
-        return ['date' => $date, 'driver' => $driver, 'route' => trim($data['name']), 'salary_kopecks' => $salary, 'closed' => DB::table('bakery_closed_delivery_dates')->where('delivery_date', $date)->exists(), 'rows' => $rows, 'order' => array_sum(array_column($rows, 'order')), 'returns' => array_sum(array_column($rows, 'returns')), 'due' => array_sum(array_column($rows, 'due'))];
+        return ['date' => $date, 'driver' => $driver, 'route' => trim($data['name']), 'salary_kopecks' => $salary, 'bonus_kopecks' => $bonus, 'closed' => DB::table('bakery_closed_delivery_dates')->where('delivery_date', $date)->exists(), 'rows' => $rows, 'order' => array_sum(array_column($rows, 'order')), 'returns' => array_sum(array_column($rows, 'returns')), 'due' => array_sum(array_column($rows, 'due')), 'cash_due' => $cashDue, 'net_cash' => $cashDue - ($salary ?? 0) - ($bonus ?? 0)];
     }
 
     public function createSheet(Request $request): RedirectResponse
     {
-        /** @var array{date:string,name:string,driver:string,salary?:string,stores:list<int|string>} $data */
+        /** @var array{date:string,name:string,driver:string,salary?:string,bonus?:string,stores:list<int|string>} $data */
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
             'name' => ['required', 'string', 'max:255'],
             'driver' => ['required', 'string', 'max:255'],
             'salary' => ['nullable', 'regex:/^\d{1,7}([.,]\d{1,2})?$/'],
+            'bonus' => ['nullable', 'regex:/^\d{1,7}([.,]\d{1,2})?$/'],
             'stores' => ['required', 'array', 'min:1'],
             'stores.*' => ['required', 'integer', 'distinct', Rule::exists('bakeries', 'id')],
         ]);
@@ -100,6 +102,51 @@ class DeliveryRouteController
         $cutoffValue = DB::table('bakery_settings')->where('key', 'order_cutoff')->value('value');
 
         return is_string($cutoffValue) && $cutoffValue !== '' ? $cutoffValue : '18:30';
+    }
+
+    private function printDate(): string
+    {
+        $now = now('Europe/Moscow');
+
+        return $now->lt($now->copy()->setTimeFromTimeString($this->cutoffTime()))
+            ? $now->toDateString()
+            : $now->copy()->addDay()->toDateString();
+    }
+
+    /**
+     * @param  array{date:string,route:string,driver:string,salary_kopecks?:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,due:int,cashless?:bool}>}  $source
+     * @return array<string, mixed>
+     */
+    private function sheetForPrint(array $source): array
+    {
+        $date = $this->printDate();
+        if ($date === $source['date']) {
+            $stores = $this->orders->stores()->keyBy('id');
+            $cashDue = 0;
+            foreach ($source['rows'] as &$row) {
+                $store = $stores->get($row['store_id']);
+                $row['cashless'] = $store !== null ? (bool) $store->is_cashless : ($row['cashless'] ?? false);
+                if (! $row['cashless']) {
+                    $cashDue += $row['due'];
+                }
+            }
+            unset($row);
+            $source['cash_due'] = $cashDue;
+            $source['net_cash'] = $cashDue - ($source['salary_kopecks'] ?? 0) - ($source['bonus_kopecks'] ?? 0);
+
+            return $source;
+        }
+
+        $this->assertAfterCutoff($date);
+
+        return $this->build([
+            'date' => $date,
+            'name' => $source['route'],
+            'driver' => $source['driver'],
+            'salary' => isset($source['salary_kopecks']) ? (string) ($source['salary_kopecks'] / 100) : '',
+            'bonus' => isset($source['bonus_kopecks']) ? (string) ($source['bonus_kopecks'] / 100) : '',
+            'stores' => array_column($source['rows'], 'store_id'),
+        ]);
     }
 
     private function assertAfterCutoff(string $date): void
@@ -123,8 +170,9 @@ class DeliveryRouteController
         /** @var object{snapshot:string}|null $source */
         $source = DB::table('bakery_delivery_sheets')->find($sourceId);
         abort_if($source === null, 404);
-        /** @var array{date:string,rows:list<array{store_id:int}>} $sheet */
+        /** @var array{date:string,route:string,driver:string,salary_kopecks?:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,due:int,cashless?:bool}>} $sheet */
         $sheet = json_decode((string) $source->snapshot, true, 512, JSON_THROW_ON_ERROR);
+        $sheet = $this->sheetForPrint($sheet);
         $printId = DB::table('bakery_delivery_sheet_prints')->insertGetId([
             'delivery_date' => $sheet['date'], 'source_sheet_id' => $sourceId,
             'snapshot' => json_encode($sheet, JSON_THROW_ON_ERROR), 'printed_at' => now(),
@@ -150,7 +198,7 @@ class DeliveryRouteController
         /** @var object{snapshot:string}|null $row */
         $row = DB::table('bakery_delivery_sheets')->find($sheet);
         abort_if($row === null, 404);
-        /** @var array{date:string,rows:list<array{store_id:int}>} $snapshot */
+        /** @var array{date:string,route:string,driver:string,salary_kopecks?:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,cashless?:bool}>} $snapshot */
         $snapshot = json_decode((string) $row->snapshot, true, 512, JSON_THROW_ON_ERROR);
 
         return view('bakery.delivery-sheet-edit', [
@@ -163,12 +211,13 @@ class DeliveryRouteController
     public function updateSheet(Request $request, int $sheet): RedirectResponse
     {
         abort_unless(DB::table('bakery_delivery_sheets')->where('id', $sheet)->exists(), 404);
-        /** @var array{date:string,name:string,driver:string,salary?:string,stores:list<int|string>} $data */
+        /** @var array{date:string,name:string,driver:string,salary?:string,bonus?:string,stores:list<int|string>} $data */
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
             'name' => ['required', 'string', 'max:255'],
             'driver' => ['required', 'string', 'max:255'],
             'salary' => ['nullable', 'regex:/^\d{1,7}([.,]\d{1,2})?$/'],
+            'bonus' => ['nullable', 'regex:/^\d{1,7}([.,]\d{1,2})?$/'],
             'stores' => ['required', 'array', 'min:1'],
             'stores.*' => ['required', 'integer', 'distinct', Rule::exists('bakeries', 'id')],
         ]);
@@ -189,10 +238,10 @@ class DeliveryRouteController
         $row = DB::table('bakery_delivery_sheets')->find($sheet);
         abort_if($row === null, 404);
 
-        /** @var array{date:string,rows:list<array{store_id:int}>} $snapshot */
+        /** @var array{date:string,route:string,driver:string,salary_kopecks?:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,due:int,cashless?:bool}>} $snapshot */
         $snapshot = json_decode((string) $row->snapshot, true, 512, JSON_THROW_ON_ERROR);
 
-        return view('bakery.delivery-sheet', ['sheet' => $snapshot, 'sheetId' => $sheet]);
+        return view('bakery.delivery-sheet', ['sheet' => $this->sheetForPrint($snapshot), 'sheetId' => $sheet]);
     }
 
     public function deleteSheet(int $sheet): RedirectResponse

@@ -187,4 +187,61 @@ class DeliveryRoutesTest extends TestCase
             'date' => '2026-11-12', 'name' => 'Третий', 'driver' => 'Водитель', 'stores' => [$other->id],
         ])->assertRedirect();
     }
+
+    public function test_same_route_printed_for_another_date_uses_that_dates_orders_and_cash_payment(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-11-13 19:00:00', 'Europe/Moscow'));
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $cash = Bakery::query()->create(['name' => 'Наличная точка', 'address' => 'А', 'is_active' => true]);
+        $bank = Bakery::query()->create(['name' => 'Безналичная точка', 'address' => 'Б', 'is_active' => true, 'is_cashless' => true]);
+        foreach (['2026-11-13' => [100000, 200000], '2026-11-14' => [150000, 300000]] as $date => $amounts) {
+            foreach ([$cash, $bank] as $index => $store) {
+                Order::query()->create(['bakery_id' => $store->id, 'delivery_date' => $date, 'status' => 'accepted', 'active_slot' => 1, 'request_key' => (string) Str::uuid(), 'store_name' => $store->name, 'store_address' => $store->address, 'total_kopecks' => $amounts[$index]]);
+            }
+        }
+        $this->actingAs($admin)->post('/admin/delivery-sheets', ['date' => '2026-11-13', 'name' => 'Маршрут', 'driver' => 'Водитель', 'salary' => '100', 'bonus' => '25', 'stores' => [$cash->id, $bank->id]])->assertRedirect();
+        /** @var object{id:int,snapshot:string}|null $saved */
+        $saved = DB::table('bakery_delivery_sheets')->first();
+        $this->assertNotNull($saved);
+        $this->actingAs($admin)->post('/admin/delivery-sheet-prints', ['sheet_id' => $saved->id])->assertOk()->assertSee('14.11.2026')->assertSee('1 500,00')->assertSee('Безналичный расчёт')->assertSee('1 375,00');
+        /** @var object{id:int,snapshot:string}|null $print */
+        $print = DB::table('bakery_delivery_sheet_prints')->first();
+        $this->assertNotNull($print);
+        /** @var array{date:string,cash_due:int,net_cash:int,rows:list<array{cashless:bool}>} $snapshot */
+        $snapshot = json_decode($print->snapshot, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('2026-11-14', $snapshot['date']);
+        $this->assertSame(150000, $snapshot['cash_due']);
+        $this->assertSame(137500, $snapshot['net_cash']);
+        $this->assertSame([false, true], array_column($snapshot['rows'], 'cashless'));
+        /** @var array{date:string} $originalSnapshot */
+        $originalSnapshot = json_decode($saved->snapshot, true, 512, JSON_THROW_ON_ERROR);
+        $this->assertSame('2026-11-13', $originalSnapshot['date']);
+        $this->actingAs($admin)->get('/admin/delivery-sheets/'.$saved->id)->assertOk()->assertSee('14.11.2026')->assertSee('1 375,00');
+        $this->actingAs($admin)->get('/admin/delivery-sheet-prints/'.$print->id)->assertOk()->assertSee('14.11.2026')->assertSee('1 375,00');
+        $this->actingAs($admin)->post('/admin/delivery-sheets/'.$saved->id.'/edit', ['date' => '2026-11-13', 'name' => 'Маршрут', 'driver' => 'Водитель', 'salary' => '100', 'bonus' => '-1', 'stores' => [$cash->id]])->assertSessionHasErrors('bonus');
+        $this->actingAs($admin)->post('/admin/stores', ['id' => $bank->id, 'name' => $bank->name, 'address' => $bank->address, 'is_active' => 1, 'is_cashless' => 0])->assertRedirect();
+        $updatedBank = $bank->fresh();
+        $this->assertNotNull($updatedBank);
+        $this->assertFalse($updatedBank->is_cashless);
+        $this->actingAs($admin)->post('/admin/delivery-sheet-prints', ['sheet_id' => $saved->id])->assertOk()->assertSee('4 375,00');
+        $this->actingAs($admin)->get('/admin/delivery-sheet-prints/'.$print->id)->assertOk()->assertSee('Безналичный расчёт')->assertSee('1 375,00');
+    }
+
+    public function test_saved_route_prints_today_before_cutoff_even_if_saved_for_another_date(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-11-13 17:00:00', 'Europe/Moscow'));
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        Order::query()->create(['bakery_id' => $store->id, 'delivery_date' => '2026-11-13', 'status' => 'accepted', 'active_slot' => 1, 'request_key' => (string) Str::uuid(), 'store_name' => 'Точка', 'store_address' => 'Адрес', 'total_kopecks' => 50000]);
+        /** @var int $sheetId */
+        $sheetId = DB::table('bakery_delivery_sheets')->insertGetId(['delivery_date' => '2026-11-12', 'snapshot' => json_encode(['date' => '2026-11-12', 'route' => 'Маршрут', 'driver' => 'Водитель', 'salary_kopecks' => null, 'closed' => false, 'rows' => [['store_id' => $store->id, 'name' => 'Точка', 'address' => 'Адрес', 'order' => 10000, 'returns' => 0, 'due' => 10000, 'has_order' => true]], 'order' => 10000, 'returns' => 0, 'due' => 10000], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);
+        $this->actingAs($admin)->get('/admin/delivery-sheets/'.$sheetId)->assertOk()->assertSee('13.11.2026')->assertSee('500,00');
+        $this->actingAs($admin)->post('/admin/delivery-sheet-prints', ['sheet_id' => $sheetId])->assertOk()->assertSee('13.11.2026')->assertSee('500,00');
+        /** @var object{delivery_date:string}|null $printed */
+        $printed = DB::table('bakery_delivery_sheet_prints')->first();
+        $this->assertNotNull($printed);
+        $this->assertSame('2026-11-13', $printed->delivery_date);
+    }
 }

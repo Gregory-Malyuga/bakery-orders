@@ -219,6 +219,8 @@ input:disabled, select:disabled, textarea:disabled { background-color: #eef1eb; 
 .route-selected li::marker { color: var(--green); font-weight: 800; }
 .route-stop-info { display: inline-block; max-width: calc(100% - 110px); vertical-align: middle; }
 .route-stop-info strong, .route-stop-info small { display: block; }
+.store-payment { display: inline-flex; align-items: center; gap: 6px; }
+.store-payment input[type="checkbox"] { width: auto; margin: 0; }
 .route-stop-actions { float: right; display: inline-flex; gap: 3px; }
 .route-stop-actions button { width: 29px; height: 29px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--green-dark); cursor: pointer; }
 .route-stop-actions button:disabled { opacity: .35; cursor: default; }
