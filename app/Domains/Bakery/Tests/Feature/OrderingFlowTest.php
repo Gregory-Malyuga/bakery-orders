@@ -134,6 +134,14 @@ class OrderingFlowTest extends TestCase
         $this->assertDatabaseMissing('bakery_closed_delivery_dates', ['delivery_date' => '2026-11-02']);
     }
 
+    public function test_invalid_closed_date_has_clear_russian_error(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($admin)->post('/admin/closed-dates', ['delivery_date' => '12.11.2026', 'reason' => 'Выходной'])
+            ->assertSessionHasErrors(['delivery_date' => 'Укажите корректную дату поставки.']);
+    }
+
     public function test_personal_prices_snapshot_and_duplicate_submission(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));

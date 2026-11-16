@@ -38,8 +38,12 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
 
 Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(function (): void {
     Route::get('/delivery-routes', [DeliveryRouteController::class, 'index'])->name('bakery.delivery-routes');
-    Route::post('/delivery-routes', [DeliveryRouteController::class, 'saveRoute'])->name('bakery.delivery-routes-save');
     Route::post('/delivery-sheets', [DeliveryRouteController::class, 'createSheet'])->name('bakery.delivery-sheets-create');
+    Route::post('/delivery-sheet-prints', [DeliveryRouteController::class, 'printSheet'])->name('bakery.delivery-sheet-print');
+    Route::get('/delivery-sheet-prints/{print}', [DeliveryRouteController::class, 'printedSheet'])->name('bakery.delivery-sheet-print-record');
+    Route::get('/delivery-sheets/{sheet}/edit', [DeliveryRouteController::class, 'editSheet'])->name('bakery.delivery-sheet-edit');
+    Route::post('/delivery-sheets/{sheet}/edit', [DeliveryRouteController::class, 'updateSheet'])->name('bakery.delivery-sheet-update');
+    Route::post('/delivery-sheets/{sheet}/delete', [DeliveryRouteController::class, 'deleteSheet'])->name('bakery.delivery-sheet-delete');
     Route::get('/delivery-sheets/{sheet}', [DeliveryRouteController::class, 'sheet'])->name('bakery.delivery-sheet');
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');

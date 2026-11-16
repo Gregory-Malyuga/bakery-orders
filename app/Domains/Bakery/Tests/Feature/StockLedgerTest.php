@@ -74,7 +74,7 @@ class StockLedgerTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-11-10 14:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $this->actingAs($admin)->get('/admin/stock')->assertOk();
-        $item = DB::table('bakery_stock_items')->where('unit', 'g')->first();
+        $item = DB::table('bakery_stock_items')->where('kind', 'ingredient')->where('unit', 'g')->first();
         $this->assertNotNull($item);
         $this->actingAs($admin)->post('/admin/stock/movements', [
             'item' => $item->id, 'kind' => 'opening', 'quantity' => '500', 'reason' => 'Проверка',
@@ -92,7 +92,9 @@ class StockLedgerTest extends TestCase
         Carbon::setTestNow(Carbon::parse('2026-11-12 12:00:00', 'Europe/Moscow'));
         $this->actingAs($admin)->get('/admin/stock?date=2026-11-12')->assertOk()->assertSee('200,00 ₽');
         $this->assertSame(2, DB::table('bakery_stock_daily_prices')->where('stock_item_id', $item->id)->count());
-        $this->actingAs($admin)->get('/admin/analytics?from=2026-11-10&to=2026-11-12')->assertOk()->assertSee('250,00 ₽')->assertSee('200,00 ₽');
+        $this->actingAs($admin)->get('/admin/analytics?from=2026-11-10&to=2026-11-12')->assertOk()
+            ->assertSeeInOrder(['Цены ингредиентов на 12.11.2026', '40,00 ₽'])
+            ->assertSee('250,00 ₽')->assertSee('200,00 ₽');
         $this->actingAs($admin)->get('/admin/analytics/csv?from=2026-11-10&to=2026-11-12')->assertOk()->assertDownload();
         $this->actingAs($admin)->get('/admin/report?from=2026-11-10&to=2026-11-12')->assertOk()->assertSee('250,00 ₽')->assertSee('200,00 ₽');
         $response = $this->actingAs($admin)->get('/admin/report/xlsx?from=2026-11-10&to=2026-11-12')->assertOk()->assertDownload();

@@ -21,6 +21,8 @@ class AnalyticsController
 
         return view('bakery.analytics', [
             'filters' => $filters, 'data' => $data, 'stockRows' => $stockRows,
+            'ingredients' => DB::table('bakery_stock_items')->where('kind', 'ingredient')->orderBy('name')->get(),
+            'ingredientPrices' => $this->stockPrices->forDate($filters['to']),
             'stores' => DB::table('bakeries')->orderBy('name')->get(['id', 'name']),
             'products' => DB::table('bakery_products')->orderBy('name')->get(['id', 'name']),
         ]);

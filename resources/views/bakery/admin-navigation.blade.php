@@ -1,6 +1,7 @@
 @php
     $adminTab = request()->routeIs('bakery.admin') ? ($tab ?? 'orders') : 'orders';
-    $dateQuery = isset($date) ? ['date' => $date] : (request()->filled('date') ? ['date' => request()->query('date')] : []);
+    $candidateDate = isset($date) ? $date : request()->query('date');
+    $dateQuery = is_string($candidateDate) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $candidateDate) ? ['date' => $candidateDate] : [];
 @endphp
 <nav class="admin-nav" aria-label="Разделы пекарни">
     <div class="wrap admin-nav-inner">
