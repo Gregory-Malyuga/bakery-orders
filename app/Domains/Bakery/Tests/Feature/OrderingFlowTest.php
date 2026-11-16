@@ -3,6 +3,7 @@
 namespace Domains\Bakery\Tests\Feature;
 
 use Carbon\Carbon;
+use Domains\Bakery\Application\AnalyticsService;
 use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
@@ -45,6 +46,92 @@ class OrderingFlowTest extends TestCase
         Price::query()->updateOrCreate(['bakery_id' => $store->id, 'product_id' => $product->id], ['kopecks' => $kopecks]);
 
         return [$store, $user, $product];
+    }
+
+    public function test_analytics_uses_delivery_date_active_orders_and_active_returns(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$store, , $product] = $this->shop('Аналитика первая', 5000);
+        $this->shop('Аналитика без заказа', 5000);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 3]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 3], $quote['hash'])['order'];
+        $this->assertNotNull($order);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', ['product' => $product->id, 'quantity' => 1, 'reason' => 'Брак'])->assertRedirect();
+
+        $result = app(AnalyticsService::class)->build('2026-10-07', '2026-10-07');
+        $this->assertSame(1, $result['summary']['orders']);
+        $this->assertSame(3, $result['summary']['pieces']);
+        $this->assertSame(15000, $result['summary']['gross']);
+        $this->assertSame(5000, $result['summary']['returns']);
+        $this->assertSame(10000, $result['summary']['net']);
+        $this->assertEqualsWithDelta(33.333, $result['summary']['return_share'], 0.01);
+        $this->assertContains('Аналитика без заказа', $result['missing_stores']);
+        $this->actingAs($admin)->get('/admin/analytics?from=2026-10-07&to=2026-10-07')->assertOk()->assertSee('100,00 ₽');
+        $this->actingAs($admin)->get('/admin/analytics/csv?from=2026-10-07&to=2026-10-07')->assertOk()->assertDownload('analitika-2026-10-07-2026-10-07.csv');
+
+        $this->assertSame(0, app(AnalyticsService::class)->build('2026-10-06', '2026-10-06')['summary']['orders']);
+        $this->assertSame(1, app(AnalyticsService::class)->build('2026-10-07', '2026-10-07', $store->id, $product->id)['summary']['orders']);
+        DB::table('bakery_returns')->where('order_id', $order->id)->update(['status' => 'cancelled']);
+        $this->assertSame(15000, app(AnalyticsService::class)->build('2026-10-07', '2026-10-07')['summary']['net']);
+        $service->cancel($store->id, $order->id);
+        $this->assertSame(0, app(AnalyticsService::class)->build('2026-10-07', '2026-10-07')['summary']['orders']);
+    }
+
+    public function test_closed_consecutive_delivery_dates_never_move_an_order_forward(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Закрытые даты', 3000);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+
+        foreach (['2026-11-02', '2026-11-03'] as $date) {
+            $this->actingAs($admin)->post('/admin/closed-dates', ['delivery_date' => $date, 'reason' => 'Выходной'])->assertRedirect();
+        }
+
+        $this->actingAs($user)->get('/orders')->assertOk()
+            ->assertSee('Поставка закрыта: Выходной')
+            ->assertSee('Заказы принимаются с 03.11.2026, поставка 04.11.2026')
+            ->assertDontSee('id="order-form"', false);
+        $input = ['store' => $store->id, 'request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1]];
+        $this->actingAs($user)->post('/orders/preview', $input)->assertStatus(422);
+        $this->actingAs($user)->post('/orders/edit-preview', $input)->assertStatus(422);
+        $this->actingAs($user)->post('/orders', $input + ['quote_hash' => str_repeat('a', 64)])->assertSessionHasErrors('order');
+
+        Carbon::setTestNow(Carbon::parse('2026-11-02 12:00:00', 'Europe/Moscow'));
+        $this->actingAs($user)->get('/orders')->assertOk()->assertSee('Заказы принимаются с 03.11.2026, поставка 04.11.2026');
+
+        Carbon::setTestNow(Carbon::parse('2026-11-03 12:00:00', 'Europe/Moscow'));
+        $this->actingAs($user)->get('/orders')->assertOk()->assertSee('id="order-form"', false);
+        $quote = app(OrderingService::class)->quote($store->id, [$product->id => 1]);
+        $this->assertSame('2026-11-04', $quote['date']);
+        $this->assertNotNull(app(OrderingService::class)->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash'])['order']);
+    }
+
+    public function test_closing_a_date_with_accepted_orders_requires_explicit_confirmation(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
+        [$store, $user, $product] = $this->shop('Существующий заказ', 3000);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 1]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash'])['order'];
+        $this->assertNotNull($order);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $input = ['delivery_date' => '2026-11-02', 'reason' => 'Ремонт печи'];
+
+        $this->actingAs($admin)->post('/admin/closed-dates', $input)->assertSessionHasErrors('delivery_date');
+        $this->assertDatabaseMissing('bakery_closed_delivery_dates', ['delivery_date' => '2026-11-02']);
+        $this->actingAs($admin)->post('/admin/closed-dates', $input + ['keep_existing_orders' => 1])->assertRedirect();
+        $this->actingAs($admin)->get('/admin/closed-dates')->assertOk()->assertSee('Ремонт печи');
+        $this->assertDatabaseHas('bakery_orders', ['id' => $order->id, 'status' => 'accepted']);
+        $this->actingAs($user)->get('/orders/'.$order->id)->assertOk();
+        $service->cancel($store->id, $order->id);
+        $this->assertDatabaseHas('bakery_orders', ['id' => $order->id, 'status' => 'cancelled']);
+        $this->actingAs($admin)->post('/admin/closed-dates/2026-11-02/open')->assertRedirect();
+        $this->assertDatabaseMissing('bakery_closed_delivery_dates', ['delivery_date' => '2026-11-02']);
     }
 
     public function test_personal_prices_snapshot_and_duplicate_submission(): void

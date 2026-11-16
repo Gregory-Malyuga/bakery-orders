@@ -6,10 +6,12 @@ use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\OrderReturnSummary;
 use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\Product;
+use Illuminate\Support\Carbon;
 use Phar;
 use PharData;
 use RuntimeException;
 
+/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
 class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 {
     public function __construct(private readonly OrderReturnSummary $returnSummary) {}
@@ -17,8 +19,9 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     /**
      * @param  iterable<Order>  $orders
      * @param  iterable<Product>  $products
+     * @param  list<GroupInvoice>  $groups
      */
-    public function create(iterable $orders, iterable $products): string
+    public function create(iterable $orders, iterable $products, array $groups = [], ?string $date = null, ?string $generatedAt = null): string
     {
         /** @var list<Order> $orderList */
         $orderList = iterator_to_array($orders, false);
@@ -44,19 +47,27 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 
         try {
             $archive = new PharData($path, 0, null, Phar::ZIP);
-            $invoiceCount = max(1, count($orderList));
-            $archive->addFromString('[Content_Types].xml', $this->contentTypes($invoiceCount + 1));
+            $groups = array_values(array_filter($groups, static fn (array $group): bool => $group['has_orders']));
+            $invoiceCount = $orderList === [] && $groups !== [] ? 0 : max(1, count($orderList));
+            $summaryCount = $invoiceCount > 0 ? 1 : 0;
+            $sheetCount = $invoiceCount + count($groups) + $summaryCount;
+            $archive->addFromString('[Content_Types].xml', $this->contentTypes($sheetCount));
             $archive->addFromString('_rels/.rels', $this->rootRelationships());
-            $archive->addFromString('xl/workbook.xml', $this->workbook($orderList));
-            $archive->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships($invoiceCount + 1));
+            $archive->addFromString('xl/workbook.xml', $this->workbook($orderList, $groups, $summaryCount > 0));
+            $archive->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships($sheetCount));
             $archive->addFromString('xl/styles.xml', $this->styles());
             foreach ($orderList as $index => $order) {
                 $archive->addFromString('xl/worksheets/sheet'.($index + 1).'.xml', $this->invoiceSheet($order, $returns[$order->id] ?? ['quantities' => [], 'extras' => [], 'amount' => 0]));
             }
-            if ($orderList === []) {
+            if ($orderList === [] && $invoiceCount > 0) {
                 $archive->addFromString('xl/worksheets/sheet1.xml', $this->invoiceSheet(null, ['quantities' => [], 'extras' => [], 'amount' => 0]));
             }
-            $archive->addFromString('xl/worksheets/sheet'.($invoiceCount + 1).'.xml', $this->orderSheet($orderList, $catalog));
+            foreach ($groups as $index => $group) {
+                $archive->addFromString('xl/worksheets/sheet'.($invoiceCount + $index + 1).'.xml', $this->groupSheet($group, $date ?? '', $generatedAt ?? now('Europe/Moscow')->format('d.m.Y H:i')));
+            }
+            if ($summaryCount > 0) {
+                $archive->addFromString('xl/worksheets/sheet'.$sheetCount.'.xml', $this->orderSheet($orderList, $catalog));
+            }
             unset($archive);
 
             return $path;
@@ -146,6 +157,74 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
         } else {
             $this->put($cells, $totalRow, $this->blank(4, $totalRow, 7));
             $this->put($cells, $totalRow, $this->formula(5, $totalRow, "SUM(E7:E{$lastRow})", $this->rubles($order->total_kopecks), 8));
+        }
+
+        return $this->sheet($cells, implode('', $widths), false);
+    }
+
+    /** @param GroupInvoice $group */
+    private function groupSheet(array $group, string $date, string $generatedAt): string
+    {
+        $cells = [];
+        $hasReturns = $group['returned_quantity'] > 0;
+        $widths = [];
+        foreach ($hasReturns ? [10, 43, 16, 16, 16, 17, 20] : [10, 43, 16, 16, 17] as $index => $width) {
+            $column = $index + 1;
+            $widths[] = '<col min="'.$column.'" max="'.$column.'" width="'.$width.'" customWidth="1"/>';
+        }
+        $this->put($cells, 1, $this->label(1, 1, 'Дата поставки: '.Carbon::parse($date)->format('d.m.Y')));
+        $this->put($cells, 2, $this->label(1, 2, 'Сводная накладная группы «'.$group['name'].'»', 9));
+        $this->put($cells, 3, $this->label(1, 3, 'Сформировано: '.$generatedAt.' МСК'));
+        $this->put($cells, 4, $this->label(1, 4, 'Не прибавлять к общему итогу — заказы уже учтены', 7));
+        $titles = $hasReturns
+            ? ['№', 'Товар', 'Заказано', 'Возврат', 'Цена, ₽', 'Сумма, ₽', 'После возврата, ₽']
+            : ['№', 'Товар', 'Заказано', 'Цена, ₽', 'Сумма, ₽'];
+        foreach ($titles as $index => $title) {
+            $this->put($cells, 6, $this->label($index + 1, 6, $title, 5));
+        }
+        foreach ($group['products'] as $index => $product) {
+            $row = 7 + $index;
+            $this->put($cells, $row, $this->number(1, $row, (string) ($index + 1), 4));
+            $this->put($cells, $row, $this->label(2, $row, $product['name'], 4));
+            $this->put($cells, $row, $this->number(3, $row, (string) $product['quantity'], 4));
+            if ($hasReturns) {
+                $this->put($cells, $row, $this->number(4, $row, (string) $product['returned'], 4));
+            }
+            $this->put($cells, $row, $this->number($hasReturns ? 5 : 4, $row, $this->rubles($product['unit_kopecks']), 6));
+            $this->put($cells, $row, $this->number($hasReturns ? 6 : 5, $row, $this->rubles($product['gross']), 6));
+            if ($hasReturns) {
+                $this->put($cells, $row, $this->number(7, $row, $this->rubles($product['net']), 6));
+            }
+        }
+        $totalRow = 7 + count($group['products']);
+        $this->put($cells, $totalRow, $this->blank(1, $totalRow, 7));
+        $this->put($cells, $totalRow, $this->label(2, $totalRow, 'Итого', 7));
+        $this->put($cells, $totalRow, $this->number(3, $totalRow, (string) $group['quantity'], 7));
+        if ($hasReturns) {
+            $this->put($cells, $totalRow, $this->number(4, $totalRow, (string) $group['returned_quantity'], 7));
+            $this->put($cells, $totalRow, $this->blank(5, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->number(6, $totalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $totalRow, $this->number(7, $totalRow, $this->rubles($group['net']), 8));
+        } else {
+            $this->put($cells, $totalRow, $this->blank(4, $totalRow, 7));
+            $this->put($cells, $totalRow, $this->number(5, $totalRow, $this->rubles($group['gross']), 8));
+        }
+
+        $memberTitleRow = $totalRow + 2;
+        $this->put($cells, $memberTitleRow, $this->label(1, $memberTitleRow, 'Состав группы на момент формирования', 7));
+        foreach ($group['members'] as $index => $member) {
+            $row = $memberTitleRow + $index + 1;
+            $label = $member['name'].' · '.$member['address'].($member['ordered'] ? '' : ' · нет заказа');
+            $this->put($cells, $row, $this->label(1, $row, $label));
+            if ($member['ordered']) {
+                $this->put($cells, $row, $this->number(2, $row, (string) $member['quantity']));
+                $this->put($cells, $row, $this->number(3, $row, $this->rubles($member['gross'])));
+                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['returns'])));
+                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net'])));
+            }
+            if ($member['comment']) {
+                $this->put($cells, $row + count($group['members']) + 1, $this->label(1, $row + count($group['members']) + 1, 'Комментарий · '.$member['name'].': '.$member['comment']));
+            }
         }
 
         return $this->sheet($cells, implode('', $widths), false);
@@ -325,8 +404,10 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             .'</Relationships>';
     }
 
-    /** @param list<Order> $orders */
-    private function workbook(array $orders): string
+    /** @param list<Order> $orders
+     * @param  list<GroupInvoice>  $groups
+     */
+    private function workbook(array $orders, array $groups, bool $includeSummary): string
     {
         $sheets = '';
         $usedNames = ['заказ' => true];
@@ -341,11 +422,26 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $number = $index + 1;
             $sheets .= '<sheet name="'.htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8').'" sheetId="'.$number.'" r:id="rId'.$number.'"/>';
         }
-        if ($orders === []) {
+        if ($orders === [] && $includeSummary) {
             $sheets = '<sheet name="Накладная" sheetId="1" r:id="rId1"/>';
         }
-        $summary = max(1, count($orders)) + 1;
-        $sheets .= '<sheet name="Заказ" sheetId="'.$summary.'" r:id="rId'.$summary.'"/>';
+        $nextSheet = $orders === [] && $includeSummary ? 2 : count($orders) + 1;
+        foreach ($groups as $group) {
+            $name = mb_substr($this->safeSheetPart('Группа '.$group['name']), 0, 31);
+            $duplicate = 1;
+            $base = $name;
+            while (isset($usedNames[mb_strtolower($name)])) {
+                $duplicate++;
+                $suffix = ' ('.$duplicate.')';
+                $name = mb_substr($base, 0, 31 - mb_strlen($suffix)).$suffix;
+            }
+            $usedNames[mb_strtolower($name)] = true;
+            $sheets .= '<sheet name="'.htmlspecialchars($name, ENT_XML1 | ENT_QUOTES, 'UTF-8').'" sheetId="'.$nextSheet.'" r:id="rId'.$nextSheet.'"/>';
+            $nextSheet++;
+        }
+        if ($includeSummary) {
+            $sheets .= '<sheet name="Заказ" sheetId="'.$nextSheet.'" r:id="rId'.$nextSheet.'"/>';
+        }
 
         return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'

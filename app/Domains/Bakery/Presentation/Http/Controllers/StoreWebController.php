@@ -2,6 +2,7 @@
 
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
+use Domains\Bakery\Application\DeliveryCalendar;
 use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\OrderingService;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
@@ -13,7 +14,7 @@ use Illuminate\View\View;
 
 class StoreWebController
 {
-    public function __construct(private readonly OrderingService $service, private readonly OrderingRepositoryInterface $repository, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingService $service, private readonly OrderingRepositoryInterface $repository, private readonly OrderCutoff $cutoff, private readonly DeliveryCalendar $calendar) {}
 
     private function user(Request $request): User
     {
@@ -50,6 +51,8 @@ class StoreWebController
             'accessibleStores' => $this->repository->stores()->whereIn('id', $this->user($request)->accessibleStoreIds())->where('is_active', true),
             'date' => $this->service->deliveryDate(),
             'open' => $this->service->isOpen(),
+            'closedReason' => $this->calendar->reason($this->service->deliveryDate()),
+            'nextWindow' => $this->calendar->nextWindow(),
             'orderCutoff' => $this->cutoff->time(),
             'products' => $this->repository->products()->where('is_active', true),
             'prices' => $this->repository->prices($id),
@@ -83,6 +86,8 @@ class StoreWebController
             'accessibleStores' => $this->repository->stores()->whereIn('id', $this->user($request)->accessibleStoreIds())->where('is_active', true),
             'date' => $this->service->deliveryDate(),
             'open' => true,
+            'closedReason' => null,
+            'nextWindow' => $this->calendar->nextWindow(),
             'orderCutoff' => $this->cutoff->time(),
             'products' => $products,
             'prices' => $prices,
@@ -142,7 +147,7 @@ class StoreWebController
 
         return view('bakery.order', [
             'order' => $record,
-            'canCancel' => $record->status === 'accepted' && $this->service->isOpen() && $record->created_at?->timezone('Europe/Moscow')->toDateString() === now('Europe/Moscow')->toDateString(),
+            'canCancel' => $record->status === 'accepted' && $this->cutoff->isOpen() && $record->created_at?->timezone('Europe/Moscow')->toDateString() === now('Europe/Moscow')->toDateString(),
             'canRepeat' => $this->service->isOpen() && $this->repository->activeOrder((int) $record->bakery_id, $this->service->deliveryDate()) === null,
         ]);
     }

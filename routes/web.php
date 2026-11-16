@@ -1,9 +1,13 @@
 <?php
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
+use Domains\Bakery\Presentation\Http\Controllers\AnalyticsController;
+use Domains\Bakery\Presentation\Http\Controllers\ClosedDateController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
 use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
 use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
+use Domains\Bakery\Presentation\Http\Controllers\StockController;
+use Domains\Bakery\Presentation\Http\Controllers\StoreGroupController;
 use Domains\Bakery\Presentation\Http\Controllers\StoreWebController;
 use Domains\Bakery\Presentation\Http\Controllers\WebAuthController;
 use Illuminate\Http\RedirectResponse;
@@ -34,6 +38,19 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
 Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(function (): void {
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');
+    Route::get('/groups', [StoreGroupController::class, 'index'])->name('bakery.groups');
+    Route::post('/groups', [StoreGroupController::class, 'save'])->name('bakery.groups-save');
+    Route::get('/groups/{group}/print', [StoreGroupController::class, 'print'])->name('bakery.group-print');
+    Route::get('/groups/{group}/xlsx', [StoreGroupController::class, 'download'])->name('bakery.group-xlsx');
+    Route::get('/closed-dates', [ClosedDateController::class, 'index'])->name('bakery.closed-dates');
+    Route::post('/closed-dates', [ClosedDateController::class, 'save'])->name('bakery.closed-dates-save');
+    Route::post('/closed-dates/{date}/open', [ClosedDateController::class, 'open'])->where('date', '[0-9]{4}-[0-9]{2}-[0-9]{2}')->name('bakery.closed-dates-open');
+    Route::get('/stock', [StockController::class, 'index'])->name('bakery.stock');
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('bakery.analytics');
+    Route::get('/analytics/csv', [AnalyticsController::class, 'download'])->name('bakery.analytics-csv');
+    Route::post('/stock/packaging', [StockController::class, 'createPackaging'])->name('bakery.stock-packaging');
+    Route::post('/stock/movements', [StockController::class, 'record'])->name('bakery.stock-record');
+    Route::post('/stock/movements/{movement}/reverse', [StockController::class, 'reverse'])->name('bakery.stock-reverse');
     Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
     Route::get('/ingredients', [IngredientCatalogWebController::class, 'index'])->name('bakery.ingredients');
     Route::post('/ingredients', [IngredientCatalogWebController::class, 'create'])->name('bakery.ingredients-create');

@@ -23,4 +23,9 @@
             <div class="invoice-footer">Итого: {{ number_format($order->total_kopecks / 100, 2, ',', ' ') }} ₽@if($hasReturns) · Возврат: {{ number_format($return['amount'] / 100, 2, ',', ' ') }} ₽ · После возврата: {{ number_format(($order->total_kopecks - $return['amount']) / 100, 2, ',', ' ') }} ₽@endif</div>
         </section>
     @empty<p>На выбранную дату принятых заказов нет.</p>@endforelse
+    @foreach($groups ?? [] as $group)
+        @if($group['has_orders'])
+            @include('bakery.group-invoice')
+        @endif
+    @endforeach
 </main></body></html>

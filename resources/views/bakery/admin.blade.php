@@ -4,8 +4,33 @@
 <div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Заказы на производство</h1><p class="muted">Все принятые заказы по дате поставки.</p></div></div>
 <div class="panel data-panel"><form method="get" action="{{ route('bakery.admin') }}" class="toolbar-form"><input type="hidden" name="tab" value="{{ $tab }}"><label class="toolbar-date"><span>Дата поставки</span><input type="date" name="date" value="{{ $date }}" required></label><button class="button primary">Показать</button><a class="button secondary" href="{{ route('bakery.print-batch',['date'=>$date]) }}" target="_blank">Печать всех накладных</a><a class="button secondary" href="{{ route('bakery.xlsx-batch',['date'=>$date]) }}">Скачать все в Excel</a></form><p class="muted small">При печати каждая накладная начинается с новой страницы. Файл Excel можно отредактировать перед печатью.</p></div>
 @if($tab === 'orders')
-<div class="section-head"><h2>Принятые заказы <span class="muted">{{ $orders->count() }}</span></h2></div><div class="panel data-panel"><div class="table-scroll"><table><thead><tr><th>Магазин</th><th>Адрес</th><th>Позиций</th><th>После возвратов</th><th></th></tr></thead><tbody>@forelse($visibleOrders as $order)<tr><td>{{ $order->store_name }}</td><td>{{ $order->store_address }}</td><td>{{ $order->items->count() }}</td><td>{{ number_format(($order->total_kopecks - ($orderReturns[$order->id]['amount'] ?? 0)) / 100, 2, ',', ' ') }} ₽</td><td><a href="{{ route('bakery.admin-order',$order->id) }}">Открыть</a></td></tr>@empty<tr><td colspan="5" class="muted">На эту дату принятых заказов нет.</td></tr>@endforelse</tbody></table></div></div>
+<div class="section-head"><h2>Принятые заказы <span class="muted">{{ $orders->count() }}</span></h2></div>
+<div class="panel data-panel"><div class="table-scroll"><table>
+    <thead><tr><th>Магазин</th><th>Адрес</th><th>Изделий, шт.</th><th>Сумма после возвратов</th><th>Комментарий магазина</th><th></th></tr></thead>
+    <tbody>
+    @forelse($visibleOrders as $order)
+        <tr>
+            <td>{{ $order->store_name }}</td>
+            <td>{{ $order->store_address }}</td>
+            <td>{{ $order->items->sum('quantity') }}</td>
+            <td>{{ number_format(($order->total_kopecks - ($orderReturns[$order->id]['amount'] ?? 0)) / 100, 2, ',', ' ') }} ₽</td>
+            <td class="orders-comment">@if(filled($order->comment))<p class="comment-text">{{ $order->comment }}</p>@else<span class="muted">—</span>@endif</td>
+            <td><a href="{{ route('bakery.admin-order',$order->id) }}">Открыть</a></td>
+        </tr>
+    @empty
+        <tr><td colspan="6" class="muted">На эту дату принятых заказов нет.</td></tr>
+    @endforelse
+    </tbody>
+</table></div></div>
 @include('bakery.pagination', ['url' => route('bakery.admin'), 'query' => ['date' => $date, 'tab' => 'orders']])
+@if($groups !== [])
+<div class="section-head"><h2>Сводные накладные групп</h2></div>
+<div class="panel data-panel"><div class="table-scroll"><table><thead><tr><th>Группа</th><th>Точек</th><th>Статус</th><th></th></tr></thead><tbody>
+@foreach($groups as $group)
+<tr><td>{{ $group['name'] }}</td><td>{{ count($group['members']) }}</td><td>{{ $group['has_orders'] ? 'Есть заказы' : 'Нет заказов' }}</td><td>@if($group['has_orders'])<a href="{{ route('bakery.group-print', ['group' => $group['id'], 'date' => $date]) }}">Печать</a> · <a href="{{ route('bakery.group-xlsx', ['group' => $group['id'], 'date' => $date]) }}">Excel</a>@else—@endif</td></tr>
+@endforeach
+</tbody></table></div></div>
+@endif
 <div class="section-head"><h2>Ещё не заказали</h2></div><div class="panel data-panel"><p>@forelse($activeStores->whereNotIn('id',$orderedStoreIds) as $store)<span class="date-pill" style="display:inline-block;margin:4px">{{ $store->name }}</span>@empty<span class="muted">Все активные магазины заказали.</span>@endforelse</p></div>
 @elseif($tab === 'production')
 <div class="section-head"><h2>Производственная сводка</h2><span class="muted">Количество, шт.</span></div><div class="panel data-panel summary-scroll"><table class="summary-table"><thead><tr><th>Товар</th>@foreach($matrixStores as $store)<th title="{{ $store->address }}">{{ $store->name }}</th>@endforeach<th>Всего</th></tr></thead><tbody>@foreach($products as $product)@if(isset($totals[$product->id]))<tr><th>{{ $product->name }}</th>@foreach($matrixStores as $store)<td>{{ $quantities[$product->id][$store->id] ?? '—' }}</td>@endforeach<td>{{ $totals[$product->id] }}</td></tr>@endif @endforeach</tbody></table></div>
@@ -14,7 +39,20 @@
 <div class="section-head"><h2>Фасовка</h2></div><div class="panel data-panel"><p class="muted small">Пакеты рассчитаны отдельно для каждого магазина. Остаток означает штуки, которые нельзя разложить по выбранным размерам упаковки.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Остаток, шт.</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($packaging[$p->id])) as $product)<tr><th>{{ $product->name }}</th><td>{{ $packaging[$product->id]['one'] ?: '—' }}</td><td>{{ $packaging[$product->id]['two'] ?: '—' }}</td><td>{{ $packaging[$product->id]['three'] ?: '—' }}</td><td>{{ $packaging[$product->id]['five'] ?: '—' }}</td><td>{{ $packaging[$product->id]['loose'] ?: '—' }}</td></tr>@empty<tr><td colspan="6" class="muted">Нет продукции к фасовке.</td></tr>@endforelse</tbody></table></div></div>
 @elseif($tab === 'labels')
 <div class="section-head"><h2>Наклейки</h2><span class="muted">Всего {{ $labelTotal }} шт.</span></div>
-<div class="panel data-panel"><p class="muted small">Одна наклейка на каждый пакет. Фасовка рассчитана отдельно для каждого магазина; размеры пакетов нельзя объединять между точками.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Всего наклеек</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($labels[$p->id])) as $product)<tr><td>{{ $product->name }}</td><td>{{ $packaging[$product->id]['one'] ?: '—' }}</td><td>{{ $packaging[$product->id]['two'] ?: '—' }}</td><td>{{ $packaging[$product->id]['three'] ?: '—' }}</td><td>{{ $packaging[$product->id]['five'] ?: '—' }}</td><td>{{ $labels[$product->id] }}</td></tr>@empty<tr><td colspan="6" class="muted">Нет продукции.</td></tr>@endforelse</tbody></table></div></div>
+<div class="panel data-panel">
+    <p class="muted small">Одна наклейка на каждый пакет точки, если она не исключена настройкой группы. Фасовка считается для всех заказов: {{ $packageTotal }} пакетов; наклеек — {{ $labelTotal }}.</p>
+    <div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Всего наклеек</th></tr></thead><tbody>
+    @forelse($products->filter(fn($p)=>isset($labels[$p->id])) as $product)
+        <tr><td>{{ $product->name }}</td><td>{{ $labelPackaging[$product->id]['one'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['two'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['three'] ?: '—' }}</td><td>{{ $labelPackaging[$product->id]['five'] ?: '—' }}</td><td>{{ $labels[$product->id] }}</td></tr>
+    @empty<tr><td colspan="6" class="muted">Нет продукции.</td></tr>
+    @endforelse
+    </tbody></table></div>
+    @if($excludedStores !== [])
+        <h3>Точки без этикеток</h3>
+        <p class="muted small">Эти точки остаются в выпуске и фасовке. Их пакеты не входят в число этикеток.</p>
+        <ul>@foreach($excludedStores as $store)<li>{{ $store['name'] }} — {{ $store['packages'] }} пакетов; группы: {{ implode(', ', $store['groups']) }}</li>@endforeach</ul>
+    @endif
+</div>
 @else
 <div class="section-head"><h2>Заготовки по рецептурам</h2></div>
 <div class="panel data-panel">

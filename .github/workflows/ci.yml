@@ -441,6 +441,8 @@ jobs:
       SESSION_SECURE_COOKIE: ${{ secrets.SESSION_SECURE_COOKIE }}
       APP_NAME: ${{ vars.APP_NAME }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: Prepare SSH
         shell: bash
         run: |
@@ -454,7 +456,7 @@ jobs:
           ssh-keygen -y -f ~/.ssh/bakery_deploy </dev/null >/dev/null
           ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
 
-      - name: Pull, tag, update PHP and clean old image
+      - name: Copy and run release code from this commit
         shell: bash
         env:
           IMAGE: ${{ needs.build.outputs.image }}:${{ github.sha }}
@@ -462,12 +464,24 @@ jobs:
           set -euo pipefail
           ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
           remote="$DEPLOY_USER@$DEPLOY_HOST"
-          python3 - <<'PY' | ssh "${ssh_opts[@]}" "$remote" bakery-release
-          import json, os
+          python3 - <<'PY' | ssh "${ssh_opts[@]}" "$remote"
+          import base64, json, os, pathlib, re
+          commit = os.environ['GITHUB_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', commit):
+              raise ValueError('Invalid commit SHA')
           keys = ('APP_KEY', 'APP_URL', 'DB_PASSWORD', 'SESSION_SECURE_COOKIE', 'APP_NAME', 'GHCR_TOKEN', 'GHCR_ACTOR')
           payload = {key: os.environ[key] for key in keys}
-          payload.update(commit=os.environ['GITHUB_SHA'], image=os.environ['IMAGE'])
-          print(json.dumps(payload))
+          payload.update(commit=commit, image=os.environ['IMAGE'])
+          print('import base64, io, pathlib, runpy, sys')
+          print('release_dir = pathlib.Path(' + repr('/home/bakery-deploy/releases/' + commit) + ')')
+          print('release_dir.mkdir(parents=True, exist_ok=True)')
+          for source, target in (('scripts/deploy-production.py', 'deploy-production.py'),
+                                 ('deploy/compose.yml', 'compose.yml'),
+                                 ('deploy/Caddyfile', 'Caddyfile')):
+              encoded = base64.b64encode(pathlib.Path(source).read_bytes()).decode('ascii')
+              print('(release_dir / ' + repr(target) + ').write_bytes(base64.b64decode(' + repr(encoded) + '))')
+          print('sys.stdin = io.StringIO(' + repr(json.dumps(payload)) + ')')
+          print("runpy.run_path(str(release_dir / 'deploy-production.py'), run_name='__main__')")
           PY
 
   release-semver:

@@ -157,7 +157,13 @@ class FinancialConsistencyTest extends TestCase
         $url = '/admin/orders/'.$order->id.'/returns';
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
-        $returnIds = DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id');
+        $returnIds = array_map(static function (mixed $id): int {
+            if (! is_int($id) && ! is_string($id)) {
+                throw new \UnexpectedValueException('Некорректный ID возврата.');
+            }
+
+            return (int) $id;
+        }, DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id')->all());
         $this->assertCount(2, $returnIds);
         $cancelUrl = $url.'/'.$returnIds[0].'/cancel';
 
@@ -182,10 +188,126 @@ class FinancialConsistencyTest extends TestCase
         $this->actingAs($admin)->get('/admin/report?from='.$date.'&to='.$date)->assertOk()->assertSee('40,00 ₽');
         $report = $this->downloadCells('/admin/report/xlsx?from='.$date.'&to='.$date, 3);
         $this->assertSame('1', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'E'));
-        $this->assertSame('40.00', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'));
+        $this->assertEqualsWithDelta(40.0, (float) $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'), 0.001);
 
         $service->cancel($store->id, $order->id);
         $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertStatus(422);
+    }
+
+    public function test_accepted_orders_list_shows_piece_count_net_total_and_store_comment(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
+        $store = Bakery::query()->create(['name' => 'Точка с комментарием', 'address' => 'Адрес', 'is_active' => true]);
+        $first = Product::query()->create(['name' => 'Пирог', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        $second = Product::query()->create(['name' => 'Булочка', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $store->id, 'product_id' => $first->id, 'kopecks' => 1000]);
+        Price::query()->create(['bakery_id' => $store->id, 'product_id' => $second->id, 'kopecks' => 2000]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$first->id => 5, $second->id => 8]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$first->id => 5, $second->id => 8], $quote['hash'], "Первая строка\nВторая строка")['order'];
+        $this->assertNotNull($order);
+        $order->update(['admin_note' => 'Только для администратора']);
+        $url = '/admin?date='.$quote['date'].'&tab=orders';
+
+        $this->actingAs($admin)->get($url)->assertOk()
+            ->assertSee('Изделий, шт.')->assertSee('Сумма после возвратов')
+            ->assertSee('<td>13</td>', false)->assertSee('210,00 ₽')
+            ->assertSee("Первая строка\nВторая строка")
+            ->assertDontSee('Только для администратора');
+
+        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', [
+            'product' => $first->id, 'quantity' => 2, 'reason' => 'Возврат',
+        ])->assertRedirect();
+        $this->actingAs($admin)->get($url)->assertOk()->assertSee('<td>13</td>', false)->assertSee('190,00 ₽');
+        $returnId = DB::table('bakery_returns')->where('order_id', $order->id)->value('id');
+        $this->assertIsInt($returnId);
+        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns/'.$returnId.'/cancel', [
+            'reason' => 'Ошибочный возврат',
+        ])->assertRedirect();
+        $this->actingAs($admin)->get($url)->assertOk()->assertSee('<td>13</td>', false)->assertSee('210,00 ₽');
+    }
+
+    public function test_group_invoice_aggregates_orders_without_adding_them_to_the_order_matrix(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
+        $first = Bakery::query()->create(['name' => 'Первая точка', 'address' => 'Первый адрес', 'is_active' => true]);
+        $missing = Bakery::query()->create(['name' => 'Нет заказа', 'address' => 'Второй адрес', 'is_active' => true]);
+        $product = Product::query()->create(['name' => 'Пирог', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 1000]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $customer = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $first->id]);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($first->id, [$product->id => 5]);
+        $order = $service->place($first->id, (string) Str::uuid(), [$product->id => 5], $quote['hash'], 'Позвонить перед доставкой')['order'];
+        $this->assertNotNull($order);
+        $date = $quote['date'];
+
+        $this->actingAs($customer)->post('/admin/groups', ['name' => 'Чужая группа'])->assertForbidden();
+        $this->actingAs($admin)->post('/admin/groups', [
+            'name' => 'Район', 'show_in_invoice' => 1, 'stores' => [$first->id, $missing->id],
+        ])->assertRedirect();
+        $groupId = DB::table('bakery_store_groups')->where('name', 'Район')->value('id');
+        $this->assertIsInt($groupId);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'name' => 'Только этикетки', 'exclude_from_labels' => 1, 'stores' => [$first->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', [
+            'product' => $product->id, 'quantity' => 1, 'reason' => 'Возврат',
+        ])->assertRedirect();
+
+        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()
+            ->assertSee('Район')->assertDontSee('Только этикетки')
+            ->assertSee('Есть заказы');
+        $this->actingAs($admin)->get('/admin/groups')->assertOk()->assertSee('Только этикетки');
+        $this->actingAs($admin)->get('/admin/groups/'.$groupId.'/print?date='.$date)->assertOk()
+            ->assertSee('Сводная накладная группы')->assertSee('Нет заказа')
+            ->assertSee('Позвонить перед доставкой')->assertSee('50,00 ₽')->assertSee('10,00 ₽')->assertSee('40,00 ₽')
+            ->assertSee('Не прибавлять к общему итогу');
+        $this->actingAs($admin)->get('/admin/print?date='.$date)->assertOk()
+            ->assertSee('Накладная №'.$order->id)->assertSee('Сводная накладная группы');
+        $groupSheet = $this->downloadCells('/admin/groups/'.$groupId.'/xlsx?date='.$date, 1)[1];
+        $this->assertSame('5', $this->cellForProduct($groupSheet, 'Пирог', 'C'));
+        $this->assertSame('1', $this->cellForProduct($groupSheet, 'Пирог', 'D'));
+        $this->assertSame('40.00', $this->cellForProduct($groupSheet, 'Пирог', 'G'));
+        $batch = $this->downloadCells('/admin/xlsx?date='.$date, 3);
+        $this->assertSame('40.00', $this->cellForProduct($batch[2], 'Пирог', 'G'));
+        $this->assertSame('5', $this->cellForProduct($batch[3], 'Пирог', 'B', 'A'));
+
+        $second = Bakery::query()->create(['name' => 'Другая точка', 'address' => 'Третий адрес', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $second->id, 'product_id' => $product->id, 'kopecks' => 1200]);
+        $secondQuote = $service->quote($second->id, [$product->id => 2]);
+        $secondOrder = $service->place($second->id, (string) Str::uuid(), [$product->id => 2], $secondQuote['hash'])['order'];
+        $this->assertNotNull($secondOrder);
+        $first->update(['name' => 'Переименованная точка']);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $groupId, 'name' => 'Район', 'show_in_invoice' => 1,
+            'stores' => [$first->id, $missing->id, $second->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->get('/admin/groups/'.$groupId.'/print?date='.$date)->assertOk()
+            ->assertSee('Переименованная точка')->assertSee('74,00 ₽')->assertSee('64,00 ₽');
+        $combined = $this->downloadCells('/admin/groups/'.$groupId.'/xlsx?date='.$date, 1)[1];
+        $this->assertSame('10.00', $combined['E7']);
+        $this->assertSame('12.00', $combined['E8']);
+        $this->assertSame('74.00', $combined['F9']);
+        $this->assertSame('64.00', $combined['G9']);
+        $batch = $this->downloadCells('/admin/xlsx?date='.$date, 4);
+        $this->assertSame('7', $this->cellForProduct($batch[4], 'Пирог', 'D', 'A'));
+
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $groupId, 'name' => 'Район', 'show_in_invoice' => 1, 'stores' => [$missing->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()
+            ->assertSee('Район')->assertSee('Нет заказов');
+        $this->actingAs($admin)->get('/admin/groups/'.$groupId.'/print?date='.$date)->assertNotFound();
+
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $groupId, 'name' => 'Новый район', 'stores' => [$missing->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()->assertDontSee('Сводные накладные групп');
+        $this->actingAs($admin)->get('/admin/groups/'.$groupId.'/print?date='.$date)->assertNotFound();
     }
 
     public function test_unordered_available_product_can_be_returned_at_snapshotted_price(): void
@@ -235,6 +357,79 @@ class FinancialConsistencyTest extends TestCase
         $this->assertEqualsWithDelta(2.5, (float) $this->reportValue($report[1], 'Магазин возвратов', 'Капуста', 'F'), 0.001);
         $this->assertEqualsWithDelta(-5.0, (float) $this->reportValue($report[1], 'Магазин возвратов', 'Капуста', 'I'), 0.001);
         $this->assertSame(1, (int) DB::table('bakery_order_items')->where('order_id', $order->id)->sum('quantity'));
+    }
+
+    public function test_label_exclusions_apply_once_per_store_without_changing_packaging_or_production(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
+        $first = Bakery::query()->create(['name' => 'Без этикеток', 'address' => 'Первый адрес', 'is_active' => true]);
+        $second = Bakery::query()->create(['name' => 'С этикетками', 'address' => 'Второй адрес', 'is_active' => true]);
+        $products = [];
+        foreach ([['По одной', 'single', 1], ['По две', 'pair', 2], ['По три', 'mixed', 3], ['По пять', 'mixed', 5]] as [$name, $mode, $quantity]) {
+            $product = Product::query()->create(['name' => $name, 'sort_order' => count($products) + 1, 'minimum_quantity' => 1, 'packaging_mode' => $mode, 'is_active' => true]);
+            $products[$product->id] = ['product' => $product, 'quantity' => $quantity];
+            foreach ([$first, $second] as $store) {
+                Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 100]);
+            }
+        }
+        $quantities = array_map(static fn (array $entry): int => $entry['quantity'], $products);
+        $productIds = array_keys($products);
+        $service = app(OrderingService::class);
+        foreach ([$first, $second] as $store) {
+            $quote = $service->quote($store->id, $quantities);
+            $this->assertNotNull($service->place($store->id, (string) Str::uuid(), $quantities, $quote['hash'])['order']);
+        }
+        $date = $quote['date'];
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $url = '/admin?date='.$date;
+
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 8);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'name' => 'Исключить первую', 'exclude_from_labels' => 1, 'stores' => [$first->id],
+        ])->assertRedirect();
+        $firstGroupId = DB::table('bakery_store_groups')->where('name', 'Исключить первую')->value('id');
+        $this->assertIsInt($firstGroupId);
+        $hasOneOfEachSize = static function (array $plans) use ($productIds): bool {
+            /** @var array<int, array{one:int,two:int,three:int,five:int,loose:int}> $plans */
+            return $plans[$productIds[0]]['one'] === 1
+                && $plans[$productIds[1]]['two'] === 1
+                && $plans[$productIds[2]]['three'] === 1
+                && $plans[$productIds[3]]['five'] === 1;
+        };
+        $hasOneExcludedStore = static function (array $stores): bool {
+            /** @var list<array{name:string,groups:list<string>,packages:int}> $stores */
+            return count($stores) === 1 && $stores[0]['name'] === 'Без этикеток' && $stores[0]['packages'] === 4;
+        };
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()
+            ->assertViewHas('labelTotal', 4)->assertViewHas('packageTotal', 8)
+            ->assertViewHas('labelPackaging', $hasOneOfEachSize)
+            ->assertViewHas('excludedStores', $hasOneExcludedStore)
+            ->assertSee('Исключить первую');
+        $this->actingAs($admin)->get($url.'&tab=packaging')->assertOk()->assertViewHas('packaging', static function (array $plans) use ($productIds): bool {
+            /** @var array<int, array{one:int,two:int,three:int,five:int,loose:int}> $plans */
+            return $plans[$productIds[0]]['one'] === 2;
+        });
+        $this->actingAs($admin)->get($url.'&tab=production')->assertOk()->assertViewHas('productionTotal', 22);
+
+        $this->actingAs($admin)->post('/admin/groups', [
+            'name' => 'Перекрытие', 'show_in_invoice' => 1, 'exclude_from_labels' => 1, 'stores' => [$first->id],
+        ])->assertRedirect();
+        $secondGroupId = DB::table('bakery_store_groups')->where('name', 'Перекрытие')->value('id');
+        $this->assertIsInt($secondGroupId);
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 4);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $firstGroupId, 'name' => 'Исключить первую', 'exclude_from_labels' => 1, 'stores' => [$first->id, $second->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 0)->assertViewHas('packageTotal', 8);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $firstGroupId, 'name' => 'Исключить первую', 'stores' => [$first->id, $second->id],
+        ])->assertRedirect();
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 4);
+        $this->actingAs($admin)->post('/admin/groups', [
+            'id' => $secondGroupId, 'name' => 'Перекрытие', 'show_in_invoice' => 1, 'exclude_from_labels' => 1,
+        ])->assertRedirect();
+        $this->actingAs($admin)->get($url.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 8);
     }
 
     /** @return array<int, array<string, string>> */

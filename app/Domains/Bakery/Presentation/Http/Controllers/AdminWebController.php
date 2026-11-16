@@ -4,10 +4,11 @@ namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Application\Exports\PeriodReportWorkbookInterface;
+use Domains\Bakery\Application\GroupInvoiceService;
+use Domains\Bakery\Application\LabelPlanService;
 use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Application\PackagingPlanner;
 use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
 use Domains\Bakery\Application\Repositories\AdminRepositoryInterface;
@@ -21,7 +22,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly LabelPlanService $labelPlans, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
 
     private function adminId(Request $request): int
     {
@@ -50,32 +51,20 @@ class AdminWebController
         $products = $this->orders->products();
         $quantities = [];
         $totals = [];
-        $packaging = [];
         $productsById = $products->keyBy('id');
-        $storesById = $stores->keyBy('id');
         foreach ($orders as $order) {
             foreach ($order->items as $item) {
                 $quantities[$item->product_id][$order->bakery_id] = ($quantities[$item->product_id][$order->bakery_id] ?? 0) + $item->quantity;
                 $totals[$item->product_id] = ($totals[$item->product_id] ?? 0) + $item->quantity;
             }
         }
-        foreach ($quantities as $productId => $byStore) {
-            $product = $productsById->get($productId);
-            if ($product === null) {
-                continue;
-            }
-            $packaging[$productId] = ['one' => 0, 'two' => 0, 'three' => 0, 'five' => 0, 'loose' => 0];
-            foreach ($byStore as $storeId => $quantity) {
-                $store = $storesById->get($storeId);
-                if ($store === null) {
-                    continue;
-                }
-                $plan = $this->packaging->plan($quantity, $product->packaging_mode);
-                foreach ($plan as $size => $count) {
-                    $packaging[$productId][$size] += $count;
-                }
-            }
-        }
+        $plan = $this->labelPlans->forQuantities($quantities, $products, $stores);
+        $packaging = $plan['packaging'];
+        $labelPackaging = $plan['labelPackaging'];
+        $labels = $plan['labels'];
+        $labelTotal = $plan['labelTotal'];
+        $packageTotal = $plan['packageTotal'];
+        $excludedStores = $plan['excludedStores'];
         $productionQuantities = [];
         $productionProductIds = [];
         foreach ($totals as $productId => $quantity) {
@@ -88,11 +77,6 @@ class AdminWebController
             $productionProductIds[$name] = (int) $productId;
         }
         $production = $this->production->calculate($productionQuantities, $productionProductIds);
-        $labels = [];
-        foreach ($packaging as $productId => $plan) {
-            $labels[$productId] = $plan['one'] + $plan['two'] + $plan['three'] + $plan['five'];
-        }
-        $labelTotal = array_sum($labels);
         $productionTotal = array_sum($totals);
         $orderedStoreIds = $orders->pluck('bakery_id')->all();
         $activeStores = $stores->where('is_active', true);
@@ -101,8 +85,9 @@ class AdminWebController
         $page = min((int) ($input['page'] ?? 1), $pageCount);
         $visibleOrders = $orders->forPage($page, 20);
         $orderReturns = $this->returnSummary->forOrders($visibleOrders);
+        $groups = $tab === 'orders' ? $this->groupInvoices->forOrders($orders) : [];
 
-        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labels', 'labelTotal', 'productionTotal', 'production', 'orderedStoreIds'));
+        return view('bakery.admin', compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'groups', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labelPackaging', 'labels', 'labelTotal', 'packageTotal', 'excludedStores', 'productionTotal', 'production', 'orderedStoreIds'));
     }
 
     public function catalog(Request $request): View
@@ -325,7 +310,7 @@ class AdminWebController
 
         $orders = $this->orders->orders($date);
 
-        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnSummary->forOrders($orders), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
+        return view('bakery.print', ['orders' => $orders, 'returns' => $this->returnSummary->forOrders($orders), 'groups' => $this->groupInvoices->forOrders($orders), 'date' => $date, 'generatedAt' => now('Europe/Moscow'), 'downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse
@@ -342,7 +327,9 @@ class AdminWebController
     {
         $date = $this->date($request);
 
-        return response()->download($this->workbook->create($this->orders->orders($date), $this->orders->products()), "nakladnye-{$date}.xlsx", [
+        $orders = $this->orders->orders($date);
+
+        return response()->download($this->workbook->create($orders, $this->orders->products(), $this->groupInvoices->forOrders($orders), $date, now('Europe/Moscow')->format('d.m.Y H:i')), "nakladnye-{$date}.xlsx", [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
