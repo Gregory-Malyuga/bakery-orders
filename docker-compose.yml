@@ -40,7 +40,7 @@ x-php-build: &php-build
   context: .
   target: dev
   args:
-    BASE_IMAGE: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
+    BASE_IMAGE: dunglas/frankenphp:1-php8.5-alpine@sha256:2e95565f69e5295e1a0a5ceb5dc81b6039c9e552e819da47f8c313f466926a83
 
 services:
   caddy:

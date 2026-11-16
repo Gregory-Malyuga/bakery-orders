@@ -1,6 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. Сервис имеет веб-кабинет магазина и панель пекарни; актуальная карта функций — в `docs/service-guide.md`.
+
+## Текущий процесс задач и ошибок
+
+Прочитать `docs/state.md`, текущую очередь `docs/process/roadmap.md`, подробную постановку задачи и `docs/process/work-items.md`. Архивный раздел roadmap не выбирать автоматически. Открытый дефект описывать в roadmap; `docs/history/` использовать после установления причины и проверки исправления. Обновлять `[x]` только после выполнения критериев приёмки. Локальный коммит, push, CI и deploy отражать отдельно. Разделы ниже унаследованы от каркаса и не заменяют текущую карту веб-сервиса.
 
 ## Running commands
 
@@ -27,7 +31,7 @@ Start infrastructure: `docker compose up -d` (postgres, redis, elasticsearch, ca
 
 ## Architecture
 
-The app is a **DDD/CQRS API-only** Laravel service with strict layer enforcement via Deptrac.
+The app is a **DDD/CQRS Laravel service** with a bakery web UI and a separate legacy user API. Layer boundaries are checked with Deptrac.
 
 ### Layer structure (per domain)
 
@@ -80,10 +84,10 @@ Controllers dispatch to `CommandBusInterface` or `QueryBusInterface`. Each Comma
 - **Queue**: Redis (`queue: imports`, 2 worker replicas, 600s timeout, 3 tries)
 - **Cache/Session**: Redis
 - **Search**: Elasticsearch 8.x (`ELASTICSEARCH_URL`)
-- **Auth**: Laravel Sanctum (token-based, no sessions for API)
+- **Auth**: web sessions for bakery pages; Laravel Sanctum tokens for the legacy API
 - **Server**: Octane/FrankenPHP in Docker, `artisan serve` locally
 - **App URL**: `http://localhost:8088` (via Caddy)
 
 ## Routes
 
-All routes are in `routes/api.php`. Auth routes: `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/logout`. Resource routes under `/api/v1/` require `auth:sanctum`. Public endpoints: `GET /health`.
+Bakery pages and actions are in `routes/web.php`; the legacy user API is in `routes/api.php`. The current route and feature inventory is in `docs/service-guide.md`.
