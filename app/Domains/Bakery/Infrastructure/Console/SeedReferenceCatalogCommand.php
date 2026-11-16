@@ -16,13 +16,13 @@ use RuntimeException;
 
 class SeedReferenceCatalogCommand extends Command
 {
-    protected $signature = 'bakery:seed-reference {--dry-run : Только проверить XLSX без записи в БД}';
+    protected $signature = 'bakery:seed-reference {file : Путь к закрытому исходному XLSX} {--dry-run : Только проверить XLSX без записи в БД}';
 
-    protected $description = 'Загрузить магазины, товары, персональные цены и аккаунты из Лист1 файла Накладные 10.09.xlsx';
+    protected $description = 'Загрузить магазины, товары, персональные цены и аккаунты из листа «Лист1» закрытого XLSX';
 
     public function handle(ReferenceWorkbookReader $reader): int
     {
-        $path = resource_path('data/Накладные 10.09.xlsx');
+        $path = (string) $this->argument('file');
         try {
             $data = $reader->read($path);
         } catch (RuntimeException $error) {
@@ -39,8 +39,15 @@ class SeedReferenceCatalogCommand extends Command
             return self::SUCCESS;
         }
 
+        $initialPassword = $this->secret('Пароль для новых аккаунтов магазинов (не менее 12 символов)');
+        if (! is_string($initialPassword) || mb_strlen($initialPassword) < 12) {
+            $this->error('Пароль должен содержать не менее 12 символов.');
+
+            return self::FAILURE;
+        }
+
         try {
-            $createdAccounts = DB::transaction(function () use ($data, $reader): int {
+            $createdAccounts = DB::transaction(function () use ($data, $reader, $initialPassword): int {
                 $storesByName = [];
                 foreach (Bakery::query()->get() as $store) {
                     $key = $reader->key($store->name);
@@ -70,7 +77,7 @@ class SeedReferenceCatalogCommand extends Command
                         $account = User::query()->create([
                             'name' => $name,
                             'email' => $email,
-                            'password' => Hash::make('changeme'),
+                            'password' => Hash::make($initialPassword),
                             'role' => UserRole::User,
                             'status' => UserStatus::Verify,
                             'bakery_id' => $store->id,
@@ -108,7 +115,7 @@ class SeedReferenceCatalogCommand extends Command
 
             return self::FAILURE;
         }
-        $this->info("Готово. Создано аккаунтов: {$createdAccounts}. Логины store-001@bakery.test … store-072@bakery.test, пароль новых аккаунтов changeme.");
+        $this->info("Готово. Создано аккаунтов: {$createdAccounts}. Логины store-001@bakery.test … store-072@bakery.test.");
         $this->warn('Надписи из Лист1 использованы как название и адрес магазина; их можно уточнить в админ-панели. Демомагазины и демотовары сохранены.');
 
         return self::SUCCESS;

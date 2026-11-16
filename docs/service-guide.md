@@ -101,7 +101,7 @@
 | Команда | Назначение |
 | --- | --- |
 | `php artisan bakery:create-admin EMAIL` | Интерактивное создание администратора со скрытым вводом пароля. |
-| `php artisan bakery:seed-reference [--dry-run]` | Загрузка начального XLSX каталога, магазинов, цен и аккаунтов; режим проверки без записи. |
+| `php artisan bakery:seed-reference FILE [--dry-run]` | Загрузка закрытого исходного XLSX каталога, магазинов, цен и аккаунтов; режим проверки без записи. |
 | `php artisan bakery:import-catalog CSV [--apply]` | Проверка согласованного CSV и применение только с `--apply`. |
 | `php artisan db:seed --class=BakeryDemoSeeder` | Локальные демоданные; не команда для рабочего окружения. |
 

@@ -25,3 +25,5 @@
 [HIST-003](HIST-003.md) — generate_always + PHP-FPM OPcache: docs регенерируются из устаревшего кеша
 [HIST-004](HIST-004.md) — class_exists() бросает ErrorException в Laravel при отсутствии файла
 [HIST-005](HIST-005.md) — HandlerInterface::handle(): mixed несовместим с void-реализациями
+
+[HIST-006](HIST-006.md) — релиз зависел от удалённого checkout на сервере

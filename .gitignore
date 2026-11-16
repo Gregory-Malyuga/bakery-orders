@@ -1,4 +1,7 @@
 *.log
+*.xlsx
+*.xls
+/.sandbox/
 .DS_Store
 .env
 .env.backup
