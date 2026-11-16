@@ -3,6 +3,7 @@
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\AnalyticsService;
+use Domains\Bakery\Application\StockPrices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -10,15 +11,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AnalyticsController
 {
-    public function __construct(private readonly AnalyticsService $analytics) {}
+    public function __construct(private readonly AnalyticsService $analytics, private readonly StockPrices $stockPrices) {}
 
     public function index(Request $request): View
     {
         $filters = $this->filters($request);
         $data = $this->analytics->build($filters['from'], $filters['to'], $filters['store'], $filters['product']);
+        $stockRows = $this->stockPrices->dailyRows($filters['from'], $filters['to']);
 
         return view('bakery.analytics', [
-            'filters' => $filters, 'data' => $data,
+            'filters' => $filters, 'data' => $data, 'stockRows' => $stockRows,
             'stores' => DB::table('bakeries')->orderBy('name')->get(['id', 'name']),
             'products' => DB::table('bakery_products')->orderBy('name')->get(['id', 'name']),
         ]);
@@ -28,9 +30,10 @@ class AnalyticsController
     {
         $filters = $this->filters($request);
         $data = $this->analytics->build($filters['from'], $filters['to'], $filters['store'], $filters['product']);
+        $stockRows = $this->stockPrices->dailyRows($filters['from'], $filters['to']);
         $filename = 'analitika-'.$filters['from'].'-'.$filters['to'].'.csv';
 
-        return response()->streamDownload(static function () use ($data): void {
+        return response()->streamDownload(static function () use ($data, $stockRows): void {
             $output = fopen('php://output', 'w');
             if ($output === false) {
                 return;
@@ -45,6 +48,11 @@ class AnalyticsController
             }
             foreach ($data['missing_stores'] as $name) {
                 fputcsv($output, ['Без заказа', self::csvText($name)], ';');
+            }
+            fputcsv($output, [], ';');
+            fputcsv($output, ['Склад: дата', 'Позиция', 'Единица остатка', 'Остаток', 'Цена, коп.', 'Мера цены', 'Стоимость остатка, коп.'], ';');
+            foreach ($stockRows as $row) {
+                fputcsv($output, [$row['date'], self::csvText($row['item']), $row['unit'], number_format($row['balance_milli'] / 1000, 3, '.', ''), $row['price_kopecks'] ?? 'Не задана', $row['measure_milli'] === null ? '' : number_format($row['measure_milli'] / (in_array($row['measure_unit'], ['kg', 'l'], true) ? 1000000 : 1000), 3, '.', '').' '.$row['measure_unit'], $row['value_kopecks'] ?? 'Не задана'], ';');
             }
             fclose($output);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);

@@ -13,6 +13,7 @@ use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
 use Domains\Bakery\Application\Repositories\AdminRepositoryInterface;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Bakery\Application\StockPrices;
 use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly LabelPlanService $labelPlans, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly LabelPlanService $labelPlans, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly GroupInvoiceService $groupInvoices, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff, private readonly StockPrices $stockPrices) {}
 
     private function adminId(Request $request): int
     {
@@ -283,7 +284,7 @@ class AdminWebController
         $period = $this->period($request);
         $report = $this->periods->build($period['from'], $period['to']);
 
-        return view('bakery.period-report', ['from' => $period['from'], 'to' => $period['to'], 'report' => $report]);
+        return view('bakery.period-report', ['from' => $period['from'], 'to' => $period['to'], 'report' => $report, 'stockRows' => $this->stockPrices->dailyRows($period['from'], $period['to'])]);
     }
 
     public function downloadReport(Request $request): BinaryFileResponse
@@ -291,7 +292,7 @@ class AdminWebController
         $period = $this->period($request);
         $report = $this->periods->build($period['from'], $period['to']);
 
-        return response()->download($this->periodWorkbook->create($report), 'otchet-'.$period['from'].'-'.$period['to'].'.xlsx', [
+        return response()->download($this->periodWorkbook->create($report, $this->stockPrices->dailyRows($period['from'], $period['to'])), 'otchet-'.$period['from'].'-'.$period['to'].'.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ])->deleteFileAfterSend(true);
     }
