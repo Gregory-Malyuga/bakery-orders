@@ -1,0 +1,91 @@
+name: Deploy Production (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+  actions: read
+
+concurrency:
+  group: bakery-production
+  cancel-in-progress: false
+
+jobs:
+  verify-release:
+    name: Verify built and tested main revision
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require successful CI push run for commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=30" |
+            jq -e --arg sha "$GITHUB_SHA" '.workflow_runs | any(.[]; .head_sha == $sha and .conclusion == "success")'
+
+  deploy-production:
+    name: Release / deploy production
+    needs: verify-release
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      DEPLOY_HOST: 153.80.246.224
+      DEPLOY_USER: bakery-deploy
+      DEPLOY_SSH_PRIVATE_KEY_B64: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY_B64 }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      GHCR_ACTOR: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_KEY: ${{ secrets.APP_KEY }}
+      APP_URL: ${{ secrets.APP_URL }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SESSION_SECURE_COOKIE: ${{ secrets.SESSION_SECURE_COOKIE }}
+      APP_NAME: ${{ vars.APP_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$DEPLOY_SSH_PRIVATE_KEY_B64"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          printf '%s' "$DEPLOY_SSH_PRIVATE_KEY_B64" | base64 --decode > ~/.ssh/bakery_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/bakery_deploy </dev/null >/dev/null
+          ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
+
+      - name: Copy and run release code from this commit
+        shell: bash
+        env:
+          IMAGE: ghcr.io/gregory-malyuga/bakery-orders:${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
+          remote="$DEPLOY_USER@$DEPLOY_HOST"
+          python3 - <<'PY' | ssh "${ssh_opts[@]}" "$remote"
+          import base64, json, os, pathlib, re
+          commit = os.environ['GITHUB_SHA']
+          if not re.fullmatch(r'[0-9a-f]{40}', commit):
+              raise ValueError('Invalid commit SHA')
+          keys = ('APP_KEY', 'APP_URL', 'DB_PASSWORD', 'SESSION_SECURE_COOKIE', 'APP_NAME', 'GHCR_TOKEN', 'GHCR_ACTOR')
+          payload = {key: os.environ[key] for key in keys}
+          payload.update(commit=commit, image=os.environ['IMAGE'])
+          print('import base64, io, pathlib, runpy, sys')
+          print('release_dir = pathlib.Path(' + repr('/home/bakery-deploy/releases/' + commit) + ')')
+          print('release_dir.mkdir(parents=True, exist_ok=True)')
+          for source, target in (('scripts/deploy-production.py', 'deploy-production.py'),
+                                 ('scripts/backup-production-db.py', 'backup-production-db.py'),
+                                 ('deploy/compose.yml', 'compose.yml'),
+                                 ('deploy/Caddyfile', 'Caddyfile')):
+              encoded = base64.b64encode(pathlib.Path(source).read_bytes()).decode('ascii')
+              print('(release_dir / ' + repr(target) + ').write_bytes(base64.b64decode(' + repr(encoded) + '))')
+          print('sys.stdin = io.StringIO(' + repr(json.dumps(payload)) + ')')
+          print("runpy.run_path(str(release_dir / 'deploy-production.py'), run_name='__main__')")
+          PY
+
+

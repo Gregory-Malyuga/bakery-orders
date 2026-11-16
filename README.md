@@ -87,21 +87,26 @@ docker compose exec php php artisan bakery:create-admin admin@backery.com
 
 Приложение использует постоянный том PostgreSQL. После запуска проверьте `/health`, вход, оформление и печать.
 
-Последующие релизы на `backery` выполняет [BAK-14](docs/process/BAK-14-release.md): CI скачивает готовый образ по SHA, ставит рабочий Docker-тег `laravel-app-php:latest`, поднимает три сервиса из `/opt/bakery/compose.yml` без сборки и удаляет прежний образ. Git checkout и `.env` на хосте не требуются; runtime-переменные поступают из GitHub Environment во время команды Compose. Миграции в этом релизе не выполняются; изменения схемы БД нужно планировать отдельно.
+Последующие production-релизы запускаются **только вручную**:
+GitHub → **Actions** → **Deploy Production (manual)** → **Run workflow** → branch **main**.
+После merge в `main` CI продолжает собирать, проверять и публиковать образ,
+но **не запускает деплой автоматически**. Ручной workflow допускает запуск
+только после успешного CI для выбранного SHA в `main`.
 
-Для восстановления после удаления контейнеров запустите `CI/CD` на ветке `main`
-через кнопку `Run workflow` в GitHub Actions. Compose использует прежние внешние
-тома PostgreSQL и Caddy; отсутствие тома останавливает релиз, не создавая
-пустую БД.
+Перед изменением контейнеров скрипт обязательно выполняет `pg_dump -Fc`
+через существующий PostgreSQL-контейнер и сохраняет архив **на самом сервере,
+вне контейнеров и Docker volumes**:
 
-Для резервной копии остановка приложения не требуется. Пример для локального Compose:
-
-```bash
-docker compose exec -T postgres pg_dump -U laravel-database-user -d laravel-database -Fc -f /tmp/bakery.dump
-docker cp laravel-app-postgres-1:/tmp/bakery.dump ./bakery-$(Get-Date -Format yyyyMMdd-HHmmss).dump
+```text
+/home/bakery-deploy/backups/bakery-postgres/bakery-YYYYMMDDTHHMMSSZ-<SHA>.dump
 ```
 
-Храните копию вне хоста и регулярно проверяйте восстановление в отдельную БД командой `pg_restore`. Перед миграциями в рабочей среде сначала сделайте и проверьте копию.
+Бэкап проверяется `pg_restore --list`; при ошибке релиз прерывается без
+замены Docker-образов. Подробный порядок, требования к бэкапам и откату:
+[BAK-14 — ручной релиз и резервное копирование](docs/process/BAK-14-release.md).
+Архив на том же сервере не заменяет независимую off-site копию и проверку
+полного восстановления на отдельной БД.
+
 
 ## Стек
 

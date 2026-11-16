@@ -3,8 +3,8 @@
 namespace Domains\Bakery\Domain\Models;
 
 use Domains\Bakery\Domain\Database\Factories\BakeryFactory;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
@@ -35,20 +35,10 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Bakery extends Model
+class Bakery extends \Domains\Store\Domain\Models\Store
 {
     /** @use HasFactory<BakeryFactory> */
     use HasFactory;
-
-    protected $table = 'bakeries';
-
-    /** @var list<string> */
-    protected $fillable = ['name', 'address', 'is_active', 'is_cashless', 'discount_enabled', 'discount_percent'];
-
-    protected function casts(): array
-    {
-        return ['is_active' => 'boolean', 'is_cashless' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
-    }
 
     protected static function newFactory(): BakeryFactory
     {

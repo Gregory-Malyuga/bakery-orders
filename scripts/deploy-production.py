@@ -13,6 +13,7 @@ import tempfile
 PROJECT = "laravel-app"
 COMPOSE = os.path.join(os.path.dirname(os.path.realpath(__file__)), "compose.yml")
 WORKING_TAG = "laravel-app-php:latest"
+ROLLBACK_TAG = "laravel-app-php:rollback"
 DATABASE_VOLUME = "laravel-app_postgres_data"
 CERTIFICATE_VOLUME = "laravel-app_caddy_data"
 DOMAIN = "xn----8sbfmclbpnvckotr1m.xn--p1ai"
@@ -54,6 +55,12 @@ def main() -> None:
         for volume in (DATABASE_VOLUME, CERTIFICATE_VOLUME):
             run("docker", "volume", "inspect", volume)
 
+        # Preserve the old database BEFORE pulling/tagging/replacing the application.
+        # The helper writes a validated pg_dump to the host, outside Docker volumes.
+        backup_helper = os.path.join(os.path.dirname(COMPOSE), "backup-production-db.py")
+        print("Backing up the running production PostgreSQL database...", flush=True)
+        print(run(sys.executable, backup_helper, commit), flush=True)
+
         runtime = os.environ.copy()
         for key in ("APP_KEY", "APP_URL", "DB_PASSWORD", "SESSION_SECURE_COOKIE", "APP_NAME"):
             if isinstance(request.get(key), str) and request[key]:
@@ -74,6 +81,10 @@ def main() -> None:
                            '{{index .Config.Labels "org.opencontainers.image.revision"}}', env=runtime)
             if revision != commit:
                 raise ValueError("Image revision does not match requested commit")
+            if old_image:
+                # A stable tag keeps the previous image available even after
+                # the old PHP container has been replaced.
+                run("docker", "tag", WORKING_TAG, ROLLBACK_TAG, env=runtime)
             run("docker", "tag", image, WORKING_TAG, env=runtime)
 
             compose = ("docker", "compose", "-p", PROJECT, "-f", COMPOSE)
@@ -93,10 +104,7 @@ def main() -> None:
             run("docker", "image", "rm", image, env=runtime)
             current_image = run("docker", "image", "inspect", WORKING_TAG, "--format", "{{.Id}}", env=runtime)
             if old_image and old_image != current_image:
-                try:
-                    run("docker", "image", "rm", old_image, env=runtime)
-                except subprocess.CalledProcessError:
-                    print(f"Previous image {old_image} is still referenced and was retained", file=sys.stderr)
+                print(f"Previous application image retained as {ROLLBACK_TAG}: {old_image}", flush=True)
             print(f"Deployed {commit}; PostgreSQL volume {DATABASE_VOLUME} preserved", flush=True)
 
 
