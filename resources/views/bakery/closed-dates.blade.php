@@ -4,11 +4,11 @@
 <div class="page-head"><div><p class="eyebrow">Панель пекарни</p><h1>Нерабочие даты поставки</h1><p class="muted">Заказ на закрытую дату не принимается накануне. Уже принятые заказы сохраняются до решения администратора.</p></div></div>
 <div class="panel data-panel">
     <h2>Закрыть дату поставки</h2>
-    <form method="post" action="{{ route('bakery.closed-dates-save') }}" class="form-grid">
+    <form method="post" action="{{ route('bakery.closed-dates-save') }}" class="form-grid closed-date-form">
         @csrf
         <label>Дата поставки<input type="date" name="delivery_date" value="{{ old('delivery_date') }}" required></label>
         <label>Причина<input name="reason" value="{{ old('reason') }}" maxlength="500" required></label>
-        <label><input type="checkbox" name="keep_existing_orders" value="1" @checked(old('keep_existing_orders'))> Если заказы уже приняты, закрыть дату с их сохранением</label>
+        <label class="checkbox-field"><input type="checkbox" name="keep_existing_orders" value="1" @checked(old('keep_existing_orders'))><span>Если заказы уже приняты, закрыть дату с их сохранением</span></label>
         <button class="button primary">Закрыть дату</button>
     </form>
 </div>

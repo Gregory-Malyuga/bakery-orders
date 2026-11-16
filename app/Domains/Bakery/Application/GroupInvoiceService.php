@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * @phpstan-type GroupMember array{name:string,address:string,comment:string|null,ordered:bool,quantity:int,gross:int,returns:int,net:int}
  * @phpstan-type GroupProduct array{name:string,quantity:int,returned:int,unit_kopecks:int,gross:int,net:int}
- * @phpstan-type GroupInvoice array{id:int,name:string,members:list<GroupMember>,products:list<GroupProduct>,quantity:int,returned_quantity:int,gross:int,returns:int,net:int,has_orders:bool}
+ * @phpstan-type GroupInvoice array{id:int,name:string,members:list<GroupMember>,products:list<GroupProduct>,quantity:int,returned_quantity:int,gross:int,returns:int,net:int,has_orders:bool,show_return_columns:bool}
  */
 class GroupInvoiceService
 {
@@ -93,6 +93,8 @@ class GroupInvoiceService
             $result[] = [
                 'id' => (int) $group->id,
                 'name' => $group->name,
+                // These consolidated printouts use a compact layout without return columns.
+                'show_return_columns' => mb_stripos((string) $group->name, 'Балтийск') === false && mb_stripos((string) $group->name, 'Колпино') === false,
                 'members' => $members,
                 'products' => array_values($products),
                 'quantity' => $quantity,

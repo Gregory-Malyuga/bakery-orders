@@ -166,7 +166,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     private function groupSheet(array $group, string $date, string $generatedAt): string
     {
         $cells = [];
-        $hasReturns = $group['returned_quantity'] > 0;
+        $hasReturns = $group['show_return_columns'] && $group['returned_quantity'] > 0;
         $widths = [];
         foreach ($hasReturns ? [10, 43, 16, 16, 16, 17, 20] : [10, 43, 16, 16, 17] as $index => $width) {
             $column = $index + 1;
@@ -191,7 +191,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
                 $this->put($cells, $row, $this->number(4, $row, (string) $product['returned'], 4));
             }
             $this->put($cells, $row, $this->number($hasReturns ? 5 : 4, $row, $this->rubles($product['unit_kopecks']), 6));
-            $this->put($cells, $row, $this->number($hasReturns ? 6 : 5, $row, $this->rubles($product['gross']), 6));
+            $this->put($cells, $row, $this->number($hasReturns ? 6 : 5, $row, $this->rubles($group['show_return_columns'] ? $product['gross'] : $product['net']), 6));
             if ($hasReturns) {
                 $this->put($cells, $row, $this->number(7, $row, $this->rubles($product['net']), 6));
             }
@@ -207,23 +207,52 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, $totalRow, $this->number(7, $totalRow, $this->rubles($group['net']), 8));
         } else {
             $this->put($cells, $totalRow, $this->blank(4, $totalRow, 7));
-            $this->put($cells, $totalRow, $this->number(5, $totalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $totalRow, $this->number(5, $totalRow, $this->rubles($group['show_return_columns'] ? $group['gross'] : $group['net']), 8));
         }
 
         $memberTitleRow = $totalRow + 2;
-        $this->put($cells, $memberTitleRow, $this->label(1, $memberTitleRow, 'Состав группы на момент формирования', 7));
+        $this->put($cells, $memberTitleRow, $this->label(2, $memberTitleRow, 'Состав группы на момент формирования', 9));
+        $memberHeaderRow = $memberTitleRow + 1;
+        $memberHasReturns = $hasReturns;
+        $memberHeaders = $memberHasReturns
+            ? ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'Возврат, ₽', 'К оплате, ₽']
+            : ['№', 'Торговая точка', 'Изделий, шт.', 'Заказ, ₽', 'К оплате, ₽'];
+        // No independent return columns for Baltic/Kolpino; only the payable net amount.
+        foreach ($memberHeaders as $index => $heading) {
+            $this->put($cells, $memberHeaderRow, $this->label($index + 1, $memberHeaderRow, $heading, 5));
+        }
         foreach ($group['members'] as $index => $member) {
-            $row = $memberTitleRow + $index + 1;
+            $row = $memberHeaderRow + $index + 1;
             $label = $member['name'].' · '.$member['address'].($member['ordered'] ? '' : ' · нет заказа');
-            $this->put($cells, $row, $this->label(1, $row, $label));
-            if ($member['ordered']) {
-                $this->put($cells, $row, $this->number(2, $row, (string) $member['quantity']));
-                $this->put($cells, $row, $this->number(3, $row, $this->rubles($member['gross'])));
-                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['returns'])));
-                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net'])));
+            $this->put($cells, $row, $this->number(1, $row, (string) ($index + 1), 4));
+            $this->put($cells, $row, $this->label(2, $row, $label, 4));
+            $this->put($cells, $row, $this->number(3, $row, (string) $member['quantity'], 4));
+            if ($memberHasReturns) {
+                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['gross']), 6));
+                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['returns']), 6));
+                $this->put($cells, $row, $this->number(6, $row, $this->rubles($member['net']), 6));
+            } else {
+                $this->put($cells, $row, $this->number(4, $row, $this->rubles($member['gross']), 6));
+                $this->put($cells, $row, $this->number(5, $row, $this->rubles($member['net']), 6));
             }
+        }
+        $memberTotalRow = $memberHeaderRow + count($group['members']) + 1;
+        $this->put($cells, $memberTotalRow, $this->blank(1, $memberTotalRow, 7));
+        $this->put($cells, $memberTotalRow, $this->label(2, $memberTotalRow, 'Итого по точкам', 7));
+        $this->put($cells, $memberTotalRow, $this->number(3, $memberTotalRow, (string) $group['quantity'], 7));
+        if ($memberHasReturns) {
+            $this->put($cells, $memberTotalRow, $this->number(4, $memberTotalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $memberTotalRow, $this->number(5, $memberTotalRow, $this->rubles($group['returns']), 8));
+            $this->put($cells, $memberTotalRow, $this->number(6, $memberTotalRow, $this->rubles($group['net']), 8));
+        } else {
+            $this->put($cells, $memberTotalRow, $this->number(4, $memberTotalRow, $this->rubles($group['gross']), 8));
+            $this->put($cells, $memberTotalRow, $this->number(5, $memberTotalRow, $this->rubles($group['net']), 8));
+        }
+        $commentRow = $memberTotalRow + 2;
+        foreach ($group['members'] as $member) {
             if ($member['comment']) {
-                $this->put($cells, $row + count($group['members']) + 1, $this->label(1, $row + count($group['members']) + 1, 'Комментарий · '.$member['name'].': '.$member['comment']));
+                $this->put($cells, $commentRow, $this->label(2, $commentRow, 'Комментарий · '.$member['name'].': '.$member['comment']));
+                $commentRow++;
             }
         }
 

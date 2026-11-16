@@ -14,11 +14,11 @@ class Bakery extends Model
     protected $table = 'bakeries';
 
     /** @var list<string> */
-    protected $fillable = ['name', 'address', 'is_active'];
+    protected $fillable = ['name', 'address', 'is_active', 'discount_enabled', 'discount_percent'];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
     }
 
     protected static function newFactory(): BakeryFactory
