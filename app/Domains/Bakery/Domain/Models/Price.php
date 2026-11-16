@@ -2,7 +2,6 @@
 
 namespace Domains\Bakery\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
@@ -25,9 +24,6 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Price extends Model
+class Price extends \Domains\Price\Domain\Models\Price
 {
-    protected $table = 'bakery_prices';
-
-    protected $fillable = ['bakery_id', 'product_id', 'kopecks'];
 }

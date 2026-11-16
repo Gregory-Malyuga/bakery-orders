@@ -3,6 +3,7 @@
 namespace Domains\User\Providers;
 
 use Domains\User\Application\Commands\Create\CreateUserHandler;
+use Domains\User\Infrastructure\Console\CreateAdminCommand;
 use Domains\User\Application\Commands\Delete\DeleteUserHandler;
 use Domains\User\Application\Commands\Logout\LogoutHandler;
 use Domains\User\Application\Commands\Register\RegisterHandler;
@@ -18,6 +19,13 @@ use Illuminate\Support\ServiceProvider;
 
 class UserServiceProvider extends ServiceProvider
 {
+    public function boot(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->commands([CreateAdminCommand::class]);
+        }
+    }
+
     public function register(): void
     {
         $this->app->bind(CreateUserHandler::class);

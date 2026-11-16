@@ -2,7 +2,6 @@
 
 namespace Domains\Bakery\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
@@ -26,11 +25,6 @@ use Illuminate\Database\Eloquent\Model;
  *
  * @mixin \Eloquent
  */
-class OrderItem extends Model
+class OrderItem extends \Domains\OrderItem\Domain\Models\OrderItem
 {
-    public $timestamps = false;
-
-    protected $table = 'bakery_order_items';
-
-    protected $fillable = ['order_id', 'product_id', 'product_name', 'quantity', 'unit_kopecks', 'total_kopecks'];
 }

@@ -1,6 +1,6 @@
 <?php
 
-use Domains\Bakery\Presentation\Http\Middleware\EnsureBakeryRole;
+use Domains\User\Presentation\Http\Middleware\EnsureBakeryRole;
 use Domains\User\Domain\Exceptions\InvalidCredentialsException;
 use Domains\User\Domain\Exceptions\UserForbiddenException;
 use Domains\User\Domain\Exceptions\UserInsufficientRoleException;

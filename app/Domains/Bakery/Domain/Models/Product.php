@@ -2,7 +2,6 @@
 
 namespace Domains\Bakery\Domain\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
@@ -29,14 +28,6 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Product extends Model
+class Product extends \Domains\Product\Domain\Models\Product
 {
-    protected $table = 'bakery_products';
-
-    protected $fillable = ['name', 'sort_order', 'minimum_quantity', 'packaging_mode', 'is_active'];
-
-    protected function casts(): array
-    {
-        return ['is_active' => 'boolean', 'sort_order' => 'integer', 'minimum_quantity' => 'integer'];
-    }
 }
