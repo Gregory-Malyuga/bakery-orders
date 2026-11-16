@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrderManagementService
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly PackagingPlanner $packaging) {}
 
     /** @param array<int|string, int|string> $quantities */
     public function adjust(int $orderId, int $adminId, array $quantities, string $reason, ?string $adminNote): void
@@ -48,6 +48,9 @@ class OrderManagementService
                 } else {
                     $unit = $item->unit_kopecks;
                     $name = $item->product_name;
+                }
+                if ($product !== null && $this->packaging->plan($quantity, $product->packaging_mode)['loose'] !== 0) {
+                    throw ValidationException::withMessages(['quantities' => "Товар «{$name}» нельзя заказать в количестве {$quantity} шт. при выбранной фасовке."]);
                 }
                 $row = ['product_id' => $id, 'product_name' => $name, 'quantity' => $quantity, 'unit_kopecks' => $unit, 'total_kopecks' => $quantity * $unit];
                 $after[] = $row;

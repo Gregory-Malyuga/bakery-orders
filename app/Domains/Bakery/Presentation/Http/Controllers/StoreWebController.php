@@ -3,6 +3,7 @@
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\OrderingService;
+use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -12,7 +13,7 @@ use Illuminate\View\View;
 
 class StoreWebController
 {
-    public function __construct(private readonly OrderingService $service, private readonly OrderingRepositoryInterface $repository) {}
+    public function __construct(private readonly OrderingService $service, private readonly OrderingRepositoryInterface $repository, private readonly OrderCutoff $cutoff) {}
 
     private function user(Request $request): User
     {
@@ -48,6 +49,7 @@ class StoreWebController
             'accessibleStores' => $this->repository->stores()->whereIn('id', $this->user($request)->accessibleStoreIds())->where('is_active', true),
             'date' => $this->service->deliveryDate(),
             'open' => $this->service->isOpen(),
+            'orderCutoff' => $this->cutoff->time(),
             'products' => $this->repository->products()->where('is_active', true),
             'prices' => $this->repository->prices($id),
             'minimums' => $this->repository->minimums($id),
@@ -80,6 +82,7 @@ class StoreWebController
             'accessibleStores' => $this->repository->stores()->whereIn('id', $this->user($request)->accessibleStoreIds())->where('is_active', true),
             'date' => $this->service->deliveryDate(),
             'open' => true,
+            'orderCutoff' => $this->cutoff->time(),
             'products' => $products,
             'prices' => $prices,
             'minimums' => $this->repository->minimums((int) $store->id),

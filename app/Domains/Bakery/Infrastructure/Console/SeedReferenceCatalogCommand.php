@@ -85,7 +85,8 @@ class SeedReferenceCatalogCommand extends Command
                 foreach ($data['products'] as $index => $name) {
                     $key = $reader->key($name);
                     $mode = in_array($key, ['пицца', 'ватрушка', 'хачапури', 'лепёшка', 'лепешка'], true) ? 'single' : (in_array($key, ['мак', 'изюм', 'косичка с маком'], true) ? 'pair' : 'mixed');
-                    $product = $productsByName[$key] ?? Product::query()->create(['name' => $name, 'sort_order' => $index + 1, 'minimum_quantity' => 1, 'packaging_mode' => $mode, 'is_active' => true]);
+                    $minimum = $mode === 'mixed' ? 3 : ($mode === 'pair' ? 2 : 1);
+                    $product = $productsByName[$key] ?? Product::query()->create(['name' => $name, 'sort_order' => $index + 1, 'minimum_quantity' => $minimum, 'packaging_mode' => $mode, 'is_active' => true]);
                     $product->update(['sort_order' => $index + 1, 'is_active' => true]);
                     $productIds[] = $product->id;
                 }
