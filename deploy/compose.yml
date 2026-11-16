@@ -48,17 +48,6 @@ services:
 
   php-green:
     profiles: [green]
-        condition: service_healthy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-    networks:
-      - backend
-
-  php:
     image: laravel-app-php:green
     restart: unless-stopped
     platform: linux/amd64
