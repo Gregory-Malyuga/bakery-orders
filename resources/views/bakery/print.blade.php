@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="ru">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Накладные</title><link rel="stylesheet" href="/bakery.css"></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Накладные</title><link rel="stylesheet" href="/bakery.css?v={{ filemtime(public_path('bakery.css')) }}"></head>
 <body><main class="wrap">
-    <div class="no-print actions"><a class="button secondary" href="{{ $downloadUrl }}">Скачать и отредактировать в Excel</a><button class="button primary" onclick="window.print()">Печать</button></div>
+    <div class="no-print actions print-actions"><a class="button secondary" href="{{ $downloadUrl }}">Скачать и отредактировать в Excel</a><button class="button primary" onclick="window.print()">Печать</button></div>
     @forelse($orders as $order)
         <section class="invoice">
             <h2>Накладная №{{ $order->id }} от {{ $order->delivery_date->format('d.m.Y') }}</h2>
