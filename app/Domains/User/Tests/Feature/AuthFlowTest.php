@@ -66,29 +66,16 @@ class AuthFlowTest extends TestCase
 
     // ── Register ──────────────────────────────────────────────────────────
 
-    public function test_register_returns_422_for_duplicate_email(): void
+    public function test_registration_endpoint_is_unavailable(): void
     {
-        User::factory()->create(['email' => 'existing@test.com']);
-
         $response = $this->postJson('/api/auth/register', [
             'name' => 'Test User',
-            'email' => 'existing@test.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-        ]);
-
-        $response->assertStatus(422)->assertJsonValidationErrors(['email']);
-    }
-
-    public function test_register_returns_201_with_token(): void
-    {
-        $response = $this->postJson('/api/auth/register', [
-            'name' => 'New User',
             'email' => 'new@test.com',
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertStatus(201)->assertJsonStructure(['token', 'user']);
+        $response->assertNotFound();
+        $this->assertDatabaseMissing('users', ['email' => 'new@test.com']);
     }
 }

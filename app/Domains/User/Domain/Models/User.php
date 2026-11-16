@@ -26,6 +26,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property UserStatus $status
+ * @property int|null $bakery_id
  * @property-read DatabaseNotificationCollection<int, DatabaseNotification> $notifications
  * @property-read int|null $notifications_count
  * @property-read Collection<int, PersonalAccessToken> $tokens
@@ -56,7 +57,7 @@ class User extends Authenticatable
     protected $table = 'users';
 
     /** @var list<string> */
-    protected $fillable = ['name', 'email', 'password', 'role'];
+    protected $fillable = ['name', 'email', 'password', 'role', 'status', 'bakery_id'];
 
     /** @var list<string> */
     protected $hidden = ['password', 'remember_token', 'status'];

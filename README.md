@@ -1,4 +1,69 @@
-# Laravel Microservice Boilerplate
+# Сайт заказов пекарни
+
+Локально: `http://localhost:8099/login`. Магазин оформляет один принятый заказ на завтрашнюю поставку до 18:30 по Москве; пекарня смотрит сводку, управляет справочниками и печатает накладные. Публичной регистрации нет.
+
+Срок заказа проверяется по времени сервера при предварительном просмотре и при окончательном подтверждении; дата и время устройства магазина не учитываются. В разделе «Магазины, товары и цены» администратор задаёт товару минимальное количество в штуках. Ноль означает отказ от товара; если товар выбран, количество должно быть не меньше указанного минимума. Из сводки можно напечатать все принятые накладные за выбранную дату или скачать их в одном `.xlsx`; на странице заказа доступны печать и `.xlsx` одной накладной. Отменённые заказы в выгрузку не попадают.
+
+В XLSX лист «Накладная» размещает магазины горизонтально отдельными блоками, товары идут по строкам, в каждом блоке есть количество, цена и сумма. Лист «Заказ» содержит матрицу количеств по магазинам и итоги в штуках и рублях. Суммы берутся из принятых заказов с сохранёнными на момент оформления ценами.
+
+```bash
+docker compose up -d --build
+docker compose exec -T php sh -c 'cd /var/www/app && composer install && php artisan migrate --force'
+docker compose exec -T php sh -c 'cd /var/www/app && php artisan db:seed --class=BakeryDemoSeeder --force'
+```
+
+Демовходы: `admin@example.test`, `sadovaya@example.test`, `frunze@example.test`, `shosse@example.test`; пароль для всех `Demo123456!`. Демоданные запускайте только в локальной среде. В рабочей среде создайте аккаунт администратора отдельно и задайте собственный пароль. Пользователи магазинов создаются в панели администратора.
+
+Для первого развёртывания после настройки `.env` выполните миграции, заполните магазины, товары, цены и магазинные аккаунты из «Лист1», затем создайте администратора. Последняя команда запускается **без `-T`**: пароль вводится скрыто дважды и не попадает в историю команд.
+
+```bash
+docker compose exec -T php php artisan migrate --force
+docker compose exec -T php php artisan bakery:seed-reference
+docker compose exec php php artisan bakery:create-admin admin@example.com
+```
+
+Если `APP_KEY` ещё не задан, перед миграциями выполните `docker compose exec -T php php artisan key:generate`. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
+
+### Начальная загрузка из «Лист1»
+
+Файл `resources/data/Накладные 10.09.xlsx` используется как источник 72 магазинов, 23 товаров и персональных цен. Проверка без записи и загрузка:
+
+```bash
+docker compose exec -T php php artisan bakery:seed-reference --dry-run
+docker compose exec -T php php artisan bakery:seed-reference
+```
+
+Для новых магазинов создаются логины `store-001@bakery.test` … `store-072@bakery.test` в порядке колонок «Лист1», пароль `changeme`. При повторном запуске существующие пароли сохраняются. Нулевая цена означает недоступность товара для конкретного магазина: цена не показывается, заказ товара запрещён. В исходном листе название и адрес магазина объединены в одной ячейке, поэтому при загрузке это значение записывается в оба поля; адрес можно уточнить в админ-панели. Демоаккаунты и демотовары сохраняются.
+
+### Импорт согласованного каталога
+
+Сохраните согласованную таблицу в UTF-8 CSV с разделителем `;` и заголовком `product;store;address;price`. Каждая строка задаёт цену одного товара для одного магазина; для всех пар магазин–товар строки обязательны. Команда сначала проверяет пропуски, дубликаты, написания и цены. Соответствия названий между файлами не угадываются. Исходные Excel в `resources/data` не изменяются.
+
+```bash
+docker compose exec -T php sh -c 'cd /var/www/app && php artisan bakery:import-catalog /var/www/app/resources/data/approved.csv'
+docker compose exec -T php sh -c 'cd /var/www/app && php artisan bakery:import-catalog /var/www/app/resources/data/approved.csv --apply'
+```
+
+### Проверка
+
+Создайте отдельную БД тестов один раз: `docker compose exec -T postgres createdb -U laravel-database-user laravel-database-test`. Запускайте gate на ней, чтобы не менять локальные демоданные:
+
+```bash
+docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/www/app && composer pre-push'
+```
+
+### Развёртывание и резервное копирование
+
+Для рабочего окружения задайте отдельные `APP_KEY`, пароли БД и HTTPS-адрес, уберите демоданные, сохраните PostgreSQL и Redis в постоянных томах. После обновления кода выполните `php artisan migrate --force` внутри PHP-контейнера; проверьте `/health`, вход, оформление и печать. Приложение здесь никуда не опубликовано.
+
+Для резервной копии остановка приложения не требуется. Пример для локального Compose:
+
+```bash
+docker compose exec -T postgres pg_dump -U laravel-database-user -d laravel-database -Fc -f /tmp/bakery.dump
+docker cp laravel-app-postgres-1:/tmp/bakery.dump ./bakery-$(Get-Date -Format yyyyMMdd-HHmmss).dump
+```
+
+Храните копию вне хоста и регулярно проверяйте восстановление в отдельную БД командой `pg_restore`. Перед миграциями в рабочей среде сначала сделайте и проверьте копию.
 
 Стартовый шаблон Laravel-микросервиса: PHP 8.5 / Laravel 13, Elasticsearch, Redis, Docker Swarm.
 
@@ -24,7 +89,7 @@ docker compose up -d
 docker compose exec -T php sh -c "cd /var/www/app && php artisan migrate"
 ```
 
-App URL: `http://localhost:8088`
+App URL: `http://localhost:8099`
 
 ## Разработка
 
