@@ -3,6 +3,7 @@
 namespace Domains\Bakery\Presentation\Http\Controllers;
 
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Bakery\Application\Exports\PeriodReportWorkbookInterface;
 use Domains\Bakery\Application\OrderCutoff;
 use Domains\Bakery\Application\OrderManagementService;
 use Domains\Bakery\Application\OrderReturnSummary;
@@ -11,7 +12,6 @@ use Domains\Bakery\Application\PeriodReportService;
 use Domains\Bakery\Application\ProductionCalculator;
 use Domains\Bakery\Application\Repositories\AdminRepositoryInterface;
 use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\Bakery\Infrastructure\Exports\PeriodReportWorkbook;
 use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +21,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AdminWebController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbook $periodWorkbook, private readonly OrderCutoff $cutoff) {}
+    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly AdminRepositoryInterface $admin, private readonly InvoiceWorkbookInterface $workbook, private readonly PackagingPlanner $packaging, private readonly ProductionCalculator $production, private readonly OrderManagementService $management, private readonly OrderReturnSummary $returnSummary, private readonly PeriodReportService $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly OrderCutoff $cutoff) {}
 
     private function adminId(Request $request): int
     {
