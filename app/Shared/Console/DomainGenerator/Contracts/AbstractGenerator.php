@@ -3,7 +3,6 @@
 namespace Shared\Console\DomainGenerator\Contracts;
 
 use Illuminate\Filesystem\Filesystem;
-use Shared\Console\DomainGenerator\Context\DomainContext;
 
 abstract class AbstractGenerator implements GeneratorInterface
 {
@@ -33,22 +32,5 @@ abstract class AbstractGenerator implements GeneratorInterface
         if ($this->outputFn !== null) {
             ($this->outputFn)('create', $path);
         }
-    }
-
-    protected function esImports(DomainContext $ctx): string
-    {
-        return $ctx->withElasticsearch
-            ? "\nuse Shared\\Elasticsearch\\ElasticsearchSearchable;\nuse Shared\\Elasticsearch\\InteractsWithElasticsearch;"
-            : '';
-    }
-
-    protected function esInterface(DomainContext $ctx): string
-    {
-        return $ctx->withElasticsearch ? ' implements ElasticsearchSearchable' : '';
-    }
-
-    protected function esTrait(DomainContext $ctx): string
-    {
-        return $ctx->withElasticsearch ? "\n    use InteractsWithElasticsearch;\n" : '';
     }
 }

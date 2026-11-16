@@ -11,7 +11,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Support\Facades\Route;
 use Shared\Http\Controllers\HealthController;
-use Shared\Http\Middleware\AddEsSearchTruncatedHeader;
 
 $app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -26,7 +25,6 @@ $app = Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
         $middleware->redirectGuestsTo('/login');
-        $middleware->appendToGroup('api', AddEsSearchTruncatedHeader::class);
         $middleware->alias(['bakery.role' => EnsureBakeryRole::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

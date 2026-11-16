@@ -13,9 +13,10 @@ ADR иммутабельны после статуса `accepted`.
 | 0005 | Auth domain merged into User domain | accepted |
 | 0006 | Repository interface in Application layer (ports & adapters) | accepted |
 | 0007 | Domain events carry scalar IDs, not Eloquent models | accepted |
-| 0008 | Async Elasticsearch sync via ShouldQueue | accepted |
+| 0008 | Async Elasticsearch sync via ShouldQueue | superseded by ADR-0011 |
 | 0009 | Separate input and output DTOs | accepted |
 | 0010 | Domain exceptions mapped to HTTP codes in bootstrap/app.php | accepted |
+| 0011 | Единый стек Caddy, PHP, PostgreSQL | accepted |
 
 > Шаблон: `docs/adr/0000-template.md`
 >

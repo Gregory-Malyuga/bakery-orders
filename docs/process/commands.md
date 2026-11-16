@@ -74,14 +74,11 @@ app/Domains/<Name>/Tests/
 
 Создаёт полную DDD-структуру домена: Model, Factory, Data, FilterData, Commands, Queries, Events, NotFoundException, Repository, Controller, OpenApi-заготовку, ServiceProvider, тесты, миграцию.
 
-Сигнатура: `make:domain {Name} [field:type ...] [--with-elasticsearch] [--with-cache-warmer]`.
+Сигнатура: `make:domain {Name} [field:type ...] [--with-cache-warmer]`.
 
 ```bash
 # Базовый домен с полями
 docker compose exec -T php sh -c "cd /var/www/app && php artisan make:domain Post title:string body:string"
-
-# С поддержкой Elasticsearch (интерфейс + трейт + buildEsQuery)
-docker compose exec -T php sh -c "cd /var/www/app && php artisan make:domain Article title:string body:string --with-elasticsearch"
 
 # С CacheWarmer
 docker compose exec -T php sh -c "cd /var/www/app && php artisan make:domain Category name:string --with-cache-warmer"

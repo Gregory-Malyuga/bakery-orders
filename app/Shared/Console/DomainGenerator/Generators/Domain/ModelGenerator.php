@@ -23,10 +23,6 @@ class ModelGenerator extends AbstractGenerator
         $castsLines = implode(', ', array_map(fn ($f, $c) => "'{$f}' => '{$c}'", array_keys($castsMap), $castsMap));
         $castsProperty = $castsMap !== [] ? "\n            /** @var array<string, string> */\n            protected \$casts = [{$castsLines}];\n" : '';
 
-        $esImports = $this->esImports($ctx);
-        $esInterface = $this->esInterface($ctx);
-        $esTrait = $this->esTrait($ctx);
-
         $content = <<<PHP
         <?php
 
@@ -34,10 +30,10 @@ class ModelGenerator extends AbstractGenerator
 
         use {$ctx->ns}\\Domain\\Database\\Factories\\{$ctx->name}Factory;
         use Illuminate\\Database\\Eloquent\\Factories\\HasFactory;
-        use Illuminate\\Database\\Eloquent\\Model;{$esImports}
+        use Illuminate\\Database\\Eloquent\\Model;
 
-        class {$ctx->name} extends Model{$esInterface}
-        {{$esTrait}
+        class {$ctx->name} extends Model
+        {
 
             /** @use HasFactory<{$ctx->name}Factory> */
             use HasFactory;

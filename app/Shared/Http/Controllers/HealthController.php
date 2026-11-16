@@ -2,32 +2,21 @@
 
 namespace Shared\Http\Controllers;
 
-use Elastic\Elasticsearch\Client;
-use Elastic\Elasticsearch\Response\Elasticsearch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Redis;
 
 class HealthController extends Controller
 {
-    public function __construct(private readonly Client $es) {}
-
     public function __invoke(): JsonResponse
     {
         $db = $this->checkDb();
-        $es = config('health.elasticsearch') ? $this->checkEs() : null;
-        $redis = config('health.redis') ? $this->checkRedis() : null;
-
-        $allHealthy = $db && $es !== false && $redis !== false;
 
         return response()->json([
-            'status' => $allHealthy ? 'ok' : 'degraded',
+            'status' => $db ? 'ok' : 'degraded',
             'db' => $db,
-            'es' => $es,
-            'redis' => $redis,
-        ], $allHealthy ? 200 : 503);
+        ], $db ? 200 : 503);
     }
 
     private function checkDb(): bool
@@ -38,32 +27,6 @@ class HealthController extends Controller
             return true;
         } catch (\Throwable $e) {
             Log::warning('Health check: DB unavailable', ['error' => $e->getMessage()]);
-
-            return false;
-        }
-    }
-
-    private function checkEs(): bool
-    {
-        try {
-            $response = $this->es->ping();
-
-            return $response instanceof Elasticsearch && $response->asBool();
-        } catch (\Throwable $e) {
-            Log::warning('Health check: Elasticsearch unavailable', ['error' => $e->getMessage()]);
-
-            return false;
-        }
-    }
-
-    private function checkRedis(): bool
-    {
-        try {
-            Redis::connection()->ping();
-
-            return true;
-        } catch (\Throwable $e) {
-            Log::warning('Health check: Redis unavailable', ['error' => $e->getMessage()]);
 
             return false;
         }

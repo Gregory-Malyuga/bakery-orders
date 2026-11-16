@@ -72,13 +72,6 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertFileDoesNotExist("{$this->domainBase}/Infrastructure/Cache/StubGenCacheWarmer.php");
     }
 
-    public function test_repository_without_elasticsearch_by_default(): void
-    {
-        $content = $this->files->get("{$this->domainBase}/Infrastructure/Repositories/StubGenRepository.php");
-
-        $this->assertStringNotContainsString('ElasticsearchSearchable', $content);
-    }
-
     public function test_generated_repository_has_correct_namespace(): void
     {
         $content = $this->files->get("{$this->domainBase}/Infrastructure/Repositories/StubGenRepository.php");

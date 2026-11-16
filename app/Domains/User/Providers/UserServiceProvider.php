@@ -11,14 +11,8 @@ use Domains\User\Application\Queries\FindByCredentials\FindUserByCredentialsHand
 use Domains\User\Application\Queries\FindById\FindUserByIdHandler;
 use Domains\User\Application\Queries\ListAll\ListUsersHandler;
 use Domains\User\Application\Repositories\UserRepositoryInterface;
-use Domains\User\Domain\Events\UserCreated;
-use Domains\User\Domain\Events\UserDeleted;
-use Domains\User\Domain\Events\UserUpdated;
-use Domains\User\Infrastructure\Elasticsearch\UserElasticsearchIndexer;
-use Domains\User\Infrastructure\Elasticsearch\UserElasticsearchSyncListener;
 use Domains\User\Infrastructure\Repositories\UserRepository;
 use Domains\User\Presentation\Http\Middleware\EnsureUserIsVerified;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -37,16 +31,6 @@ class UserServiceProvider extends ServiceProvider
 
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
 
-        $this->app->bind(UserElasticsearchIndexer::class);
-        $this->app->tag([UserElasticsearchIndexer::class], ['es-indexers']);
-
         Route::aliasMiddleware('user.verified', EnsureUserIsVerified::class);
-    }
-
-    public function boot(): void
-    {
-        Event::listen(UserCreated::class, [UserElasticsearchSyncListener::class, 'handleCreated']);
-        Event::listen(UserUpdated::class, [UserElasticsearchSyncListener::class, 'handleUpdated']);
-        Event::listen(UserDeleted::class, [UserElasticsearchSyncListener::class, 'handleDeleted']);
     }
 }

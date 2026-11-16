@@ -46,8 +46,7 @@ class MakeDomainCommand extends Command
     protected $signature = 'make:domain
         {name : Domain name in PascalCase, optionally nested with / (e.g. Store or Users/User)}
         {fields?* : Field definitions as field:type (e.g. name:string email:email). Omit id/created_at/updated_at.}
-        {--with-cache-warmer : Generate a CacheWarmer class}
-        {--with-elasticsearch : Add ElasticsearchSearchable to Repository}';
+        {--with-cache-warmer : Generate a CacheWarmer class}';
 
     protected $description = 'Scaffold a full working CRUD domain with CQRS, tests, routes and OpenAPI docs.';
 
@@ -113,7 +112,6 @@ class MakeDomainCommand extends Command
             basePath: $basePath,
             unitTestPath: "{$basePath}/Tests/Unit",
             featureTestPath: "{$basePath}/Tests/Feature",
-            withElasticsearch: (bool) $this->option('with-elasticsearch'),
             withCacheWarmer: (bool) $this->option('with-cache-warmer'),
         );
     }

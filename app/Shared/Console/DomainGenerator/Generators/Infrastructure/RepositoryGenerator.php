@@ -10,13 +10,6 @@ class RepositoryGenerator extends AbstractGenerator
 {
     public function generate(DomainContext $ctx, Filesystem $files): void
     {
-        $esImports = $this->esImports($ctx);
-        $esTrait = $this->esTrait($ctx);
-
-        $implements = $ctx->withElasticsearch
-            ? " implements ElasticsearchSearchable, {$ctx->name}RepositoryInterface"
-            : " implements {$ctx->name}RepositoryInterface";
-
         $content = <<<PHP
         <?php
 
@@ -24,10 +17,10 @@ class RepositoryGenerator extends AbstractGenerator
 
         use Shared\\Repository\\BaseRepository;
         use {$ctx->ns}\\Application\\Repositories\\{$ctx->name}RepositoryInterface;
-        use {$ctx->ns}\\Domain\\Models\\{$ctx->name};{$esImports}
+        use {$ctx->ns}\\Domain\\Models\\{$ctx->name};
 
-        class {$ctx->name}Repository extends BaseRepository{$implements}
-        {{$esTrait}
+        class {$ctx->name}Repository extends BaseRepository implements {$ctx->name}RepositoryInterface
+        {
             protected string \$model = {$ctx->name}::class;
 
             public function findOrFail(int|string \$id): {$ctx->name}

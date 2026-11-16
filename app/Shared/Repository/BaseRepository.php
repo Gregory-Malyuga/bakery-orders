@@ -160,7 +160,6 @@ abstract class BaseRepository
 
     /**
      * Override to modify the query builder before filters are applied.
-     * InteractsWithElasticsearch overrides this to inject ES-based id constraints.
      *
      * @param  BaseQueryBuilder<Model>  $qb
      * @return BaseQueryBuilder<Model>

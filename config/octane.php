@@ -1,8 +1,6 @@
 <?php
 
-use Elastic\Elasticsearch\Client;
 use Laravel\Octane\Octane;
-use Shared\Elasticsearch\EsTruncationBag;
 
 return [
 
@@ -10,22 +8,9 @@ return [
 
     'https' => env('OCTANE_HTTPS', false),
 
-    /*
-     * Warm at worker boot so the first request pays no cold-start cost.
-     * Keep Octane's framework defaults (auth, cache, db, view, ...) and add ours.
-     */
-    'warm' => [
-        ...Octane::defaultServicesToWarm(),
-        Client::class,
-    ],
+    'warm' => Octane::defaultServicesToWarm(),
 
-    /*
-     * Reset these singletons between requests to prevent state leaking across requests.
-     * EsTruncationBag carries a boolean flag that must start clean on every request.
-     */
-    'flush' => [
-        EsTruncationBag::class,
-    ],
+    'flush' => [],
 
     'garbage' => 50,
 
