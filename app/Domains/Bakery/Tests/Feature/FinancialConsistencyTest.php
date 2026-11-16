@@ -61,7 +61,7 @@ class FinancialConsistencyTest extends TestCase
         $date = $firstQuote['date'];
         $this->assertSame(5346, $firstOrder->fresh()?->total_kopecks);
         $this->actingAs($customer)->get('/orders/'.$firstOrder->id)->assertOk()->assertSee('53,46 ₽')->assertSee('12,34 ₽');
-        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()->assertSee('53,46 ₽')->assertSee('30,60 ₽');
+        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()->assertSee('39,07 ₽')->assertSee('30,60 ₽');
         $this->actingAs($admin)->get('/admin?date='.$date.'&tab=production')->assertOk()
             ->assertViewHas('totals', fn (array $totals): bool => $totals[$pizza->id] === 6 && $totals[$bun->id] === 2);
         $this->actingAs($admin)->get('/admin?date='.$date.'&tab=labels')->assertOk()->assertViewHas('labelTotal', 8);
@@ -139,6 +139,53 @@ class FinancialConsistencyTest extends TestCase
         $report = $this->downloadCells('/admin/report/xlsx?from='.$date.'&to='.$date, 3);
         $this->assertArrayNotHasKey('A2', $report[1]);
         $this->assertArrayNotHasKey('A2', $report[2]);
+    }
+
+    public function test_cancelling_one_duplicate_return_preserves_history_and_updates_every_financial_view(): void
+    {
+        $this->withoutMiddleware(PreventRequestForgery::class);
+        Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
+        $store = Bakery::query()->create(['name' => 'Точка возврата', 'address' => 'Адрес', 'is_active' => true]);
+        $product = Product::query()->create(['name' => 'Пирог', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1000]);
+        $admin = User::factory()->create(['name' => 'Администратор возвратов', 'role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $customer = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 5]);
+        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 5], $quote['hash'])['order'];
+        $this->assertNotNull($order);
+        $url = '/admin/orders/'.$order->id.'/returns';
+        $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
+        $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertRedirect();
+        $returnIds = DB::table('bakery_returns')->where('order_id', $order->id)->orderBy('id')->pluck('id');
+        $this->assertCount(2, $returnIds);
+        $cancelUrl = $url.'/'.$returnIds[0].'/cancel';
+
+        $this->actingAs($customer)->post($cancelUrl, ['reason' => 'Дубль'])->assertForbidden();
+        $this->actingAs($admin)->post($cancelUrl, ['reason' => '   '])->assertSessionHasErrors('reason');
+        $this->actingAs($admin)->post($cancelUrl, ['reason' => 'Дублированная запись'])->assertRedirect();
+        $this->actingAs($admin)->post($cancelUrl, ['reason' => 'Повтор'])->assertStatus(422);
+        $this->assertDatabaseCount('bakery_returns', 2);
+        $this->assertDatabaseHas('bakery_returns', ['id' => $returnIds[0], 'status' => 'cancelled', 'cancelled_by_user_id' => $admin->id, 'cancellation_reason' => 'Дублированная запись']);
+        $this->assertDatabaseHas('bakery_returns', ['id' => $returnIds[1], 'status' => 'active', 'cancelled_at' => null]);
+        $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertOk()
+            ->assertSee('Дублированная запись')->assertSee('Администратор возвратов')->assertSee('40,00 ₽');
+        $date = $quote['date'];
+        $this->actingAs($admin)->get('/admin?date='.$date.'&tab=orders')->assertOk()->assertSee('40,00 ₽');
+        $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/print')->assertOk()->assertSee('40,00 ₽')->assertSee('10,00 ₽');
+        $this->actingAs($admin)->get('/admin/print?date='.$date)->assertOk()->assertSee('40,00 ₽');
+        $single = $this->downloadCells('/admin/orders/'.$order->id.'/xlsx', 2);
+        $this->assertSame('1', $this->cellForProduct($single[1], 'Пирог', 'D'));
+        $this->assertSame('40.00', $this->cellForProduct($single[1], 'Итого', 'G'));
+        $batch = $this->downloadCells('/admin/xlsx?date='.$date, 2);
+        $this->assertSame('40.00', $this->cellForProduct($batch[1], 'Итого', 'G'));
+        $this->actingAs($admin)->get('/admin/report?from='.$date.'&to='.$date)->assertOk()->assertSee('40,00 ₽');
+        $report = $this->downloadCells('/admin/report/xlsx?from='.$date.'&to='.$date, 3);
+        $this->assertSame('1', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'E'));
+        $this->assertSame('40.00', $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'));
+
+        $service->cancel($store->id, $order->id);
+        $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertStatus(422);
     }
 
     public function test_unordered_available_product_can_be_returned_at_snapshotted_price(): void

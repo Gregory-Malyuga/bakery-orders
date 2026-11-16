@@ -54,6 +54,7 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::get('/orders/{order}/edit', [AdminWebController::class, 'editOrder'])->name('bakery.admin-order-edit');
     Route::post('/orders/{order}/edit', [AdminWebController::class, 'updateOrder'])->name('bakery.admin-order-update');
     Route::post('/orders/{order}/returns', [AdminWebController::class, 'recordReturn'])->name('bakery.admin-order-return');
+    Route::post('/orders/{order}/returns/{return}/cancel', [AdminWebController::class, 'cancelReturn'])->name('bakery.admin-order-return-cancel');
     Route::get('/report', [AdminWebController::class, 'report'])->name('bakery.report');
     Route::get('/report/xlsx', [AdminWebController::class, 'downloadReport'])->name('bakery.report-xlsx');
     Route::get('/orders/{order}/print', [AdminWebController::class, 'printOne'])->name('bakery.print-one');
