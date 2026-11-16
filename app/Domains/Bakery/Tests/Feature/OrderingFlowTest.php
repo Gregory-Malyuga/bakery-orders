@@ -209,6 +209,14 @@ class OrderingFlowTest extends TestCase
         $archive = new PharData($path);
         $sheet = $archive['xl/worksheets/sheet1.xml']->getContent();
         $summary = $archive['xl/worksheets/sheet2.xml']->getContent();
+        $styles = $archive['xl/styles.xml']->getContent();
+        $this->assertStringContainsString('<fills count="4">', $styles);
+        $this->assertStringContainsString('fgColor rgb="FFFFFF00"', $styles);
+        $this->assertStringContainsString('fgColor rgb="FFE2F0D9"', $styles);
+        $this->assertStringContainsString('<borders count="2">', $styles);
+        $this->assertStringContainsString('r="A6" s="5"', $sheet);
+        $this->assertStringContainsString('r="A7" s="4"', $sheet);
+        $this->assertStringContainsString('r="A3" s="5"', $summary);
         $this->assertStringContainsString('Седьмой', $sheet);
         $this->assertStringContainsString('Девятый', $sheet);
         $this->assertStringContainsString('r="J4"', $sheet);
