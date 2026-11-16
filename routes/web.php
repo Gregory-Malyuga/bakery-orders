@@ -3,6 +3,7 @@
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
 use Domains\Bakery\Presentation\Http\Controllers\AnalyticsController;
 use Domains\Bakery\Presentation\Http\Controllers\ClosedDateController;
+use Domains\Bakery\Presentation\Http\Controllers\DeliveryRouteController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
 use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
 use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
@@ -36,6 +37,10 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
 });
 
 Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(function (): void {
+    Route::get('/delivery-routes', [DeliveryRouteController::class, 'index'])->name('bakery.delivery-routes');
+    Route::post('/delivery-routes', [DeliveryRouteController::class, 'saveRoute'])->name('bakery.delivery-routes-save');
+    Route::post('/delivery-sheets', [DeliveryRouteController::class, 'createSheet'])->name('bakery.delivery-sheets-create');
+    Route::get('/delivery-sheets/{sheet}', [DeliveryRouteController::class, 'sheet'])->name('bakery.delivery-sheet');
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');
     Route::get('/groups', [StoreGroupController::class, 'index'])->name('bakery.groups');
