@@ -2,6 +2,15 @@ name: Deploy Production (manual)
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: "Deploy a new image, or roll back to the previous healthy PHP slot"
+        type: choice
+        required: true
+        default: deploy
+        options:
+          - deploy
+          - rollback
 
 permissions:
   contents: read
@@ -15,7 +24,7 @@ concurrency:
 jobs:
   verify-release:
     name: Verify built and tested main revision
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && inputs.operation == 'deploy'
     runs-on: ubuntu-latest
     steps:
       - name: Require successful CI push run for commit
@@ -29,6 +38,10 @@ jobs:
   deploy-production:
     name: Release / deploy production
     needs: verify-release
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (needs.verify-release.result == 'success' ||
+       (inputs.operation == 'rollback' && needs.verify-release.result == 'skipped'))
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -60,6 +73,7 @@ jobs:
           ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
 
       - name: Backup production PostgreSQL on server
+        if: inputs.operation == 'deploy'
         shell: bash
         run: |
           set -euo pipefail
@@ -76,6 +90,7 @@ jobs:
         shell: bash
         env:
           IMAGE: ghcr.io/gregory-malyuga/bakery-orders:${{ github.sha }}
+          ACTION: ${{ inputs.operation }}
         run: |
           set -euo pipefail
           ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
@@ -87,7 +102,7 @@ jobs:
               raise ValueError('Invalid commit SHA')
           keys = ('APP_KEY', 'APP_URL', 'DB_PASSWORD', 'SESSION_SECURE_COOKIE', 'APP_NAME', 'GHCR_TOKEN', 'GHCR_ACTOR')
           payload = {key: os.environ[key] for key in keys}
-          payload.update(commit=commit, image=os.environ['IMAGE'])
+          payload.update(commit=commit, image=os.environ['IMAGE'], action=os.environ['ACTION'])
           print('import base64, io, pathlib, runpy, sys')
           print('release_dir = pathlib.Path(' + repr('/home/bakery-deploy/releases/' + commit) + ')')
           print('release_dir.mkdir(parents=True, exist_ok=True)')

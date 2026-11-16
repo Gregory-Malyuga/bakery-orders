@@ -45,10 +45,14 @@ jobs:
           actual=$(docker compose config --services | sort)
           expected=$(printf 'caddy\nphp\npostgres\n' | sort)
           test "$actual" = "$expected"
-      - name: Check release backup script and unit tests
+      - name: Validate production Blue-Green Compose
+        run: |
+          docker compose --profile green -f deploy/compose.yml config --quiet
+      - name: Check release scripts and unit tests
         run: |
           python3 -m py_compile scripts/deploy-production.py scripts/backup-production-db.py
           python3 -m unittest discover -s scripts/tests -p 'test_*.py' -v
+          python3 -m unittest discover -s tests -p 'deploy_*_test.py' -v
 
 # ─── PREPARE ─────────────────────────────────────────────────────────────────
 # Устанавливает vendor и кладёт в кеш. Последующие джобы восстанавливают кеш
