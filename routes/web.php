@@ -2,6 +2,8 @@
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
 use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
+use Domains\Bakery\Presentation\Http\Controllers\IngredientCatalogWebController;
+use Domains\Bakery\Presentation\Http\Controllers\RecipeWebController;
 use Domains\Bakery\Presentation\Http\Controllers\StoreWebController;
 use Domains\Bakery\Presentation\Http\Controllers\WebAuthController;
 use Illuminate\Http\RedirectResponse;
@@ -23,6 +25,7 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
     Route::get('/orders', [StoreWebController::class, 'index'])->name('bakery.store');
     Route::get('/orders/{order}/repeat', [StoreWebController::class, 'repeat'])->name('bakery.repeat');
     Route::post('/orders/preview', [StoreWebController::class, 'preview'])->name('bakery.preview');
+    Route::post('/orders/edit-preview', [StoreWebController::class, 'editPreview'])->name('bakery.edit-preview');
     Route::post('/orders', [StoreWebController::class, 'place'])->name('bakery.place');
     Route::get('/orders/{order}', [StoreWebController::class, 'show'])->name('bakery.order');
     Route::post('/orders/{order}/cancel', [StoreWebController::class, 'cancel'])->name('bakery.cancel');
@@ -31,6 +34,14 @@ Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
 Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(function (): void {
     Route::get('/', [AdminWebController::class, 'index'])->name('bakery.admin');
     Route::get('/catalog', [AdminWebController::class, 'catalog'])->name('bakery.catalog');
+    Route::get('/recipes', [RecipeWebController::class, 'index'])->name('bakery.recipes');
+    Route::get('/ingredients', [IngredientCatalogWebController::class, 'index'])->name('bakery.ingredients');
+    Route::post('/ingredients', [IngredientCatalogWebController::class, 'create'])->name('bakery.ingredients-create');
+    Route::post('/ingredients/{ingredient}/rename', [IngredientCatalogWebController::class, 'rename'])->name('bakery.ingredients-rename');
+    Route::post('/ingredients/{ingredient}/toggle', [IngredientCatalogWebController::class, 'toggle'])->name('bakery.ingredients-toggle');
+    Route::post('/recipes/product', [RecipeWebController::class, 'saveProduct'])->name('bakery.recipes-product');
+    Route::post('/recipes/dough', [RecipeWebController::class, 'saveDough'])->name('bakery.recipes-dough');
+    Route::post('/recipes/reset', [RecipeWebController::class, 'reset'])->name('bakery.recipes-reset');
     Route::post('/stores', [AdminWebController::class, 'saveStore'])->name('bakery.save-store');
     Route::post('/products', [AdminWebController::class, 'saveProduct'])->name('bakery.save-product');
     Route::post('/prices', [AdminWebController::class, 'savePrice'])->name('bakery.save-price');
