@@ -13,8 +13,9 @@ class IngredientCatalog
         return DB::table('bakery_ingredients')->orderBy('name')->orderBy('unit')->get();
     }
 
-    /** @param list<array<string, mixed>> $rows
-     * @return list<array<string, mixed>>
+    /**
+     * @param  list<array{name:string,amount:float,unit:string,ingredient_id?:int}>  $rows
+     * @return list<array{name:string,amount:float,unit:string,ingredient_id?:int}>
      */
     public function resolveRows(array $rows): array
     {
@@ -36,10 +37,8 @@ class IngredientCatalog
 
         foreach ($rows as &$row) {
             $id = $row['ingredient_id'] ?? null;
-            $name = $row['name'] ?? '';
-            $unit = $row['unit'] ?? '';
-            $key = $this->key(is_string($name) ? $name : '', is_string($unit) ? $unit : '');
-            $ingredient = is_int($id) || (is_string($id) && ctype_digit($id)) ? ($byId[(int) $id] ?? null) : null;
+            $key = $this->key($row['name'], $row['unit']);
+            $ingredient = $id !== null ? ($byId[$id] ?? null) : null;
             $ingredient ??= $bySource[$key] ?? null;
             $ingredient ??= $byName[$key] ?? null;
             if ($ingredient !== null) {

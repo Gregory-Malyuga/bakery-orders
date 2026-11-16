@@ -15,9 +15,17 @@ class ProductionRecipeStore
             return [];
         }
 
+        /** @var array<string, array<string, mixed>> $overrides */
         $overrides = [];
         foreach (DB::table('bakery_recipe_overrides')->whereIn('recipe_key', $keys)->get(['recipe_key', 'definition']) as $row) {
-            $overrides[$row->recipe_key] = json_decode($row->definition, true, 512, JSON_THROW_ON_ERROR);
+            if (! is_string($row->recipe_key) || ! is_string($row->definition)) {
+                continue;
+            }
+            $definition = json_decode($row->definition, true, 512, JSON_THROW_ON_ERROR);
+            if (is_array($definition)) {
+                /** @var array<string, mixed> $definition */
+                $overrides[$row->recipe_key] = $definition;
+            }
         }
 
         return $overrides;

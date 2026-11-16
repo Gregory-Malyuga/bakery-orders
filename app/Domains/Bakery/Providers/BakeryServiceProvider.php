@@ -23,6 +23,7 @@ use Domains\Bakery\Infrastructure\Exports\PeriodReportWorkbook;
 use Domains\Bakery\Infrastructure\Repositories\AdminRepository;
 use Domains\Bakery\Infrastructure\Repositories\BakeryRepository;
 use Domains\Bakery\Infrastructure\Repositories\OrderingRepository;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\ServiceProvider;
 
 class BakeryServiceProvider extends ServiceProvider
@@ -40,7 +41,14 @@ class BakeryServiceProvider extends ServiceProvider
         $this->app->bind(AdminRepositoryInterface::class, AdminRepository::class);
         $this->app->bind(InvoiceWorkbookInterface::class, MatrixInvoiceWorkbook::class);
         $this->app->bind(PeriodReportWorkbookInterface::class, PeriodReportWorkbook::class);
-        $this->app->bind(ProductionCalculator::class, fn ($app): ProductionCalculator => new ProductionCalculator($app->make(ProductionRecipeStore::class), $app->make(IngredientCatalog::class)));
+        $this->app->bind(ProductionCalculator::class, function (Container $app): ProductionCalculator {
+            /** @var ProductionRecipeStore $store */
+            $store = $app->make(ProductionRecipeStore::class);
+            /** @var IngredientCatalog $catalog */
+            $catalog = $app->make(IngredientCatalog::class);
+
+            return new ProductionCalculator($store, $catalog);
+        });
     }
 
     public function boot(): void

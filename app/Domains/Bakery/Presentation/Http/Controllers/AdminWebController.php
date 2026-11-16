@@ -116,8 +116,9 @@ class AdminWebController
         $accounts = $this->admin->accounts();
         $search = trim($input['search'] ?? '');
         if ($tab === 'accounts' && $search !== '') {
+            /** @var list<int> $matchingStoreIds */
             $matchingStoreIds = $stores->filter(fn ($store): bool => mb_stripos($store->name, $search) !== false)->pluck('id')->all();
-            $accounts = array_values(array_filter($accounts, fn (array $account): bool => count(array_intersect($account['store_ids'], $matchingStoreIds)) > 0));
+            $accounts = array_values(array_filter($accounts, fn (array $account): bool => count(array_intersect(array_map('intval', $account['store_ids']), $matchingStoreIds)) > 0));
         }
         $storeOwners = $tab === 'accounts' ? DB::table('bakery_account_stores')->pluck('user_id', 'bakery_id')->all() : [];
         $perPage = $tab === 'accounts' ? 8 : 20;
@@ -127,7 +128,7 @@ class AdminWebController
         $visibleStores = $stores->forPage($page, $perPage);
         $visibleAccounts = array_slice($accounts, ($page - 1) * $perPage, $perPage);
         $unavailableProducts = $selectedStore && $tab === 'prices'
-            ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => [(int) $id => true])->all()
+            ? DB::table('bakery_store_product_exclusions')->where('bakery_id', $selectedStore)->pluck('product_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all()
             : [];
 
         return view('bakery.catalog', compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + ['prices' => $selectedStore ? $this->orders->prices($selectedStore, true) : [], 'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [], 'orderCutoff' => $this->cutoff->time()]);
