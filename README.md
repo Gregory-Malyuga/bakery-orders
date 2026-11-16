@@ -25,7 +25,7 @@ $bakeryEnv = Get-Content .env
 $bakeryEnv -replace '^APP_KEY=.*$', ('APP_KEY=base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))) | Set-Content .env
 ```
 
-Один `docker-compose.yml` запускает Caddy, PHP и PostgreSQL локально и в рабочем окружении. Сессии и кеш хранятся в PostgreSQL, очередь выполняется синхронно, письма пишутся в лог. Исходники и `vendor` не монтируются в PHP-контейнер: после изменения кода пересоберите его командой `docker compose up -d --build`. При переходе со старого стека `--remove-orphans` удалит лишние контейнеры; тома Redis и Elasticsearch автоматически не удаляются.
+Локальный `docker-compose.yml` запускает Caddy, PHP и PostgreSQL. На рабочем хосте используется минимальный `/opt/bakery/compose.yml` без исходников и `build`. Сессии и кеш хранятся в PostgreSQL, очередь выполняется синхронно, письма пишутся в лог. Локально после изменения кода пересоберите PHP командой `docker compose up -d --build`.
 
 Демовходы: `admin@example.test`, `sadovaya@example.test`, `frunze@example.test`, `shosse@example.test`; пароль для всех `Demo123456!`. Демоданные запускайте только в локальной среде. В рабочей среде создайте аккаунт администратора отдельно и задайте собственный пароль. Пользователи магазинов создаются в панели администратора.
 
@@ -38,6 +38,10 @@ docker compose exec php php artisan bakery:create-admin admin@example.com
 ```
 
 `APP_KEY` должен быть задан в `.env` до запуска Compose. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
+
+При каждом релизе сохраняйте прежние `APP_KEY`, имя Compose-проекта и том `postgres_data`. Не запускайте `php artisan key:generate`, `docker compose down -v` или `docker volume prune` для рабочего стека: смена ключа делает существующие cookie недействительными, удаление тома уничтожает таблицу сессий вместе с остальными данными. `SESSION_DRIVER=database` уже задан в Compose; web-сессии находятся в таблице `sessions`, а API-токены Sanctum — в `personal_access_tokens`. Пароли пользователей при смене образа не меняются.
+
+Для проверки релиза войдите в браузере под тестовым магазином, дождитесь image-only релиза из CI и откройте `/orders` без повторного входа. Срок бездействия по умолчанию в `config/session.php` составляет 43200 минут (30 дней). До релиза проверьте, что таблица сессий существует: `docker compose exec -T php php artisan migrate:status`.
 
 ### Начальная загрузка из «Лист1»
 
@@ -69,7 +73,7 @@ docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/w
 
 ### Развёртывание и резервное копирование
 
-Для рабочего окружения используйте тот же `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
+Для первого запуска рабочего окружения используйте `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
 
 ```bash
 docker compose up -d --build --remove-orphans
@@ -79,6 +83,8 @@ docker compose exec php php artisan bakery:create-admin admin@backery.com
 ```
 
 Приложение использует постоянный том PostgreSQL. После запуска проверьте `/health`, вход, оформление и печать.
+
+Последующие релизы на `backery` выполняет [BAK-14](docs/process/BAK-14-release.md): CI скачивает готовый образ по SHA, ставит рабочий Docker-тег `laravel-app-php:latest`, поднимает три сервиса из `/opt/bakery/compose.yml` без сборки и удаляет прежний образ. Git checkout и `.env` на хосте не требуются; runtime-переменные поступают из GitHub Environment во время команды Compose. Миграции в этом релизе не выполняются; изменения схемы БД нужно планировать отдельно.
 
 Для резервной копии остановка приложения не требуется. Пример для локального Compose:
 

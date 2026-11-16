@@ -418,6 +418,57 @@ jobs:
           docker tag  $IMAGE:${{ github.sha }} $IMAGE:latest
           docker push $IMAGE:latest
 
+  deploy-production:
+    name: Release / deploy production
+    needs: [build, security-image, smoke, release-latest]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: bakery-production
+      cancel-in-progress: false
+    env:
+      DEPLOY_HOST: 153.80.246.224
+      DEPLOY_USER: bakery-deploy
+      DEPLOY_SSH_PRIVATE_KEY_B64: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY_B64 }}
+      DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+      GHCR_ACTOR: ${{ github.actor }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      APP_KEY: ${{ secrets.APP_KEY }}
+      APP_URL: ${{ secrets.APP_URL }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      SESSION_SECURE_COOKIE: ${{ secrets.SESSION_SECURE_COOKIE }}
+      APP_NAME: ${{ vars.APP_NAME }}
+    steps:
+      - name: Prepare SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$DEPLOY_SSH_PRIVATE_KEY_B64"
+          test -n "$DEPLOY_KNOWN_HOSTS"
+          mkdir -p ~/.ssh
+          printf '%s' "$DEPLOY_SSH_PRIVATE_KEY_B64" | base64 --decode > ~/.ssh/bakery_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/bakery_deploy </dev/null >/dev/null
+          ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
+
+      - name: Pull, tag, update PHP and clean old image
+        shell: bash
+        env:
+          IMAGE: ${{ needs.build.outputs.image }}:${{ github.sha }}
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
+          remote="$DEPLOY_USER@$DEPLOY_HOST"
+          python3 - <<'PY' | ssh "${ssh_opts[@]}" "$remote" bakery-release
+          import json, os
+          keys = ('APP_KEY', 'APP_URL', 'DB_PASSWORD', 'SESSION_SECURE_COOKIE', 'APP_NAME', 'GHCR_TOKEN', 'GHCR_ACTOR')
+          payload = {key: os.environ[key] for key in keys}
+          payload.update(commit=os.environ['GITHUB_SHA'], image=os.environ['IMAGE'])
+          print(json.dumps(payload))
+          PY
+
   release-semver:
     name: Release / semver tag
     needs: [build, security-image, smoke]

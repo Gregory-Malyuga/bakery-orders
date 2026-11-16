@@ -1,0 +1,76 @@
+name: laravel-app
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    depends_on:
+      php:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    networks:
+      - backend
+
+  php:
+    image: laravel-app-php:latest
+    restart: unless-stopped
+    platform: linux/amd64
+    environment:
+      APP_NAME: ${APP_NAME:-Bakery Orders}
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:?Set APP_KEY in the release environment}
+      APP_URL: ${APP_URL:?Set APP_URL in the release environment}
+      DEFAULT_URI: ${APP_URL:?Set APP_URL in the release environment}
+      OCTANE_SERVER: frankenphp
+      CACHE_STORE: database
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: database
+      SESSION_SECURE_COOKIE: ${SESSION_SECURE_COOKIE:-true}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-laravel-database}
+      DB_USERNAME: ${DB_USERNAME:-laravel-database-user}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the release environment}
+      MAIL_MAILER: log
+      LOG_LEVEL: warning
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-laravel-database}
+      POSTGRES_USER: ${DB_USERNAME:-laravel-database-user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in the release environment}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - backend
+
+networks:
+  backend:
+    name: laravel-app_backend
+
+volumes:
+  postgres_data:
+    external: true
+    name: laravel-app_postgres_data
+  caddy_data:
+    external: true
+    name: laravel-app_caddy_data
