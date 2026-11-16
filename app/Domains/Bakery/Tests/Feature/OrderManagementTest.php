@@ -33,6 +33,7 @@ class OrderManagementTest extends TestCase
         $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $ham = Product::query()->create(['name' => 'Ветчина', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
+        $unavailable = Product::query()->create(['name' => 'Недоступный товар', 'sort_order' => 3, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $pizza->id, 'kopecks' => 10000]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $ham->id, 'kopecks' => 7000]);
         $service = app(OrderingService::class);
@@ -51,7 +52,7 @@ class OrderManagementTest extends TestCase
         $this->assertDatabaseHas('bakery_order_adjustments', ['order_id' => $order->id, 'before_total_kopecks' => 20000, 'after_total_kopecks' => 37000]);
 
         $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', ['product' => $pizza->id, 'quantity' => 2, 'reason' => 'Обмен'])->assertRedirect();
-        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', ['product' => $pizza->id, 'quantity' => 2])->assertSessionHasErrors('quantity');
+        $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', ['product' => $unavailable->id, 'quantity' => 2])->assertSessionHasErrors('product');
         $this->assertDatabaseCount('bakery_returns', 1);
         $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertOk()->assertSee('Уточнение магазина')->assertSee('Обмен');
         $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/print')->assertOk()->assertSee('Возврат, шт.')->assertSee('170,00');

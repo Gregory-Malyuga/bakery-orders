@@ -332,7 +332,9 @@ class OrderingFlowTest extends TestCase
         $path = $response->baseResponse->getFile()->getPathname();
         $archive = new PharData($path);
         $sheet = $archive['xl/worksheets/sheet1.xml']->getContent();
-        $summary = $archive['xl/worksheets/sheet2.xml']->getContent();
+        $secondInvoice = $archive['xl/worksheets/sheet2.xml']->getContent();
+        $summary = $archive['xl/worksheets/sheet3.xml']->getContent();
+        $workbook = $archive['xl/workbook.xml']->getContent();
         $styles = $archive['xl/styles.xml']->getContent();
         $this->assertStringContainsString('<fills count="4">', $styles);
         $this->assertStringContainsString('fgColor rgb="FFFFFF00"', $styles);
@@ -342,16 +344,46 @@ class OrderingFlowTest extends TestCase
         $this->assertStringContainsString('r="A7" s="4"', $sheet);
         $this->assertStringContainsString('r="A3" s="5"', $summary);
         $this->assertStringContainsString('Седьмой', $sheet);
-        $this->assertStringContainsString('Девятый', $sheet);
-        $this->assertStringContainsString('r="J4"', $sheet);
+        $this->assertStringNotContainsString('Девятый', $sheet);
+        $this->assertStringContainsString('Девятый', $secondInvoice);
+        $this->assertStringContainsString('Седьмой 1 — Седьмой', $workbook);
+        $this->assertStringContainsString('Девятый 1 — Девятый', $workbook);
+        $this->assertStringNotContainsString('Накладная '.$accepted->id.'"', $workbook);
+        $this->assertStringContainsString('sheetId="3"', $workbook);
         $this->assertStringContainsString('<v>31.50</v>', $sheet);
-        $this->assertStringContainsString('<v>34.00</v>', $sheet);
+        $this->assertStringContainsString('<v>34.00</v>', $secondInvoice);
         $this->assertStringNotContainsString('Восьмой', $sheet);
         $this->assertStringContainsString('Заказ на ', $summary);
         $this->assertStringContainsString('Итого, ₽', $summary);
         $this->assertStringContainsString('<v>165.00</v>', $summary);
         $this->assertStringNotContainsString('Восьмой', $summary);
         $this->actingAs($admin)->get('/admin/orders/'.$cancelled->id.'/xlsx')->assertNotFound();
+        unset($archive);
+        unlink($path);
+    }
+
+    public function test_excel_invoice_sheet_names_sanitize_and_distinguish_same_customer_address(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
+        [$first, , $product] = $this->shop('Точка: [Центр]', 3150);
+        [$second] = $this->shop('Точка: [Центр]', 3150);
+        foreach ([$first, $second] as $store) {
+            $store->update(['address' => 'ул. Мира/5']);
+            $quote = app(OrderingService::class)->quote($store->id, [$product->id => 1]);
+            app(OrderingService::class)->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash']);
+        }
+
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $response = $this->actingAs($admin)->get('/admin/xlsx?date=2026-10-07')->assertOk();
+        $path = $response->baseResponse->getFile()->getPathname();
+        $archive = new PharData($path);
+        $workbook = $archive['xl/workbook.xml']->getContent();
+        $this->assertStringContainsString('name="ул. Мира 5 — Точка Центр"', $workbook);
+        $this->assertStringContainsString('name="ул. Мира 5 — Точка Центр (2)"', $workbook);
+        preg_match_all('/<sheet name="([^"]+)"/', $workbook, $sheetNames);
+        foreach ($sheetNames[1] as $name) {
+            $this->assertLessThanOrEqual(31, mb_strlen($name));
+        }
         unset($archive);
         unlink($path);
     }
