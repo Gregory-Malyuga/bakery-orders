@@ -8,7 +8,7 @@ class Product extends Model
 {
     protected $table = 'bakery_products';
 
-    protected $fillable = ['name', 'sort_order', 'minimum_quantity', 'is_active'];
+    protected $fillable = ['name', 'sort_order', 'minimum_quantity', 'packaging_mode', 'is_active'];
 
     protected function casts(): array
     {

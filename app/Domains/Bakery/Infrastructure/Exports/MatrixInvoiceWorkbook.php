@@ -76,6 +76,9 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, 1, $this->label($start + 3, 1, 'Дата поставки'));
             $this->put($cells, 1, $this->label($start + 4, 1, $order->delivery_date->format('d.m.Y')));
             $this->put($cells, 2, $this->label($start + 1, 2, 'Накладная №'.$order->id, 1));
+            if ($order->comment !== null && $order->comment !== '') {
+                $this->put($cells, 3, $this->label($start + 1, 3, 'Комментарий: '.$order->comment));
+            }
             $this->put($cells, 4, $this->label($start, 4, 'Кому'));
             $this->put($cells, 4, $this->label($start + 1, 4, $order->store_name, 1));
             $this->put($cells, 5, $this->label($start + 1, 5, $order->store_address));

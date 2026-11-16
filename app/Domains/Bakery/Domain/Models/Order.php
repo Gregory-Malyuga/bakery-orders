@@ -11,7 +11,7 @@ class Order extends Model
 {
     protected $table = 'bakery_orders';
 
-    protected $fillable = ['bakery_id', 'delivery_date', 'status', 'active_slot', 'request_key', 'store_name', 'store_address', 'total_kopecks', 'cancelled_at'];
+    protected $fillable = ['bakery_id', 'delivery_date', 'status', 'active_slot', 'request_key', 'store_name', 'store_address', 'total_kopecks', 'comment', 'admin_note', 'cancelled_at'];
 
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany

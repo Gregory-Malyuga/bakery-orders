@@ -25,8 +25,10 @@ class OrderingRepository implements OrderingRepositoryInterface
 
     public function prices(int $storeId): array
     {
+        $store = Bakery::query()->findOrFail($storeId);
+        $priceStoreId = (int) ($store->price_source_id ?: $storeId);
         $prices = [];
-        foreach (Price::query()->where('bakery_id', $storeId)->get() as $price) {
+        foreach (Price::query()->where('bakery_id', $priceStoreId)->get() as $price) {
             $prices[(int) $price->product_id] = (int) $price->kopecks;
         }
 
@@ -72,7 +74,7 @@ class OrderingRepository implements OrderingRepositoryInterface
         });
     }
 
-    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total): Order
+    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order
     {
         $order = Order::query()->create([
             'bakery_id' => $store->id,
@@ -83,6 +85,7 @@ class OrderingRepository implements OrderingRepositoryInterface
             'store_name' => $store->name,
             'store_address' => $store->address,
             'total_kopecks' => $total,
+            'comment' => $comment,
         ]);
         foreach ($items as $item) {
             OrderItem::query()->create(['order_id' => $order->id] + $item);

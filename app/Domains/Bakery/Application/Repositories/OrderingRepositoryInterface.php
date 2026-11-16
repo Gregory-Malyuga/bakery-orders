@@ -38,7 +38,7 @@ interface OrderingRepositoryInterface
     public function lockedStore(int $storeId, callable $operation): Order|array;
 
     /** @param list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}> $items */
-    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total): Order;
+    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order;
 
     public function cancel(Order $order): void;
 }
