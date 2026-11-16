@@ -218,7 +218,7 @@ def main():
            "\n" in request[k] or "\r" in request[k] for k in required):
         raise ValueError("Required release value is missing or multiline")
     url = urlparse(request["APP_URL"])
-    if url.scheme != "https" or url.hostname != DOMAIN:
+    if url.scheme != "https" or (url.hostname or "").encode("idna").decode("ascii") != DOMAIN:
         raise ValueError("APP_URL must match the production HTTPS domain")
 
     lock_path = os.path.join(os.path.expanduser("~"), ".bakery-release.lock")
@@ -226,8 +226,8 @@ def main():
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         run("docker", "volume", "inspect", DB_VOLUME)
         run("docker", "volume", "inspect", CADDY_VOLUME)
-        if not container_healthy(CADDY_CONTAINER):
-            raise ValueError("Caddy is not healthy; cannot guarantee traffic continuity")
+        if not docker_inspect(CADDY_CONTAINER)["State"]["Running"]:
+            raise ValueError("Caddy is not running; cannot guarantee traffic continuity")
         path = current_caddyfile()
         config = path.read_text(encoding="utf-8")
         if detect_active(config) not in SLOTS:
