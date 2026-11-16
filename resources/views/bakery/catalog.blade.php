@@ -78,7 +78,7 @@
                 <td><strong>{{ $stores->whereIn('id', $account['store_ids'])->pluck('name')->implode(', ') ?: 'Нет магазинов' }}</strong><details><summary>Изменить привязку</summary><fieldset class="store-choices">@foreach($stores->filter(fn($store) => !isset($storeOwners[$store->id]) || (int) $storeOwners[$store->id] === $account['id']) as $store)<label><input form="account-{{ $account['id'] }}" type="checkbox" name="stores[]" value="{{ $store->id }}" @checked(in_array($store->id, $account['store_ids'], true))>{{ $store->name }}@if($store->address !== $store->name) — {{ $store->address }}@endif</label>@endforeach</fieldset></details></td>
                 <td><select form="account-{{ $account['id'] }}" name="is_active"><option value="1" @selected($account['status']==='verify')>Да</option><option value="0" @selected($account['status']!=='verify')>Нет</option></select></td>
                 <td><input form="account-{{ $account['id'] }}" type="password" name="password" placeholder="Без изменения" minlength="10"></td>
-                <td><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button></td>
+                <td><button form="account-{{ $account['id'] }}" class="button secondary">Сохранить</button>@if($account['status'] === 'verify')<form method="post" action="{{ route('bakery.impersonation-start', $account['id']) }}">@csrf<button class="button secondary">Войти как пользователь</button></form>@endif</td>
             </tr>
         @endforeach
     </tbody></table></div>

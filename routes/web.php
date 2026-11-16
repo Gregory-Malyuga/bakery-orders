@@ -1,6 +1,7 @@
 <?php
 
 use Domains\Bakery\Presentation\Http\Controllers\AdminWebController;
+use Domains\Bakery\Presentation\Http\Controllers\ImpersonationController;
 use Domains\Bakery\Presentation\Http\Controllers\StoreWebController;
 use Domains\Bakery\Presentation\Http\Controllers\WebAuthController;
 use Illuminate\Http\RedirectResponse;
@@ -16,6 +17,7 @@ Route::get('/', function (): RedirectResponse {
 Route::get('/login', [WebAuthController::class, 'loginForm'])->middleware('guest')->name('bakery.login');
 Route::post('/login', [WebAuthController::class, 'login'])->middleware(['guest', 'throttle:auth-login']);
 Route::post('/logout', [WebAuthController::class, 'logout'])->middleware('auth')->name('bakery.logout');
+Route::post('/impersonation/stop', [ImpersonationController::class, 'stop'])->middleware('auth')->name('bakery.impersonation-stop');
 
 Route::middleware(['auth', 'bakery.role:store'])->group(function (): void {
     Route::get('/orders', [StoreWebController::class, 'index'])->name('bakery.store');
@@ -35,6 +37,7 @@ Route::prefix('admin')->middleware(['auth', 'bakery.role:admin'])->group(functio
     Route::post('/minimums', [AdminWebController::class, 'saveMinimum'])->name('bakery.save-minimum');
     Route::post('/availability', [AdminWebController::class, 'saveAvailability'])->name('bakery.save-availability');
     Route::post('/accounts', [AdminWebController::class, 'saveAccount'])->name('bakery.save-account');
+    Route::post('/accounts/{user}/impersonate', [ImpersonationController::class, 'start'])->name('bakery.impersonation-start');
     Route::post('/settings', [AdminWebController::class, 'saveSettings'])->name('bakery.save-settings');
     Route::get('/orders/{order}', [AdminWebController::class, 'order'])->name('bakery.admin-order');
     Route::get('/orders/{order}/edit', [AdminWebController::class, 'editOrder'])->name('bakery.admin-order-edit');
