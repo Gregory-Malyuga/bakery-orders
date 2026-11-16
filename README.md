@@ -1,201 +1,114 @@
-# Сайт заказов пекарни
+# Bakery Orders
 
-Полная карта страниц, функций и ограничений сервиса — в [документации сервиса](docs/service-guide.md).
+**Bakery Orders** — B2B-приложение для управления ежедневными заказами между пекарней и сетью розничных магазинов. Магазины заказывают продукцию на следующий день, а пекарня получает сводку для производства, управляет ассортиментом и формирует накладные.
 
-Текущие задачи и ошибки: [roadmap](docs/process/roadmap.md); порядок их ведения: [работа с задачами и ошибками](docs/process/work-items.md).
+Проект охватывает реальные бизнес-правила, разграничение доступа, модульную архитектуру, автоматические проверки и контролируемые релизы.
 
-Локально: `http://localhost:8099/login`. Магазин оформляет один принятый заказ на завтрашнюю поставку до настраиваемого времени по Москве (по умолчанию 18:30); пекарня смотрит сводку, управляет справочниками и печатает накладные. Публичной регистрации нет.
+## Функциональность
 
-Срок заказа проверяется по времени сервера при предварительном просмотре и при окончательном подтверждении; дата и время устройства магазина не учитываются. В разделе «Магазины, товары и цены» администратор задаёт товару минимальное количество в штуках. Ноль означает отказ от товара; если товар выбран, количество должно быть не меньше указанного минимума. Из сводки можно напечатать все принятые накладные за выбранную дату или скачать их в одном `.xlsx`; на странице заказа доступны печать и `.xlsx` одной накладной. Отменённые заказы в выгрузку не попадают.
+**Магазин**
+- Входит под собственной учётной записью; публичной регистрации нет.
+- Видит только свой ассортимент и индивидуальные цены.
+- Формирует заказ в штуках с минимальным количеством для выбранных товаров.
+- Подтверждает один заказ на следующую дату поставки до установленного времени (по умолчанию **18:30 по Москве**).
+- Просматривает, печатает и скачивает свою накладную в XLSX.
+- Может отменить заказ; редактирование подтверждённого заказа не предусмотрено.
 
-В XLSX каждая накладная находится на отдельном листе и настроена для печати на одной странице. Лист «Заказ» содержит матрицу количеств по магазинам и итоги в штуках и рублях. Столбцы возврата в накладной появляются только при наличии возвратов. Можно вернуть доступный магазину товар, даже если его нет в текущем заказе; цена фиксируется при возврате. Заказанные позиции сохраняют цену на момент оформления.
+**Пекарня**
+- Управляет магазинами, аккаунтами, каталогом и ценами.
+- Просматривает принятые заказы по магазинам и суммарную потребность по товарам.
+- Формирует отдельные накладные, массовую печать и общую XLSX-выгрузку.
+- Учитывает возвраты и индивидуальные скидки, округляет суммы до копеек.
+- Импортирует согласованный каталог и исходные справочники.
+
+Срок заказа проверяется на сервере. Цена заказанной позиции фиксируется при оформлении, а отменённые заказы не включаются в выгрузку принятых заказов. Данные и цены других магазинов недоступны.
+
+Полная карта сценариев: [Руководство по сервису](docs/service-guide.md).
+
+## Технологический стек
+
+| Компонент | Технологии |
+| --- | --- |
+| Backend | PHP 8.5, Laravel 13 |
+| Хранилище | PostgreSQL 18 |
+| HTTP | Caddy, FrankenPHP |
+| Контейнеризация | Docker, Docker Compose |
+| Авторизация и API | Laravel Sanctum, OpenAPI |
+| Архитектура | DDD/CQRS, модульная структура, разделение слоёв |
+| Проверки | PHPUnit, ParaTest, PHPStan, Laravel Pint, Deptrac |
+| Автоматизация | GitHub Actions, GitHub Container Registry |
+
+Локальный Compose запускает три сервиса: **PHP, Caddy и PostgreSQL**. Сессии и кеш хранятся в PostgreSQL, очередь выполняется синхронно.
+
+## Архитектура
+
+Бизнес-модули размещены в `app/Domains/`, общие компоненты — в `app/Shared/`, приложение Laravel — в `app/App/`. В доменах отделены бизнес-правила, обработчики команд и запросов, инфраструктурные реализации и HTTP-слой. Архитектурные границы проверяются Deptrac. Для типовых модулей предусмотрен Artisan-генератор `make:domain`.
+
+Документация: [Архитектура](docs/architecture/index.md) · [CQRS](docs/architecture/cqrs.md) · [Стратегия тестирования](docs/testing-strategy.md).
+
+## Локальный запуск
+
+Потребуются Docker и Docker Compose.
 
 ```bash
 cp .env.example .env
-# Задайте APP_KEY в .env перед запуском.
+# Укажите APP_KEY в .env до запуска
 docker compose up -d --build --remove-orphans
 docker compose exec -T php php artisan migrate --force
-docker compose exec -T php sh -c 'cd /var/www/app && php artisan db:seed --class=BakeryDemoSeeder --force'
+docker compose exec -T php php artisan db:seed --class=BakeryDemoSeeder --force
 ```
 
-В PowerShell ключ для локального `.env` можно создать так:
+Приложение будет доступно по адресу **http://localhost:8099/login**, панель администратора — `/admin`.
+
+| Демо-роль | Логин |
+| --- | --- |
+| Администратор | `admin@example.test` |
+| Магазин | `sadovaya@example.test` |
+| Магазин | `frunze@example.test` |
+| Магазин | `shosse@example.test` |
+
+Пароль демоаккаунтов: `Demo123456!`. **Демо-данные предназначены только для локальной среды.**
+
+Для генерации `APP_KEY` в Windows PowerShell:
 
 ```powershell
-$bakeryEnv = Get-Content .env
-$bakeryEnv -replace '^APP_KEY=.*$', ('APP_KEY=base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))) | Set-Content .env
+(Get-Content .env) -replace '^APP_KEY=.*$', ('APP_KEY=base64:' + [Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))) | Set-Content .env
 ```
 
-Локальный `docker-compose.yml` запускает Caddy, PHP и PostgreSQL. На рабочем хосте используется минимальный `/opt/bakery/compose.yml` без исходников и `build`. Сессии и кеш хранятся в PostgreSQL, очередь выполняется синхронно, письма пишутся в лог. Локально после изменения кода пересоберите PHP командой `docker compose up -d --build`.
+## Разработка и тестирование
 
-Демовходы: `admin@example.test`, `sadovaya@example.test`, `frunze@example.test`, `shosse@example.test`; пароль для всех `Demo123456!`. Демоданные запускайте только в локальной среде. В рабочей среде создайте аккаунт администратора отдельно и задайте собственный пароль. Пользователи магазинов создаются в панели администратора.
-
-Для первого развёртывания после настройки `.env` выполните миграции, передайте закрытый исходный XLSX в PHP-контейнер, заполните магазины, товары, цены и магазинные аккаунты из «Лист1», затем создайте администратора. Обе команды создания аккаунтов запускаются **без `-T`**: пароли вводятся скрыто и не попадают в историю команд.
+Все Composer, PHP и Artisan-команды выполняются в контейнере `php`.
 
 ```bash
-docker compose exec -T php php artisan migrate --force
-docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
-docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
-docker compose exec php php artisan bakery:create-admin admin@example.com
-```
+# Создать отдельную тестовую базу (один раз)
+docker compose exec -T postgres createdb -U laravel-database-user laravel-database-test
 
-`APP_KEY` должен быть задан в `.env` до запуска Compose. После входа откройте `/admin`. Не запускайте `BakeryDemoSeeder` в рабочей среде.
-
-При каждом релизе сохраняйте прежние `APP_KEY`, имя Compose-проекта и том `postgres_data`. Не запускайте `php artisan key:generate`, `docker compose down -v` или `docker volume prune` для рабочего стека: смена ключа делает существующие cookie недействительными, удаление тома уничтожает таблицу сессий вместе с остальными данными. `SESSION_DRIVER=database` уже задан в Compose; web-сессии находятся в таблице `sessions`, а API-токены Sanctum — в `personal_access_tokens`. Пароли пользователей при смене образа не меняются.
-
-Для проверки релиза войдите в браузере под тестовым магазином, дождитесь image-only релиза из CI и откройте `/orders` без повторного входа. Срок бездействия по умолчанию в `config/session.php` составляет 43200 минут (30 дней). До релиза проверьте, что таблица сессий существует: `docker compose exec -T php php artisan migrate:status`.
-
-### Начальная загрузка из «Лист1»
-
-Исходный XLSX с листом «Лист1» храните вне репозитория. Передайте его в контейнер и укажите путь явно. Проверка без записи и загрузка:
-
-```bash
-docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
-docker compose exec -T php php artisan bakery:seed-reference /tmp/private-reference.xlsx --dry-run
-docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
-```
-
-Для новых магазинов создаются логины `store-001@bakery.test` … `store-072@bakery.test` в порядке колонок «Лист1». Пароль новых аккаунтов вводится скрыто, должен содержать не менее 12 символов и не выводится командой. При повторном запуске существующие пароли сохраняются. Нулевая цена означает недоступность товара для конкретного магазина: цена не показывается, заказ товара запрещён. В исходном листе название и адрес магазина объединены в одной ячейке, поэтому при загрузке это значение записывается в оба поля; адрес можно уточнить в админ-панели. Демоаккаунты и демотовары сохраняются.
-
-### Импорт согласованного каталога
-
-Сохраните согласованную таблицу в UTF-8 CSV с разделителем `;` и заголовком `product;store;address;price`. Каждая строка задаёт цену одного товара для одного магазина; для всех пар магазин–товар строки обязательны. Команда сначала проверяет пропуски, дубликаты, написания и цены. Соответствия названий между файлами не угадываются. Исходные Excel не храните в репозитории.
-
-```bash
-docker compose exec -T php sh -c 'cd /var/www/app && php artisan bakery:import-catalog /var/www/app/resources/data/approved.csv'
-docker compose exec -T php sh -c 'cd /var/www/app && php artisan bakery:import-catalog /var/www/app/resources/data/approved.csv --apply'
-```
-
-### Проверка
-
-Создайте отдельную БД тестов один раз: `docker compose exec -T postgres createdb -U laravel-database-user laravel-database-test`. Запускайте gate на ней, чтобы не менять локальные демоданные:
-
-```bash
+# Полная проверка проекта
 docker compose exec -T -e DB_DATABASE=laravel-database-test php sh -c 'cd /var/www/app && composer pre-push'
+
+# Запустить тесты отдельно
+docker compose exec -T php php artisan test
 ```
 
-### Развёртывание и резервное копирование
+CI выполняет проверки синтаксиса PHP, форматирования, Composer, ссылок документации, статического анализа PHPStan, архитектурных границ Deptrac, тесты и оценку покрытия, сканирование безопасности и сборку контейнерного образа.
 
-Для первого запуска рабочего окружения используйте `docker-compose.yml`. В закрытом для посторонних `.env` задайте `APP_ENV=production`, `APP_DEBUG=false`, `PHP_BUILD_TARGET=prod`, `LOG_LEVEL=warning`, уникальные `APP_KEY`, `DB_PASSWORD` и рабочий `APP_URL`. По умолчанию HTTP привязан только к `127.0.0.1:8099`; внешний HTTPS-прокси и домен настраиваются отдельно. Пароль существующей роли PostgreSQL должен совпадать с `DB_PASSWORD`. Не размещайте форму входа в открытом интернете по HTTP.
+## Релиз и резервные копии
 
-```bash
-docker compose up -d --build --remove-orphans
-docker compose exec -T php php artisan migrate --force
-docker compose cp /path/to/private-reference.xlsx php:/tmp/private-reference.xlsx
-docker compose exec php php artisan bakery:seed-reference /tmp/private-reference.xlsx
-docker compose exec php php artisan bakery:create-admin admin@backery.com
-```
+Публикация образа после CI **не означает автоматический production-деплой**. Развёртывание запускается вручную: **GitHub → Actions → Deploy Production (manual) → Run workflow**, по проверенному коммиту в `main`.
 
-Приложение использует постоянный том PostgreSQL. После запуска проверьте `/health`, вход, оформление и печать.
+Перед изменением контейнеров workflow выполняет серверный бэкап PostgreSQL через `/usr/local/bin/bakery-backup.sh`. Если резервное копирование завершилось с ошибкой, релиз прерывается.
 
-Последующие production-релизы запускаются **только вручную**:
-GitHub → **Actions** → **Deploy Production (manual)** → **Run workflow** → branch **main**.
-После merge в `main` CI продолжает собирать, проверять и публиковать образ,
-но **не запускает деплой автоматически**. Ручной workflow допускает запуск
-только после успешного CI для выбранного SHA в `main`.
+При обновлениях необходимо сохранять `APP_KEY` и постоянный том PostgreSQL. Не запускайте `docker compose down -v` или `docker volume prune` для рабочего стека. Бэкап на том же сервере не заменяет независимую копию и проверку восстановления.
 
-Перед развёртыванием GitHub Actions выполняет обязательный шаг
-`Backup production PostgreSQL on server`: через ограниченный SSH-доступ
-`bakery-deploy` вызывает `sudo -n /usr/local/bin/bakery-backup.sh`.
-При ненулевом коде возврата скрипта workflow останавливается **до**
-`docker pull`, смены образов и миграций. Старый встроенный бэкап
-`scripts/backup-production-db.py` в рамках этого workflow больше не вызывается.
+Инструкция: [Ручной релиз и резервное копирование](docs/process/BAK-14-release.md).
 
-Серверный скрипт сохраняет архивы в свой настроенный каталог
-(в текущей конфигурации: `/root/backups/bakery-orders/`); проверка целостности
-архива должна выполняться самим скриптом. До первого релиза следует проверить
-`sudo -n` от имени `bakery-deploy`. Предпочтительно разрешить в sudoers
-только выполнение этого root-owned скрипта без пароля, а не общий `sudo`.
-Прямой запуск `scripts/deploy-production.py` в обход GitHub Actions теперь
-**не выполняет бэкап** и не должен использоваться как штатный релиз.
+## Дополнительная документация
 
-Подробный порядок, требования к бэкапам и откату:
-[BAK-14 — ручной релиз и резервное копирование](docs/process/BAK-14-release.md).
-Архив на том же сервере не заменяет независимую off-site копию и проверку
-полного восстановления на отдельной БД.
+- [Описание функций](docs/service-guide.md)
+- [Архитектура](docs/architecture/index.md)
+- [Проверки и тесты](docs/testing-strategy.md)
+- [Актуальные задачи](docs/process/roadmap.md)
 
+## Безопасность
 
-## Стек
-
-- PHP 8.5 / Laravel 13
-- PostgreSQL 18 (данные, сессии, кеш)
-- Синхронная очередь Laravel
-- Caddy (reverse proxy)
-- Docker / docker-compose
-
-## Быстрый старт
-
-```bash
-# 1. Форкнуть и инициализировать под конкретный сервис
-#    (переименовать namespace, env, docker-метки и т.д.)
-# Запустить /setup-service в Claude Code — он проведёт по шагам.
-
-# 2. Поднять окружение
-docker compose up -d
-
-# 3. Миграции
-docker compose exec -T php sh -c "cd /var/www/app && php artisan migrate"
-```
-
-App URL: `http://localhost:8099`
-
-## Разработка
-
-Все PHP/Artisan/Composer команды — внутри контейнера `php`:
-
-```bash
-# Тесты
-docker compose exec -T php sh -c "cd /var/www/app && php artisan test"
-
-# Quality gate (pint + phpstan level 8 + tests)
-docker compose exec -T php sh -c "cd /var/www/app && composer pre-push"
-
-# Pint (авто-форматирование)
-docker compose exec -T php sh -c "cd /var/www/app && ./vendor/bin/pint"
-
-# PHPStan
-docker compose exec -T php sh -c "cd /var/www/app && ./vendor/bin/phpstan analyse --level=8"
-```
-
-## Кодогенератор доменов
-
-Одна команда создаёт полный CQRS-домен:
-
-```bash
-docker compose exec -T php sh -c "cd /var/www/app && php artisan make:domain Post title:string body:string is_published:boolean"
-```
-
-Генерирует:
-- **Model** + **Factory** с faker-данными под типы полей
-- **Data DTO** + **FilterData** (Spatie Laravel Data)
-- **Commands**: Create/Update/Delete + Handlers
-- **Queries**: ListAll/FindById + Handlers
-- **Events**: Created/Updated/Deleted
-- **REST Controller** (index/show/store/update/destroy)
-- **OpenAPI-аннотации** для всех 5 эндпоинтов
-- **ServiceProvider** — авторегистрация в `bootstrap/providers.php`
-- **Маршруты** — автодобавление в `routes/api.php` (`/api/v1/{plural}`)
-- **Миграция** — создаётся и применяется сразу
-- **Unit + Feature тесты** с покрытием CRUD, пагинации, сортировки, фильтров
-
-Опции:
-- `--with-cache-warmer` — генерирует `{Name}CacheWarmer`
-
-Все операции идемпотентны — существующие файлы пропускаются.
-
-## Эндпоинты из коробки
-
-| Method | Path | Описание |
-|--------|------|----------|
-| GET | `/api/health` | Health check |
-
-## Структура
-
-```
-app/
-  Shared/             — базовые классы (Bus, Data, Repository, Testing …)
-  Domains/            — доменные модули (CQRS, сгенерированные make:domain)
-  Http/Controllers/   — тонкие контроллеры legacy-слоя
-```
-
-Архитектурные ограничения и рабочий процесс — в [CLAUDE.md](CLAUDE.md).  
-Текущий статус задач — в [docs/state.md](docs/state.md).
+Приватные XLSX-файлы с ценами и магазинами, реальные учётные данные, ключи и `.env` не должны храниться в репозитории. Для примеров и локальной демонстрации используются фиктивные данные.
