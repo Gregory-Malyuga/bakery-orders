@@ -59,6 +59,19 @@ jobs:
           ssh-keygen -y -f ~/.ssh/bakery_deploy </dev/null >/dev/null
           ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null
 
+      - name: Backup production PostgreSQL on server
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh_opts=(-i ~/.ssh/bakery_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o BatchMode=yes -o ConnectTimeout=15)
+          remote="$DEPLOY_USER@$DEPLOY_HOST"
+          # The deploy SSH key is restricted to /usr/bin/python3 - on the server.
+          # sudo must allow ONLY this root-owned backup script without a password.
+          printf '%s\n' \
+            'import subprocess' \
+            'subprocess.run(["sudo", "-n", "/usr/local/bin/bakery-backup.sh"], check=True)' \
+            | ssh "${ssh_opts[@]}" "$remote"
+
       - name: Copy and run release code from this commit
         shell: bash
         env:
@@ -79,7 +92,6 @@ jobs:
           print('release_dir = pathlib.Path(' + repr('/home/bakery-deploy/releases/' + commit) + ')')
           print('release_dir.mkdir(parents=True, exist_ok=True)')
           for source, target in (('scripts/deploy-production.py', 'deploy-production.py'),
-                                 ('scripts/backup-production-db.py', 'backup-production-db.py'),
                                  ('deploy/compose.yml', 'compose.yml'),
                                  ('deploy/Caddyfile', 'Caddyfile')):
               encoded = base64.b64encode(pathlib.Path(source).read_bytes()).decode('ascii')
