@@ -72,7 +72,8 @@ class User extends Authenticatable
                 $ids[] = (int) $storeId;
             }
         }
-        if ($this->bakery_id !== null && ! in_array((int) $this->bakery_id, $ids, true)) {
+        // Legacy accounts may have only bakery_id; once links exist they define access.
+        if ($ids === [] && $this->bakery_id !== null) {
             $ids[] = (int) $this->bakery_id;
         }
 

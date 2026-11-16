@@ -29,6 +29,9 @@ class ProductionPlanningTest extends TestCase
         $this->assertSame(44, $result['samsa_count']);
         $this->assertEqualsWithDelta(3000, $result['samsa_dough']['Мука'], 0.0001);
         $this->assertSame(80, $result['ingredients']['Помидоры']);
+        $this->assertSame(2, $result['recipes']['Пицца']['quantity']);
+        $this->assertSame(80, $result['recipes']['Пицца']['ingredients']['Помидоры']);
+        $this->assertSame(1980, $result['recipes']['Самса']['ingredients']['Курица']);
         $this->assertSame(1980, $result['ingredients']['Курица']);
         $this->assertSame(['Вишня'], $result['without_recipe']);
     }

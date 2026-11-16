@@ -23,16 +23,25 @@ class OrderingRepository implements OrderingRepositoryInterface
         return Product::query()->orderBy('sort_order')->orderBy('id')->get();
     }
 
-    public function prices(int $storeId): array
+    public function prices(int $storeId, bool $includeUnavailable = false): array
     {
         $store = Bakery::query()->findOrFail($storeId);
         $priceStoreId = (int) ($store->price_source_id ?: $storeId);
         $prices = [];
-        foreach (Price::query()->where('bakery_id', $priceStoreId)->get() as $price) {
+        $query = Price::query()->where('bakery_id', $priceStoreId);
+        if (! $includeUnavailable) {
+            $query->whereNotIn('product_id', DB::table('bakery_store_product_exclusions')->select('product_id')->where('bakery_id', $storeId));
+        }
+        foreach ($query->get() as $price) {
             $prices[(int) $price->product_id] = (int) $price->kopecks;
         }
 
         return $prices;
+    }
+
+    public function minimums(int $storeId): array
+    {
+        return DB::table('bakery_store_product_minimums')->where('bakery_id', $storeId)->pluck('minimum_quantity', 'product_id')->mapWithKeys(fn ($quantity, $productId): array => [(int) $productId => (int) $quantity])->all();
     }
 
     public function stores(): Collection

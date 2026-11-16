@@ -54,6 +54,14 @@ class OrderManagementTest extends TestCase
         $this->actingAs($admin)->post('/admin/orders/'.$order->id.'/returns', ['product' => $pizza->id, 'quantity' => 2])->assertSessionHasErrors('quantity');
         $this->assertDatabaseCount('bakery_returns', 1);
         $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertOk()->assertSee('Уточнение магазина')->assertSee('Обмен');
+        $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/print')->assertOk()->assertSee('Возврат, шт.')->assertSee('170,00');
+        $invoice = $this->actingAs($admin)->get('/admin/orders/'.$order->id.'/xlsx')->assertOk();
+        $invoicePath = $invoice->baseResponse->getFile()->getPathname();
+        $invoiceArchive = new PharData($invoicePath);
+        $this->assertStringContainsString('Возврат', $invoiceArchive['xl/worksheets/sheet1.xml']->getContent());
+        $this->assertStringContainsString('<v>170.00</v>', $invoiceArchive['xl/worksheets/sheet1.xml']->getContent());
+        unset($invoiceArchive);
+        unlink($invoicePath);
 
         $period = '?from=2026-10-11&to=2026-10-11';
         $this->actingAs($admin)->get('/admin/report'.$period)->assertOk()->assertSee('370,00')->assertSee('200,00')->assertSee('170,00');

@@ -35,13 +35,14 @@ class ProductionCalculator
     ];
 
     /** @param array<string, int> $quantities
-     * @return array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,without_recipe:list<string>}
+     * @return array{dough_grams:int,main_dough:array<string,float>,samsa_count:int,samsa_dough:array<string,float>,ingredients:array<string,float>,recipes:array<string, array{quantity:int,ingredients:array<string,float>}>,without_recipe:list<string>}
      */
     public function calculate(array $quantities): array
     {
         $doughGrams = 0;
         $samsaCount = 0;
         $ingredients = [];
+        $recipes = [];
         $withoutRecipe = [];
         foreach ($quantities as $name => $quantity) {
             $key = mb_strtolower(trim($name));
@@ -57,7 +58,9 @@ class ProductionCalculator
             }
             foreach (self::FILLINGS[$key] as $ingredient => $grams) {
                 $ingredients[$ingredient] = ($ingredients[$ingredient] ?? 0) + $grams * $quantity;
+                $recipes[$name]['ingredients'][$ingredient] = ($recipes[$name]['ingredients'][$ingredient] ?? 0) + $grams * $quantity;
             }
+            $recipes[$name]['quantity'] = $quantity;
         }
         ksort($ingredients);
 
@@ -80,6 +83,7 @@ class ProductionCalculator
                 'Маргарин' => 600 * $samsaCount / 44,
             ],
             'ingredients' => $ingredients,
+            'recipes' => $recipes,
             'without_recipe' => $withoutRecipe,
         ];
     }

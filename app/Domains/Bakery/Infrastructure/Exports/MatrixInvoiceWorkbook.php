@@ -5,6 +5,7 @@ namespace Domains\Bakery\Infrastructure\Exports;
 use Domains\Bakery\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\Product;
+use Illuminate\Support\Facades\DB;
 use Phar;
 use PharData;
 use RuntimeException;
@@ -19,6 +20,13 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     {
         /** @var list<Order> $orderList */
         $orderList = iterator_to_array($orders, false);
+        $returns = [];
+        $orderIds = array_map(fn (Order $order): int => (int) $order->id, $orderList);
+        if ($orderIds !== []) {
+            foreach (DB::table('bakery_returns')->select('order_id', 'product_id')->selectRaw('SUM(quantity) AS quantity')->whereIn('order_id', $orderIds)->groupBy('order_id', 'product_id')->get() as $row) {
+                $returns[$row->order_id][$row->product_id] = (int) $row->quantity;
+            }
+        }
         $catalog = [];
         foreach ($products as $product) {
             if ($product->is_active) {
@@ -45,7 +53,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $archive->addFromString('xl/workbook.xml', $this->workbook());
             $archive->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRelationships());
             $archive->addFromString('xl/styles.xml', $this->styles());
-            $archive->addFromString('xl/worksheets/sheet1.xml', $this->invoiceSheet($orderList, $catalog));
+            $archive->addFromString('xl/worksheets/sheet1.xml', $this->invoiceSheet($orderList, $catalog, $returns));
             $archive->addFromString('xl/worksheets/sheet2.xml', $this->orderSheet($orderList, $catalog));
             unset($archive);
 
@@ -61,15 +69,16 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
     /**
      * @param  list<Order>  $orders
      * @param  array<int, string>  $catalog
+     * @param  array<int, array<int, int>>  $returns
      */
-    private function invoiceSheet(array $orders, array $catalog): string
+    private function invoiceSheet(array $orders, array $catalog, array $returns): string
     {
         $cells = [];
         $widths = [];
         $lastProductRow = 6 + count($catalog);
         foreach ($orders as $index => $order) {
-            $start = 1 + $index * 6;
-            foreach ([10, 43, 16, 16, 17, 3] as $offset => $width) {
+            $start = 1 + $index * 8;
+            foreach ([10, 43, 16, 16, 16, 17, 20, 3] as $offset => $width) {
                 $column = $start + $offset;
                 $widths[] = '<col min="'.$column.'" max="'.$column.'" width="'.$width.'" customWidth="1"/>';
             }
@@ -82,7 +91,7 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
             $this->put($cells, 4, $this->label($start, 4, 'Кому'));
             $this->put($cells, 4, $this->label($start + 1, 4, $order->store_name, 1));
             $this->put($cells, 5, $this->label($start + 1, 5, $order->store_address));
-            foreach (['№', 'Товар', 'Кол-во', 'Цена, ₽', 'Сумма, ₽'] as $offset => $title) {
+            foreach (['№', 'Товар', 'Заказано', 'Возврат', 'Цена, ₽', 'Сумма, ₽', 'После возврата, ₽'] as $offset => $title) {
                 $this->put($cells, 6, $this->label($start + $offset, 6, $title, 2));
             }
             $items = $order->items->keyBy('product_id');
@@ -93,18 +102,27 @@ class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
                 $this->put($cells, $row, $this->number($start, $row, (string) $position));
                 $this->put($cells, $row, $this->label($start + 1, $row, $item === null ? $name : $item->product_name));
                 $this->put($cells, $row, $this->number($start + 2, $row, (string) ($item === null ? 0 : $item->quantity)));
+                $returned = $returns[$order->id][$productId] ?? 0;
+                $this->put($cells, $row, $this->number($start + 3, $row, (string) $returned));
                 if ($item !== null) {
-                    $this->put($cells, $row, $this->number($start + 3, $row, $this->rubles($item->unit_kopecks), 3));
-                    $this->put($cells, $row, $this->formula($start + 4, $row, $this->ref($start + 2, $row).'*'.$this->ref($start + 3, $row), $this->rubles($item->total_kopecks), 3));
+                    $this->put($cells, $row, $this->number($start + 4, $row, $this->rubles($item->unit_kopecks), 3));
+                    $this->put($cells, $row, $this->formula($start + 5, $row, $this->ref($start + 2, $row).'*'.$this->ref($start + 4, $row), $this->rubles($item->total_kopecks), 3));
+                    $this->put($cells, $row, $this->formula($start + 6, $row, '('.$this->ref($start + 2, $row).'-'.$this->ref($start + 3, $row).')*'.$this->ref($start + 4, $row), $this->rubles(($item->quantity - $returned) * $item->unit_kopecks), 3));
                 }
                 $position++;
             }
             $totalRow = $lastProductRow + 1;
             $quantityColumn = $this->column($start + 2);
-            $sumColumn = $this->column($start + 4);
+            $returnColumn = $this->column($start + 3);
+            $sumColumn = $this->column($start + 5);
+            $netColumn = $this->column($start + 6);
+            $returnedQuantity = array_sum($returns[$order->id] ?? []);
+            $returnedKopecks = $order->items->sum(fn ($item): int => ($returns[$order->id][$item->product_id] ?? 0) * $item->unit_kopecks);
             $this->put($cells, $totalRow, $this->label($start + 1, $totalRow, 'Итого', 2));
             $this->put($cells, $totalRow, $this->formula($start + 2, $totalRow, "SUM({$quantityColumn}7:{$quantityColumn}{$lastProductRow})", (string) $this->quantity($order)));
-            $this->put($cells, $totalRow, $this->formula($start + 4, $totalRow, "SUM({$sumColumn}7:{$sumColumn}{$lastProductRow})", $this->rubles($order->total_kopecks), 3));
+            $this->put($cells, $totalRow, $this->formula($start + 3, $totalRow, "SUM({$returnColumn}7:{$returnColumn}{$lastProductRow})", (string) $returnedQuantity));
+            $this->put($cells, $totalRow, $this->formula($start + 5, $totalRow, "SUM({$sumColumn}7:{$sumColumn}{$lastProductRow})", $this->rubles($order->total_kopecks), 3));
+            $this->put($cells, $totalRow, $this->formula($start + 6, $totalRow, "SUM({$netColumn}7:{$netColumn}{$lastProductRow})", $this->rubles($order->total_kopecks - $returnedKopecks), 3));
         }
         if ($orders === []) {
             $this->put($cells, 1, $this->label(1, 1, 'На выбранную дату принятых заказов нет.'));

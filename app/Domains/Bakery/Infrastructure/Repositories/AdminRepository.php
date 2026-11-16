@@ -36,7 +36,7 @@ class AdminRepository implements AdminRepositoryInterface
 
     public function saveAccount(?int $id, array $storeIds, string $name, string $email, ?string $password, bool $active): void
     {
-        $data = ['bakery_id' => $storeIds[0], 'name' => $name, 'email' => $email, 'role' => 'user', 'status' => $active ? 'verify' : 'banned'];
+        $data = ['bakery_id' => $storeIds[0] ?? null, 'name' => $name, 'email' => $email, 'role' => 'user', 'status' => $active ? 'verify' : 'banned'];
         if ($password !== null && $password !== '') {
             $data['password'] = Hash::make($password);
         }
@@ -61,11 +61,8 @@ class AdminRepository implements AdminRepositoryInterface
                 DB::table('users')->where('id', $id)->update($data + ['updated_at' => now()]);
                 DB::table('bakery_account_stores')->where('user_id', $id)->delete();
             }
-            $otherUsers = DB::table('bakery_account_stores')->whereIn('bakery_id', $storeIds)->where('user_id', '!=', $id)->distinct()->pluck('user_id');
-            foreach ($otherUsers as $otherUserId) {
-                if (DB::table('bakery_account_stores')->where('user_id', $otherUserId)->count() > 1) {
-                    throw ValidationException::withMessages(['stores' => 'Один из магазинов уже входит в другую точку с общим прайсом.']);
-                }
+            if (DB::table('bakery_account_stores')->whereIn('bakery_id', $storeIds)->where('user_id', '!=', $id)->exists()) {
+                throw ValidationException::withMessages(['stores' => 'Один из магазинов уже привязан к другому аккаунту. Сначала отвяжите его там.']);
             }
             if ($oldPrimary !== null && count($oldStores) > 1) {
                 $sharedPrices = Price::query()->where('bakery_id', $oldPrimary)->get();
@@ -80,7 +77,9 @@ class AdminRepository implements AdminRepositoryInterface
                 }
                 DB::table('bakeries')->whereIn('id', $oldStores)->where('price_source_id', $oldPrimary)->update(['price_source_id' => null]);
             }
-            DB::table('bakery_account_stores')->insert(array_map(fn (int $storeId): array => ['user_id' => $id, 'bakery_id' => $storeId], $storeIds));
+            if ($storeIds !== []) {
+                DB::table('bakery_account_stores')->insert(array_map(fn (int $storeId): array => ['user_id' => $id, 'bakery_id' => $storeId], $storeIds));
+            }
             if (count($storeIds) > 1) {
                 DB::table('bakeries')->where('id', $storeIds[0])->update(['price_source_id' => null]);
                 DB::table('bakeries')->whereIn('id', array_slice($storeIds, 1))->update(['price_source_id' => $storeIds[0]]);
@@ -92,14 +91,14 @@ class AdminRepository implements AdminRepositoryInterface
     {
         $accounts = [];
         foreach (DB::table('users')->where('role', 'user')->orderBy('name')->get(['id', 'bakery_id', 'name', 'email', 'status']) as $user) {
-            /** @var object{id:int,bakery_id:int,name:string,email:string,status:string} $user */
+            /** @var object{id:int,bakery_id:int|null,name:string,email:string,status:string} $user */
             $storeIds = [];
             foreach (DB::table('bakery_account_stores')->where('user_id', $user->id)->pluck('bakery_id') as $storeId) {
                 if (is_int($storeId) || is_string($storeId)) {
                     $storeIds[] = (int) $storeId;
                 }
             }
-            $accounts[] = ['id' => (int) $user->id, 'bakery_id' => (int) $user->bakery_id, 'store_ids' => $storeIds ?: [(int) $user->bakery_id], 'name' => (string) $user->name, 'email' => (string) $user->email, 'status' => (string) $user->status];
+            $accounts[] = ['id' => (int) $user->id, 'bakery_id' => $user->bakery_id === null ? null : (int) $user->bakery_id, 'store_ids' => $storeIds ?: ($user->bakery_id === null ? [] : [(int) $user->bakery_id]), 'name' => (string) $user->name, 'email' => (string) $user->email, 'status' => (string) $user->status];
         }
 
         return $accounts;

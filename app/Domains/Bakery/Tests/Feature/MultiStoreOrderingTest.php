@@ -85,7 +85,11 @@ class MultiStoreOrderingTest extends TestCase
 
         $account = User::query()->where('email', 'baltiyskaya@example.test')->firstOrFail();
         $this->assertSame([$first->id, $second->id], $account->accessibleStoreIds());
-        $this->actingAs($admin)->get('/admin/catalog')->assertOk()->assertSee('Балтийская 26');
+        $this->actingAs($admin)->get('/admin/catalog?tab=accounts')->assertOk()
+            ->assertSee('Балтийская 26, Балтийская 35')
+            ->assertSee('Изменить привязку')
+            ->assertSee('type="checkbox" name="stores[]" value="'.$second->id.'" checked', false)
+            ->assertSee('form="account-'.$account->id.'"', false);
         $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
 
         $this->actingAs($admin)->post('/admin/accounts', [
@@ -98,6 +102,127 @@ class MultiStoreOrderingTest extends TestCase
         $account->refresh();
         $this->assertSame([$second->id], $account->accessibleStoreIds());
         $this->actingAs($account)->get('/orders?store='.$first->id)->assertForbidden();
+        $account->update(['bakery_id' => $first->id]);
+        $this->assertSame([$second->id], $account->accessibleStoreIds());
+        $this->actingAs($account)->get('/orders?store='.$first->id)->assertForbidden();
+        $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk();
+    }
+
+    public function test_one_account_can_place_one_order_per_store_for_the_same_delivery_date(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
+        $first = Bakery::query()->create(['name' => 'Тестовый магазин А', 'address' => 'Адрес А', 'is_active' => true]);
+        $second = Bakery::query()->create(['name' => 'Тестовый магазин Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $product = Product::query()->create(['name' => 'Тестовый пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'is_active' => true]);
+        foreach ([$first, $second] as $store) {
+            Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 3000]);
+        }
+        $account = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $first->id]);
+        DB::table('bakery_account_stores')->insert([
+            ['user_id' => $account->id, 'bakery_id' => $first->id],
+            ['user_id' => $account->id, 'bakery_id' => $second->id],
+        ]);
+
+        $quote = app(OrderingService::class)->quote($first->id, [$product->id => 1]);
+        $firstResponse = $this->actingAs($account)->post('/orders', [
+            'store' => $first->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->actingAs($account)->get('/orders?store='.$first->id)
+            ->assertOk()->assertSee('Для магазина «Тестовый магазин А» заказ на завтра уже оформлен')
+            ->assertSee('/orders?store='.$second->id, false);
+        $this->actingAs($account)->get('/orders?store='.$second->id)
+            ->assertOk()->assertSee('Проверить заказ');
+
+        $secondResponse = $this->actingAs($account)->post('/orders', [
+            'store' => $second->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->assertNotSame($firstResponse->headers->get('Location'), $secondResponse->headers->get('Location'));
+        $this->assertSame(2, DB::table('bakery_orders')->whereIn('bakery_id', [$first->id, $second->id])
+            ->where('delivery_date', $quote['date'])->where('status', 'accepted')->count());
+
+        $duplicate = $this->actingAs($account)->post('/orders', [
+            'store' => $first->id, 'request_key' => (string) Str::uuid(),
+            'quantities' => [$product->id => 1], 'quote_hash' => $quote['hash'],
+        ])->assertRedirect();
+        $this->assertSame($firstResponse->headers->get('Location'), $duplicate->headers->get('Location'));
+        $this->assertSame(2, DB::table('bakery_orders')->whereIn('bakery_id', [$first->id, $second->id])
+            ->where('delivery_date', $quote['date'])->where('status', 'accepted')->count());
+        Carbon::setTestNow();
+    }
+
+    public function test_store_can_be_unassigned_and_then_assigned_to_another_account(): void
+    {
+        $store = Bakery::query()->create(['name' => 'Тестовый свободный магазин', 'address' => 'Адрес', 'is_active' => true]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $first = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
+        DB::table('bakery_account_stores')->insert(['user_id' => $first->id, 'bakery_id' => $store->id]);
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'stores' => [$store->id], 'name' => 'Второй аккаунт', 'email' => 'second-store@example.test',
+            'password' => 'StrongPassword123!', 'is_active' => 1,
+        ])->assertSessionHasErrors('stores');
+        $this->assertDatabaseMissing('users', ['email' => 'second-store@example.test']);
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'id' => $first->id, 'name' => $first->name, 'email' => $first->email, 'is_active' => 1,
+        ])->assertRedirect()->assertSessionHas('success');
+        $first->refresh();
+        $this->assertNull($first->bakery_id);
+        $this->assertSame([], $first->accessibleStoreIds());
+        $this->actingAs($first)->get('/orders')->assertOk()->assertSee('Нет назначенных магазинов');
+        $this->actingAs($first)->get('/orders?store='.$store->id)->assertForbidden();
+        $this->actingAs($admin)->get('/admin/catalog?tab=accounts')->assertOk()->assertSee('Нет магазинов');
+
+        $this->actingAs($admin)->post('/admin/accounts', [
+            'stores' => [$store->id], 'name' => 'Второй аккаунт', 'email' => 'second-store@example.test',
+            'password' => 'StrongPassword123!', 'is_active' => 1,
+        ])->assertRedirect()->assertSessionHas('success');
+        $second = User::query()->where('email', 'second-store@example.test')->firstOrFail();
+        $this->assertSame([$store->id], $second->accessibleStoreIds());
+        $this->assertDatabaseHas('bakery_account_stores', ['user_id' => $second->id, 'bakery_id' => $store->id]);
+        $this->actingAs($second)->get('/orders')->assertOk();
+    }
+
+    public function test_shared_price_does_not_force_the_same_assortment_on_every_store(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
+        $first = Bakery::query()->create(['name' => 'Тестовый магазин 1', 'address' => 'Адрес 1', 'is_active' => true]);
+        $second = Bakery::query()->create(['name' => 'Тестовый магазин 2', 'address' => 'Адрес 2', 'is_active' => true]);
+        DB::table('bakeries')->where('id', $second->id)->update(['price_source_id' => $first->id]);
+        $product = Product::query()->create(['name' => 'Тестовый товар', 'sort_order' => 1, 'minimum_quantity' => 1, 'is_active' => true]);
+        Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 3000]);
+        $account = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $first->id]);
+        DB::table('bakery_account_stores')->insert([
+            ['user_id' => $account->id, 'bakery_id' => $first->id],
+            ['user_id' => $account->id, 'bakery_id' => $second->id],
+        ]);
+        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+
+        $this->actingAs($admin)->post('/admin/availability', [
+            'store' => $second->id, 'product' => $product->id, 'is_available' => 0,
+        ])->assertRedirect()->assertSessionHas('success');
+        $this->assertDatabaseHas('bakery_store_product_exclusions', ['bakery_id' => $second->id, 'product_id' => $product->id]);
+        $this->actingAs($account)->get('/orders?store='.$second->id)->assertOk()
+            ->assertSee('Нет цены или товар не поставляется — заказать нельзя');
+        $this->actingAs($account)->post('/orders/preview', [
+            'store' => $second->id, 'request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1],
+        ])->assertSessionHasErrors('quantities');
+        $this->actingAs($account)->post('/orders/preview', [
+            'store' => $first->id, 'request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1],
+        ])->assertOk();
+        $this->actingAs($admin)->get('/admin/catalog?tab=prices&store='.$second->id)->assertOk()
+            ->assertSee('30,00');
+
+        $this->actingAs($admin)->post('/admin/availability', [
+            'store' => $second->id, 'product' => $product->id, 'is_available' => 1,
+        ])->assertRedirect();
+        $this->assertDatabaseMissing('bakery_store_product_exclusions', ['bakery_id' => $second->id, 'product_id' => $product->id]);
+        $this->actingAs($account)->post('/orders/preview', [
+            'store' => $second->id, 'request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1],
+        ])->assertOk();
+        Carbon::setTestNow();
     }
 
     public function test_admin_tabs_show_only_selected_section_and_keep_date(): void

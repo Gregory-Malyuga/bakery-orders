@@ -15,8 +15,25 @@
 <div class="section-head"><h2>Фасовка</h2></div><div class="panel data-panel"><p class="muted small">Пакеты рассчитаны отдельно для каждого магазина. Остаток означает штуки, которые нельзя разложить по выбранным размерам упаковки.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>По 1</th><th>По 2</th><th>По 3</th><th>По 5</th><th>Остаток, шт.</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($packaging[$p->id])) as $product)<tr><th>{{ $product->name }}</th><td>{{ $packaging[$product->id]['one'] ?: '—' }}</td><td>{{ $packaging[$product->id]['two'] ?: '—' }}</td><td>{{ $packaging[$product->id]['three'] ?: '—' }}</td><td>{{ $packaging[$product->id]['five'] ?: '—' }}</td><td>{{ $packaging[$product->id]['loose'] ?: '—' }}</td></tr>@empty<tr><td colspan="6" class="muted">Нет продукции к фасовке.</td></tr>@endforelse</tbody></table></div></div>
 @elseif($tab === 'labels')
 <div class="section-head"><h2>Наклейки</h2><span class="muted">Всего {{ $labelTotal }} шт.</span></div>
-<div class="panel data-panel"><p class="muted small">Одна наклейка на каждую упакованную единицу. Остатки, не вошедшие в фасовку, проверьте во вкладке «Фасовка». Макет для печати добавлю после размера наклейки.</p><div class="table-scroll"><table><thead><tr><th>Магазин</th><th>Товар</th><th>Штук в упаковке</th><th>Наклеек</th></tr></thead><tbody>@forelse($labelRows as $row)<tr><td>{{ $row['store'] }}</td><td>{{ $row['product'] }}</td><td>{{ ['one' => 1, 'two' => 2, 'three' => 3, 'five' => 5][$row['size']] }}</td><td>{{ $row['count'] }}</td></tr>@empty<tr><td colspan="4" class="muted">Нет наклеек к печати.</td></tr>@endforelse</tbody></table></div></div>
+<div class="panel data-panel"><p class="muted small">Итог по всем магазинам для подготовки наклеек.</p><div class="table-scroll"><table><thead><tr><th>Товар</th><th>Количество, шт.</th></tr></thead><tbody>@forelse($products->filter(fn($p)=>isset($totals[$p->id])) as $product)<tr><td>{{ $product->name }}</td><td>{{ $totals[$product->id] }}</td></tr>@empty<tr><td colspan="2" class="muted">Нет продукции.</td></tr>@endforelse</tbody></table></div></div>
 @else
-<div class="section-head"><h2>Заготовки по рецептурам</h2></div><div class="panel data-panel"><p>Основное тесто: <strong>{{ number_format($production['dough_grams'] / 1000, 3, ',', ' ') }} кг</strong>. Самса: <strong>{{ $production['samsa_count'] }} шт.</strong> ({{ number_format($production['samsa_count'] / 44, 2, ',', ' ') }} замеса по 44 шт.).</p><p class="muted small">Масса теста и нормы начинки взяты из листа 12.09 присланного файла. Остатки вчерашнего теста и ручные корректировки сюда не включены. Рецептуры ниже охватывают только сырьё с однозначными нормами в файле.</p><h3>Основное тесто</h3><div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>@foreach($production['main_dough'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@endforeach</tbody></table></div><h3>Тесто для самсы</h3><div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>@foreach($production['samsa_dough'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@endforeach</tbody></table></div><h3>Начинки и заготовки</h3><div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>@forelse($production['ingredients'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@empty<tr><td colspan="2" class="muted">Нет рассчитанных заготовок.</td></tr>@endforelse</tbody></table></div>@if($production['without_recipe'])<p class="muted small">В файле нет однозначной нормы начинки для: {{ implode(', ', $production['without_recipe']) }}. Нормы теста учтены там, где они указаны в файле.</p>@endif</div>
+<div class="section-head"><h2>Заготовки по рецептурам</h2></div>
+<div class="panel data-panel">
+    <p>Основное тесто: <strong>{{ number_format($production['dough_grams'] / 1000, 3, ',', ' ') }} кг</strong>. Самса: <strong>{{ $production['samsa_count'] }} шт.</strong> ({{ number_format($production['samsa_count'] / 44, 2, ',', ' ') }} замеса по 44 шт.).</p>
+    <p class="muted small">Нормы взяты из листа 12.09 присланного файла. Остатки и ручные корректировки не включены.</p>
+    @foreach(['main_dough' => 'ТЕСТО Пирожки', 'samsa_dough' => 'ТЕСТО на САМСУ'] as $section => $heading)
+        <h3>{{ $heading }}</h3>
+        <div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>
+            @foreach($production[$section] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@endforeach
+        </tbody></table></div>
+    @endforeach
+    @foreach($production['recipes'] as $name => $recipe)
+        <h3>{{ $name }} — {{ $recipe['quantity'] }} шт.</h3>
+        <div class="table-scroll"><table><thead><tr><th>Сырьё</th><th>Количество, кг</th></tr></thead><tbody>
+            @foreach($recipe['ingredients'] as $ingredient => $grams)<tr><th>{{ $ingredient }}</th><td>{{ number_format($grams / 1000, 3, ',', ' ') }}</td></tr>@endforeach
+        </tbody></table></div>
+    @endforeach
+    @if($production['without_recipe'])<p class="muted small">В файле нет однозначной нормы начинки для: {{ implode(', ', $production['without_recipe']) }}.</p>@endif
+</div>
 @endif
 @endsection

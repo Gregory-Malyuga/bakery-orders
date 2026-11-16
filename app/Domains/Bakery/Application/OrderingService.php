@@ -28,6 +28,7 @@ class OrderingService
     {
         $date = $this->deliveryDate();
         $prices = $this->repository->prices($storeId);
+        $minimums = $this->repository->minimums($storeId);
         $products = $this->repository->products();
         $items = [];
         foreach ($quantities as $id => $rawQuantity) {
@@ -42,8 +43,9 @@ class OrderingService
             if ($product === null || ! $product->is_active || ! isset($prices[(int) $id])) {
                 throw ValidationException::withMessages(['quantities' => 'Один из товаров недоступен или не имеет цены. Обновите форму.']);
             }
-            if ($quantity < $product->minimum_quantity) {
-                throw ValidationException::withMessages(['quantities' => "Минимальный заказ товара «{$product->name}» — {$product->minimum_quantity} шт."]);
+            $minimum = $minimums[$product->id] ?? $product->minimum_quantity;
+            if ($quantity < $minimum) {
+                throw ValidationException::withMessages(['quantities' => "Минимальный заказ товара «{$product->name}» — {$minimum} шт."]);
             }
             $unit = $prices[(int) $id];
             $items[] = ['product_id' => (int) $id, 'product_name' => $product->name, 'quantity' => $quantity, 'unit_kopecks' => $unit, 'total_kopecks' => $quantity * $unit];
