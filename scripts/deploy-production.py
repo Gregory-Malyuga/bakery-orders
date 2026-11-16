@@ -55,11 +55,8 @@ def main() -> None:
         for volume in (DATABASE_VOLUME, CERTIFICATE_VOLUME):
             run("docker", "volume", "inspect", volume)
 
-        # Preserve the old database BEFORE pulling/tagging/replacing the application.
-        # The helper writes a validated pg_dump to the host, outside Docker volumes.
-        backup_helper = os.path.join(os.path.dirname(COMPOSE), "backup-production-db.py")
-        print("Backing up the running production PostgreSQL database...", flush=True)
-        print(run(sys.executable, backup_helper, commit), flush=True)
+        # The GitHub Actions backup step must succeed before this script runs.
+        # Do not start this deployment script directly: it does not create a backup.
 
         runtime = os.environ.copy()
         for key in ("APP_KEY", "APP_URL", "DB_PASSWORD", "SESSION_SECURE_COOKIE", "APP_NAME"):
