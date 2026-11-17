@@ -312,7 +312,7 @@ class OrderingFlowTest extends TestCase
         $quote = $service->quote($store->id, [$product->id => 1]);
         $requestKey = (string) Str::uuid();
 
-        $lockKey = sprintf('create_order_lock:%d:%s', $store->id, $quote['date']);
+        $lockKey = "create_order_lock:{$store->id}:" . $quote['date'];
         $lock = Cache::lock($lockKey, 10);
         $this->assertTrue($lock->get());
 
