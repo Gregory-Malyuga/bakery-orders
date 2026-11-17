@@ -100,7 +100,7 @@ class OrderRepository implements OrderRepositoryInterface
     {
         $normalizedDate = Carbon::parse($date)->startOfDay();
 
-        $lockKey = "create_order_lock:{$store->id}:" . $normalizedDate->toDateString();
+        $lockKey = "create_order_lock:{$store->id}:" . $date;
         $lock = Cache::lock($lockKey, 10);
 
         try {
