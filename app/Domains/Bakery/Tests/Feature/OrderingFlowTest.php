@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use PharData;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -300,6 +301,35 @@ class OrderingFlowTest extends TestCase
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('quantities', $exception->errors());
         }
+    }
+
+    public function test_order_placement_is_blocked_when_cache_lock_is_held(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
+        [$store, , $product] = $this->shop('Пекарня с локом', 3000);
+
+        $service = app(OrderingService::class);
+        $quote = $service->quote($store->id, [$product->id => 1]);
+        $requestKey = (string) Str::uuid();
+
+        $lockKey = sprintf('bakery:order:%d:%s', $store->id, $quote['date']);
+        $lock = Cache::lock($lockKey, 10);
+        $this->assertTrue($lock->get());
+
+        try {
+            try {
+                $service->place($store->id, $requestKey, [$product->id => 1], $quote['hash']);
+                $this->fail('Ожидалось исключение при занятом локе кэша.');
+            } catch (ValidationException $e) {
+                $this->assertDatabaseMissing('bakery_orders', ['request_key' => $requestKey]);
+            }
+        } finally {
+            $lock->release();
+        }
+
+        $result = $service->place($store->id, $requestKey, [$product->id => 1], $quote['hash']);
+        $this->assertNotNull($result['order']);
+        $this->assertDatabaseHas('bakery_orders', ['request_key' => $requestKey]);
     }
 
     public function test_admin_can_change_order_cutoff_and_store_cannot(): void
