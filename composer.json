@@ -138,7 +138,6 @@
         "smoke": "@php artisan about --ansi",
         "test": [
             "@php artisan config:clear --ansi",
-            "@php artisan migrate --force --ansi",
             "@php artisan test"
         ],
         "test:parallel": [

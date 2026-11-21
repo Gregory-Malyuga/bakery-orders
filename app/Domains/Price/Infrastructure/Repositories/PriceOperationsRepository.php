@@ -4,7 +4,6 @@ namespace Domains\Price\Infrastructure\Repositories;
 
 use Domains\Price\Application\Repositories\PriceOperationsRepositoryInterface;
 use Domains\Store\Application\Repositories\StorePriceSourceRepositoryInterface;
-
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -120,10 +119,10 @@ class PriceOperationsRepository implements PriceOperationsRepositoryInterface
             }
         }, 3);
     }
+
     public function belongsToProduct(int $operationId, int $productId): bool
     {
         return DB::table('bakery_price_operations')
             ->where('id', $operationId)->where('product_id', $productId)->exists();
     }
-
 }

@@ -2,10 +2,10 @@
 
 namespace Domains\Report\Providers;
 
-use Domains\Report\Application\Repositories\PeriodOrderRepositoryInterface;
-use Domains\Report\Infrastructure\Repositories\PeriodOrderRepository;
 use Domains\Report\Application\Exports\PeriodReportWorkbookInterface;
+use Domains\Report\Application\Repositories\PeriodOrderRepositoryInterface;
 use Domains\Report\Infrastructure\Exports\PeriodReportWorkbook;
+use Domains\Report\Infrastructure\Repositories\PeriodOrderRepository;
 use Illuminate\Support\ServiceProvider;
 
 class ReportServiceProvider extends ServiceProvider

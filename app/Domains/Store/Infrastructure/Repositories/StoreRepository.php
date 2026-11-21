@@ -2,8 +2,8 @@
 
 namespace Domains\Store\Infrastructure\Repositories;
 
-use Domains\Store\Domain\Models\Store;
 use Domains\Store\Application\Repositories\StoreRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 
 final class StoreRepository implements StoreRepositoryInterface
 {

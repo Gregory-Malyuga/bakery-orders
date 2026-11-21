@@ -2,20 +2,20 @@
 
 namespace Domains\Price\Providers;
 
-use Domains\Price\Application\Repositories\PriceOperationsRepositoryInterface;
-use Domains\Price\Application\Repositories\PriceAvailabilityReadRepositoryInterface;
-use Domains\Price\Infrastructure\Repositories\PriceAvailabilityReadRepository;
-use Domains\Price\Infrastructure\Repositories\PriceOperationsRepository;
-use Domains\Price\Application\Repositories\PriceCatalogImportRepositoryInterface;
-use Domains\Price\Infrastructure\Repositories\PriceCatalogImportRepository;
-use Domains\Price\Application\Repositories\PriceReferenceImportRepositoryInterface;
-use Domains\Price\Infrastructure\Repositories\PriceReferenceImportRepository;
-use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
-use Domains\Price\Infrastructure\Repositories\PriceOrderReadRepository;
-use Domains\Price\Application\Repositories\PriceHistoryCatalogReadRepositoryInterface;
-use Domains\Price\Infrastructure\Repositories\PriceHistoryCatalogReadRepository;
 use Domains\Price\Application\Repositories\PriceAccountMembershipRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceAvailabilityReadRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceCatalogImportRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceHistoryCatalogReadRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceOperationsRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
+use Domains\Price\Application\Repositories\PriceReferenceImportRepositoryInterface;
 use Domains\Price\Infrastructure\Repositories\PriceAccountMembershipRepository;
+use Domains\Price\Infrastructure\Repositories\PriceAvailabilityReadRepository;
+use Domains\Price\Infrastructure\Repositories\PriceCatalogImportRepository;
+use Domains\Price\Infrastructure\Repositories\PriceHistoryCatalogReadRepository;
+use Domains\Price\Infrastructure\Repositories\PriceOperationsRepository;
+use Domains\Price\Infrastructure\Repositories\PriceOrderReadRepository;
+use Domains\Price\Infrastructure\Repositories\PriceReferenceImportRepository;
 use Illuminate\Support\ServiceProvider;
 
 class PriceServiceProvider extends ServiceProvider

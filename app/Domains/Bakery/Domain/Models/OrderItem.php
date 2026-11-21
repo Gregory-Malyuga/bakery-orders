@@ -2,7 +2,6 @@
 
 namespace Domains\Bakery\Domain\Models;
 
-
 /**
  * @property int $id
  * @property int $order_id
@@ -25,6 +24,4 @@ namespace Domains\Bakery\Domain\Models;
  *
  * @mixin \Eloquent
  */
-class OrderItem extends \Domains\OrderItem\Domain\Models\OrderItem
-{
-}
+class OrderItem extends \Domains\OrderItem\Domain\Models\OrderItem {}

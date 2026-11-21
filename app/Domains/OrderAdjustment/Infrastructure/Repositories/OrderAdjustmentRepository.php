@@ -29,8 +29,8 @@ final class OrderAdjustmentRepository implements OrderAdjustmentRepositoryInterf
     }
 
     /**
-     * @param list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}> $before
-     * @param list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}> $after
+     * @param  list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>  $before
+     * @param  list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>  $after
      */
     public function save(int $orderId, int $adminId, array $before, array $after, int $total, ?string $adminNote, string $reason): void
     {

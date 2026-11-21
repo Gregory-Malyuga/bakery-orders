@@ -4,10 +4,10 @@ namespace Domains\Bakery\Application;
 
 use Domains\OrderAdjustment\Application\Commands\Adjust\AdjustOrderCommand;
 use Domains\OrderAdjustment\Application\Commands\Adjust\AdjustOrderHandler;
-use Domains\OrderReturn\Application\Commands\Record\RecordOrderReturnCommand;
-use Domains\OrderReturn\Application\Commands\Record\RecordOrderReturnHandler;
 use Domains\OrderReturn\Application\Commands\Cancel\CancelOrderReturnCommand;
 use Domains\OrderReturn\Application\Commands\Cancel\CancelOrderReturnHandler;
+use Domains\OrderReturn\Application\Commands\Record\RecordOrderReturnCommand;
+use Domains\OrderReturn\Application\Commands\Record\RecordOrderReturnHandler;
 
 /** @deprecated Use the OrderAdjustment and OrderReturn command handlers directly. */
 readonly class OrderManagementService

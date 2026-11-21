@@ -73,5 +73,4 @@ final class DeliverySheetRepository implements DeliverySheetRepositoryInterface
             'printed_at' => now(),
         ]);
     }
-
 }

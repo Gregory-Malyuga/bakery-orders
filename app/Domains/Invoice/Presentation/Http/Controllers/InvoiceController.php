@@ -2,27 +2,14 @@
 
 namespace Domains\Invoice\Presentation\Http\Controllers;
 
-use Domains\Invoice\Application\Queries\Single\SingleInvoiceHandler;
-use Domains\Invoice\Application\Queries\Single\SingleInvoiceQuery;
+use Domains\Bakery\Application\GroupInvoiceService;
+use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceHandler;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceQuery;
-use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
-use Domains\Report\Application\Exports\PeriodReportWorkbookInterface;
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\LabelPlanService;
-use Domains\Order\Application\OrderCutoff;
-use Domains\Bakery\Application\OrderManagementService;
-use Domains\Bakery\Application\PeriodReportService;
-use Domains\Bakery\Application\ProductionCalculator;
-use Domains\StoreAccount\Application\Queries\ListAll\ListStoreAccountsQuery;
-use Domains\StoreAccount\Application\Queries\ListAll\ListStoreAccountsHandler;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\StockPrice\Application\StockPrices;
-use Domains\User\Domain\Models\User;
-use Illuminate\Http\RedirectResponse;
+use Domains\Invoice\Application\Queries\Single\SingleInvoiceHandler;
+use Domains\Invoice\Application\Queries\Single\SingleInvoiceQuery;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 

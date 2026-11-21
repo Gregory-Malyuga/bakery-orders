@@ -2,10 +2,9 @@
 
 namespace Domains\StockPrice\Infrastructure\Repositories;
 
+use Carbon\CarbonImmutable;
 use Domains\StockPrice\Application\Repositories\StockPriceReadRepositoryInterface;
 use Domains\StockPrice\Application\StockPrices;
-
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 

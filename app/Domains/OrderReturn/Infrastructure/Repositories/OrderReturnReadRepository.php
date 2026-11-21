@@ -16,6 +16,7 @@ final class OrderReturnReadRepository implements OrderReturnReadRepositoryInterf
         return DB::table('bakery_returns')->whereIn('order_id', $ids)
             ->where('status', 'active')->orderBy('id')->get();
     }
+
     /** @return Collection<int, \stdClass> */
     public function historyForOrder(int $orderId): Collection
     {

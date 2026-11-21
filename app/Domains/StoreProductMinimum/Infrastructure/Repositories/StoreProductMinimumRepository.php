@@ -19,6 +19,7 @@ final class StoreProductMinimumRepository implements StoreProductMinimumReposito
             ['minimum_quantity' => $minimum],
         );
     }
+
     public function normalizeForProduct(int $productId, int $minimum): void
     {
         DB::table('bakery_store_product_minimums')->where('product_id', $productId)

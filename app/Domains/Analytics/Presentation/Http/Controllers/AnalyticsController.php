@@ -3,8 +3,8 @@
 namespace Domains\Analytics\Presentation\Http\Controllers;
 
 use Domains\Analytics\Application\AnalyticsService;
-use Domains\Analytics\Application\Queries\Dashboard\AnalyticsDashboardQuery;
 use Domains\Analytics\Application\Queries\Dashboard\AnalyticsDashboardHandler;
+use Domains\Analytics\Application\Queries\Dashboard\AnalyticsDashboardQuery;
 use Domains\StockPrice\Application\StockPrices;
 use Illuminate\Http\Request;
 use Illuminate\View\View;

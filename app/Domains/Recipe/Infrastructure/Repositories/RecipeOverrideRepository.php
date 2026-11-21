@@ -3,7 +3,6 @@
 namespace Domains\Recipe\Infrastructure\Repositories;
 
 use Domains\Recipe\Application\Repositories\RecipeOverrideRepositoryInterface;
-
 use Illuminate\Support\Facades\DB;
 
 final class RecipeOverrideRepository implements RecipeOverrideRepositoryInterface

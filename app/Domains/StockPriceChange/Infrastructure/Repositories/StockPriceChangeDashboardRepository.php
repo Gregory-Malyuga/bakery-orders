@@ -13,6 +13,7 @@ final class StockPriceChangeDashboardRepository implements StockPriceChangeDashb
     {
         $tomorrowPrices = DB::table('bakery_stock_price_changes')->where('effective_date', '<=', $date)
             ->orderBy('stock_item_id')->orderByDesc('effective_date')->orderByDesc('id')->get()->unique('stock_item_id')->keyBy('stock_item_id');
+
         return $tomorrowPrices;
     }
 
@@ -24,6 +25,7 @@ final class StockPriceChangeDashboardRepository implements StockPriceChangeDashb
             ->join('users as actor', 'actor.id', '=', 'price.actor_id')
             ->select('price.*', 'item.name as item_name', 'actor.name as actor_name')
             ->orderByDesc('price.id')->limit(50)->get();
+
         return $priceHistory;
     }
 }

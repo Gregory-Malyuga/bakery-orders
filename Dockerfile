@@ -9,27 +9,7 @@ RUN apk upgrade --no-cache curl libcurl \
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
-RUN printf '%s\n' \
-    'memory_limit=256M' \
-    'upload_max_filesize=16M' \
-    'post_max_size=16M' \
-    'max_execution_time=0' \
-    'date.timezone=UTC' \
-    'expose_php=0' \
-    'realpath_cache_size=4096K' \
-    'realpath_cache_ttl=600' \
-    'session.upload_progress.enabled=0' \
-    > /usr/local/etc/php/conf.d/10-bakery.ini \
-    && printf '%s\n' \
-    'opcache.enable=1' \
-    'opcache.enable_cli=1' \
-    'opcache.validate_timestamps=0' \
-    'opcache.memory_consumption=256' \
-    'opcache.interned_strings_buffer=16' \
-    'opcache.max_accelerated_files=20000' \
-    'opcache.jit=0' \
-    'opcache.jit_buffer_size=0' \
-    > /usr/local/etc/php/conf.d/20-bakery-opcache.ini
+COPY docker/php/10-bakery.ini docker/php/20-bakery-opcache.ini /usr/local/etc/php/conf.d/
 
 WORKDIR /var/www/app
 
@@ -47,6 +27,10 @@ CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", 
 
 FROM base AS dev
 RUN composer install --prefer-dist --no-progress --optimize-autoloader
+USER root
+RUN git config --system --add safe.directory /var/www/app
+USER www-data
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
 
 FROM base AS prod
 RUN composer install --no-dev --prefer-dist --no-progress \

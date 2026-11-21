@@ -49,6 +49,14 @@ services:
       <<: *php-env
     depends_on:
       <<: *php-depends
+    volumes:
+      - ./:/var/www/app
+      - php_vendor:/var/www/app/vendor
+      - php_storage:/var/www/app/storage
+      - php_bootstrap_cache:/var/www/app/bootstrap/cache
+      - ./docker/php/10-bakery.ini:/usr/local/etc/php/conf.d/10-bakery.ini:ro
+      - ./docker/php/20-bakery-opcache.ini:/usr/local/etc/php/conf.d/20-bakery-opcache.ini:ro
+      - ./docker/php/dev/99-bakery-dev.ini:/usr/local/etc/php/conf.d/99-bakery-dev.ini:ro
     networks:
       - backend
 
@@ -73,3 +81,6 @@ networks:
 
 volumes:
   postgres_data:
+  php_vendor:
+  php_storage:
+  php_bootstrap_cache:

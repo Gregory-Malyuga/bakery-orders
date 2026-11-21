@@ -24,6 +24,4 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Price extends \Domains\Price\Domain\Models\Price
-{
-}
+class Price extends \Domains\Price\Domain\Models\Price {}

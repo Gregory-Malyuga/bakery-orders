@@ -3,9 +3,7 @@
 namespace Domains\DeliverySchedule\Application;
 
 use Domains\DeliverySchedule\Application\Repositories\ClosedDateRepositoryInterface;
-
 use Domains\Order\Application\OrderCutoff;
-
 
 class DeliveryCalendar
 {

@@ -2,8 +2,8 @@
 
 namespace Domains\Product\Infrastructure\Repositories;
 
-use Domains\Product\Domain\Models\Product;
 use Domains\Product\Application\Repositories\ProductRepositoryInterface;
+use Domains\Product\Domain\Models\Product;
 use Domains\StoreProductMinimum\Application\Repositories\StoreProductMinimumRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 

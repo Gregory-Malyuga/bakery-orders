@@ -24,6 +24,7 @@ final class StoreReferenceImportRepository implements StoreReferenceImportReposi
 
         return $store;
     }
+
     public function activate(int $storeId): void
     {
         Bakery::query()->whereKey($storeId)->update(['is_active' => true]);

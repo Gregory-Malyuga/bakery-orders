@@ -2,10 +2,10 @@
 
 namespace Domains\StockMovement\Providers;
 
-use Domains\StockMovement\Application\Repositories\StockMovementRepositoryInterface;
-use Domains\StockMovement\Infrastructure\Repositories\StockMovementRepository;
 use Domains\StockMovement\Application\Repositories\StockMovementDashboardRepositoryInterface;
+use Domains\StockMovement\Application\Repositories\StockMovementRepositoryInterface;
 use Domains\StockMovement\Infrastructure\Repositories\StockMovementDashboardRepository;
+use Domains\StockMovement\Infrastructure\Repositories\StockMovementRepository;
 use Illuminate\Support\ServiceProvider;
 
 class StockMovementServiceProvider extends ServiceProvider

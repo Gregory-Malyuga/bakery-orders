@@ -68,7 +68,6 @@ readonly class ProductionDashboardHandler implements QueryHandlerInterface
         $orderReturns = $this->returnSummary->forOrders($visibleOrders);
         $groups = $tab === 'orders' ? $this->groupInvoices->forOrders($orders) : [];
 
-
         return new ProductionDashboardData(compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'groups', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labelPackaging', 'labels', 'labelTotal', 'packageTotal', 'excludedStores', 'productionTotal', 'production', 'orderedStoreIds'));
     }
 }

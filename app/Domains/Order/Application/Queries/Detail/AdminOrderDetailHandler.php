@@ -5,8 +5,8 @@ namespace Domains\Order\Application\Queries\Detail;
 use Domains\Order\Application\Data\AdminOrderViewData;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentReadRepositoryInterface;
-use Domains\OrderReturn\Application\Repositories\OrderReturnReadRepositoryInterface;
 use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\OrderReturn\Application\Repositories\OrderReturnReadRepositoryInterface;
 use Shared\Bus\QueryHandlerInterface;
 
 readonly class AdminOrderDetailHandler implements QueryHandlerInterface

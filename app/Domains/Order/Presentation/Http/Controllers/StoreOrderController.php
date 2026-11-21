@@ -2,18 +2,17 @@
 
 namespace Domains\Order\Presentation\Http\Controllers;
 
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Application\Queries\Home\StoreOrderHomeHandler;
 use Domains\Order\Application\Queries\Home\StoreOrderHomeQuery;
 use Domains\Order\Application\Queries\Repeat\StoreOrderRepeatHandler;
 use Domains\Order\Application\Queries\Repeat\StoreOrderRepeatQuery;
 use Domains\Order\Application\Queries\Show\StoreOrderShowHandler;
 use Domains\Order\Application\Queries\Show\StoreOrderShowQuery;
-use Domains\Order\Application\OrderingService;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\User\Domain\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class StoreOrderController

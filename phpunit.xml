@@ -44,6 +44,7 @@
         <ini name="error_reporting" value="-1"/>
         <env name="APP_KEY" value="base64:nzndTDnKTcSI51xvwTFZiLwU9AM5MLWqhnSr456y44A=" force="true"/>
         <env name="APP_ENV" value="testing" force="true"/>
+        <server name="APP_ENV" value="testing" force="true"/>
         <env name="APP_DEBUG" value="1" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
@@ -53,6 +54,7 @@
         <env name="DB_HOST" value="postgres"/>
         <env name="DB_PORT" value="5432"/>
         <env name="DB_DATABASE" value="laravel-database-test"/>
+        <server name="DB_DATABASE" value="laravel-database-test" force="true"/>
         <env name="DB_USERNAME" value="laravel-database-user"/>
         <env name="DB_PASSWORD" value="laravel-database-secret"/>
         <env name="DB_URL" value=""/>

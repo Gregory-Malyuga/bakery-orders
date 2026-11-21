@@ -30,7 +30,6 @@ readonly class GetCatalogProductHandler implements QueryHandlerInterface
         $historyItems = $this->repository->priceOperationItems($history);
         $reversed = $this->repository->reversedOperationIds($history);
 
-
         return new CatalogViewData(compact('item', 'stores', 'prices', 'unavailable', 'history', 'historyItems', 'reversed'));
     }
 }

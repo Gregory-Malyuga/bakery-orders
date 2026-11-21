@@ -2,9 +2,8 @@
 
 namespace Domains\Production\Application;
 
-use Domains\Recipe\Application\ProductionRecipeStore;
-
 use Domains\Ingredient\Application\IngredientCatalog;
+use Domains\Recipe\Application\ProductionRecipeStore;
 
 class ProductionCalculator
 {

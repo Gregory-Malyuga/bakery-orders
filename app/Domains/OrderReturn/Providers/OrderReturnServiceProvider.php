@@ -2,8 +2,8 @@
 
 namespace Domains\OrderReturn\Providers;
 
-use Domains\OrderReturn\Application\Repositories\OrderReturnRepositoryInterface;
 use Domains\OrderReturn\Application\Repositories\OrderReturnReadRepositoryInterface;
+use Domains\OrderReturn\Application\Repositories\OrderReturnRepositoryInterface;
 use Domains\OrderReturn\Infrastructure\Repositories\OrderReturnReadRepository;
 use Domains\OrderReturn\Infrastructure\Repositories\OrderReturnRepository;
 use Illuminate\Support\ServiceProvider;

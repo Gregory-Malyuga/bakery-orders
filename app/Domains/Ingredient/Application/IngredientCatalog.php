@@ -2,8 +2,8 @@
 
 namespace Domains\Ingredient\Application;
 
-use Illuminate\Support\Collection;
 use Domains\Ingredient\Application\Repositories\IngredientRepositoryInterface;
+use Illuminate\Support\Collection;
 
 class IngredientCatalog
 {

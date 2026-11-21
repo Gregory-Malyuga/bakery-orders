@@ -28,5 +28,4 @@ interface DeliverySheetRepositoryInterface
 
     /** @param array<string, mixed> $snapshot */
     public function createPrint(string $date, int $sourceId, array $snapshot): int;
-
 }

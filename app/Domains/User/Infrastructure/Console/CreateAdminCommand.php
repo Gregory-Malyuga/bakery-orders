@@ -4,6 +4,7 @@ namespace Domains\User\Infrastructure\Console;
 
 use Domains\User\Application\Commands\CreateBakeryAdmin\CreateBakeryAdminCommand;
 use Domains\User\Application\Commands\CreateBakeryAdmin\CreateBakeryAdminHandler;
+use Domains\User\Application\EmailAvailabilityService;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
@@ -11,9 +12,8 @@ class CreateAdminCommand extends Command
 {
     public function __construct(
         private readonly CreateBakeryAdminHandler $createAdmin,
-        private readonly \Domains\User\Application\EmailAvailabilityService $emailAvailability,
-    )
-    {
+        private readonly EmailAvailabilityService $emailAvailability,
+    ) {
         parent::__construct();
     }
 

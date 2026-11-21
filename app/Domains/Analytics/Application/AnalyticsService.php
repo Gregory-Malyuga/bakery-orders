@@ -3,9 +3,8 @@
 namespace Domains\Analytics\Application;
 
 use Domains\Order\Application\Repositories\OrderAnalyticsReadRepositoryInterface;
-use Domains\Store\Application\Repositories\StoreAnalyticsReadRepositoryInterface;
 use Domains\OrderReturn\Application\OrderReturnSummary;
-
+use Domains\Store\Application\Repositories\StoreAnalyticsReadRepositoryInterface;
 
 /** @phpstan-type MetricRow array{label:string,orders:int,pieces:int,returned_pieces:int,gross:int,returns:int,net:int,return_share:float} */
 class AnalyticsService
