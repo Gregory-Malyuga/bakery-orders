@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\FinancialConsistency;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\FinancialConsistencyCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -21,8 +21,8 @@ class GroupInvoiceTotalsTest extends FinancialConsistencyCase
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Первая точка', 'address' => 'Первый адрес', 'is_active' => true]);
-        $missing = Bakery::query()->create(['name' => 'Нет заказа', 'address' => 'Второй адрес', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Первая точка', 'address' => 'Первый адрес', 'is_active' => true]);
+        $missing = Store::query()->create(['name' => 'Нет заказа', 'address' => 'Второй адрес', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Пирог', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 1000]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
@@ -64,7 +64,7 @@ class GroupInvoiceTotalsTest extends FinancialConsistencyCase
         $this->assertSame('40.00', $this->cellForProduct($batch[2], 'Пирог', 'G'));
         $this->assertSame('5', $this->cellForProduct($batch[3], 'Пирог', 'B', 'A'));
 
-        $second = Bakery::query()->create(['name' => 'Другая точка', 'address' => 'Третий адрес', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Другая точка', 'address' => 'Третий адрес', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $second->id, 'product_id' => $product->id, 'kopecks' => 1200]);
         $secondQuote = $service->quote($second->id, [$product->id => 2]);
         $secondOrder = $service->place($second->id, (string) Str::uuid(), [$product->id => 2], $secondQuote['hash'])['order'];

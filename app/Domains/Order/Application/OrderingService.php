@@ -2,9 +2,9 @@
 
 namespace Domains\Order\Application;
 
-use Domains\Bakery\Domain\Models\Order;
 use Domains\DeliverySchedule\Application\DeliveryCalendar;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Order\Domain\Models\Order;
 use Domains\Product\Application\PackagingPlanner;
 use Illuminate\Validation\ValidationException;
 

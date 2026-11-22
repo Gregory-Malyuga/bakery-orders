@@ -2,7 +2,7 @@
 
 namespace Domains\User\Tests\Feature;
 
-use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -15,7 +15,7 @@ class ImpersonationTest extends TestCase
 
     public function testAdminCanEnterStoreAccountAndReturn(): void
     {
-        $store = Bakery::query()->create(['name' => 'Магазин', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Магазин', 'address' => 'Адрес', 'is_active' => true]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $account = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
 

@@ -2,8 +2,8 @@
 
 namespace Domains\Product\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Product;
 use Domains\Product\Application\Repositories\ProductReferenceImportRepositoryInterface;
+use Domains\Product\Domain\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
 
 final class ProductReferenceImportRepository implements ProductReferenceImportRepositoryInterface

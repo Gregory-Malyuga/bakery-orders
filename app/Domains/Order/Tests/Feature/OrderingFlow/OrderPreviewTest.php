@@ -3,11 +3,11 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -56,7 +56,7 @@ class OrderPreviewTest extends OrderingFlowCase
         Carbon::setTestNow(Carbon::parse('2026-10-07 12:00:00', 'Europe/Moscow'));
         Price::query()->where('bakery_id', $store->id)->where('product_id', $product->id)->update(['kopecks' => 3500]);
         $this->actingAs($user)->get('/orders/'.$order->id.'/repeat')->assertOk()->assertSee('value="3"', false)->assertSee('35,00 ₽');
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders('2026-10-08'));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders('2026-10-08'));
         $this->actingAs($admin)->post('/admin/minimums', ['store' => $store->id, 'product' => $product->id, 'minimum_quantity' => ''])->assertRedirect();
         $this->actingAs($user)->get('/orders')->assertOk()->assertSee('минимум 2 шт.');
     }

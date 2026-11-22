@@ -2,14 +2,14 @@
 
 namespace Domains\Order\Application\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Domain\Models\Order;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 interface OrderRepositoryInterface
 {
-    public function store(int $id): ?Bakery;
+    public function store(int $id): ?Store;
 
     /** @return Collection<int, Product> */
     public function products(): Collection;
@@ -20,7 +20,7 @@ interface OrderRepositoryInterface
     /** @return array<int, int> Store overrides only. */
     public function minimums(int $storeId): array;
 
-    /** @return Collection<int, Bakery> */
+    /** @return Collection<int, Store> */
     public function stores(): Collection;
 
     /** @return Collection<int, Order> */
@@ -41,7 +41,7 @@ interface OrderRepositoryInterface
     public function lockedStore(int $storeId, callable $operation): Order|array;
 
     /** @param list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}> $items */
-    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order;
+    public function createOrder(Store $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order;
 
     public function cancel(Order $order): void;
 }

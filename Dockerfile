@@ -3,8 +3,6 @@ FROM ${BASE_IMAGE} AS base
 
 ENV APP_BASE_DIR=/var/www/app AUTORUN_ENABLED=false
 
-COPY docker/php/10-bakery.ini docker/php/20-bakery-opcache.ini /usr/local/etc/php/conf.d/
-
 WORKDIR /var/www/app
 
 COPY --chown=www-data:www-data . .
@@ -20,7 +18,6 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 CMD wget 
 CMD ["php", "artisan", "octane:start", "--server=frankenphp", "--host=0.0.0.0", "--port=8000"]
 
 FROM base AS dev
-RUN composer install --prefer-dist --no-progress --optimize-autoloader
 USER root
 RUN git config --system --add safe.directory /var/www/app
 USER www-data

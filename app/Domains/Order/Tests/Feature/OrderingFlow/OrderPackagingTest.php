@@ -3,10 +3,11 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\OrderManagementService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\OrderAdjustment\Application\Commands\Adjust\AdjustOrderCommand;
+use Domains\OrderAdjustment\Application\Commands\Adjust\AdjustOrderHandler;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -43,7 +44,7 @@ class OrderPackagingTest extends OrderingFlowCase
             'quantities' => [$product->id => 2],
             'quote_hash' => $oldQuote['hash'],
         ])->assertSessionHasErrors('quantities');
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders($oldQuote['date']));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($oldQuote['date']));
 
         $newQuote = $service->quote($store->id, [$product->id => 3]);
         $this->assertSame(9000, $newQuote['total']);
@@ -90,7 +91,7 @@ class OrderPackagingTest extends OrderingFlowCase
         $this->assertNotNull($order);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         try {
-            app(OrderManagementService::class)->adjust($order->id, $admin->id, [$product->id => 4], 'Исправление', null);
+            app(AdjustOrderHandler::class)->handle(new AdjustOrderCommand($order->id, $admin->id, [$product->id => 4], 'Исправление', null));
             $this->fail('Корректировка на 4 шт. не должна сохраняться.');
         } catch (ValidationException $exception) {
             $this->assertArrayHasKey('quantities', $exception->errors());

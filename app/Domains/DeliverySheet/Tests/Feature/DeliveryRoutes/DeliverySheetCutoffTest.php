@@ -2,9 +2,9 @@
 
 namespace Domains\DeliverySheet\Tests\Feature\DeliveryRoutes;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
 use Domains\DeliverySheet\Tests\Feature\Support\DeliveryRoutesCase;
+use Domains\Order\Domain\Models\Order;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -20,7 +20,7 @@ class DeliverySheetCutoffTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 18:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         $this->actingAs($admin)->post('/admin/delivery-sheets', ['date' => '2026-11-12', 'name' => 'Маршрут', 'driver' => 'Водитель', 'stores' => [$store->id]])->assertSessionHasErrors('date');
         $this->actingAs($admin)->get('/admin/delivery-routes')->assertOk()->assertViewHas('date', '2026-11-11');
         $this->actingAs($admin)->post('/admin/delivery-sheets', ['date' => '2026-11-11', 'name' => 'Маршрут', 'driver' => 'Водитель', 'stores' => [$store->id]])->assertRedirect();
@@ -31,7 +31,7 @@ class DeliverySheetCutoffTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-13 17:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         Order::query()->create(['bakery_id' => $store->id, 'delivery_date' => '2026-11-13', 'status' => 'accepted', 'active_slot' => 1, 'request_key' => (string) Str::uuid(), 'store_name' => 'Точка', 'store_address' => 'Адрес', 'total_kopecks' => 50000]);
         /** @var int $sheetId */
         $sheetId = DB::table('bakery_delivery_sheets')->insertGetId(['delivery_date' => '2026-11-12', 'snapshot' => json_encode(['date' => '2026-11-12', 'route' => 'Маршрут', 'driver' => 'Водитель', 'salary_kopecks' => null, 'closed' => false, 'rows' => [['store_id' => $store->id, 'name' => 'Точка', 'address' => 'Адрес', 'order' => 10000, 'returns' => 0, 'due' => 10000, 'has_order' => true]], 'order' => 10000, 'returns' => 0, 'due' => 10000], JSON_THROW_ON_ERROR), 'created_at' => now(), 'updated_at' => now()]);

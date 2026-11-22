@@ -2,8 +2,8 @@
 
 namespace Domains\Order\Tests\Feature\MultiStoreOrdering;
 
-use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Order\Tests\Feature\Support\MultiStoreOrderingCase;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -13,8 +13,8 @@ class StoreAccountAssignmentTest extends MultiStoreOrderingCase
 {
     public function testAdminCanAssignMultipleStoresToOneAccount(): void
     {
-        $first = Bakery::query()->create(['name' => 'Балтийская 26', 'address' => '26', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Балтийская 35', 'address' => '35', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Балтийская 26', 'address' => '26', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Балтийская 35', 'address' => '35', 'is_active' => true]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
 
         $this->actingAs($admin)->post('/admin/accounts', [
@@ -52,8 +52,8 @@ class StoreAccountAssignmentTest extends MultiStoreOrderingCase
 
     public function testAccountsCanBeFilteredByAssignedStoreName(): void
     {
-        $matchingStore = Bakery::query()->create(['name' => 'Редкая точка Северная', 'address' => 'Северная', 'is_active' => true]);
-        $otherStore = Bakery::query()->create(['name' => 'Редкая точка Южная', 'address' => 'Южная', 'is_active' => true]);
+        $matchingStore = Store::query()->create(['name' => 'Редкая точка Северная', 'address' => 'Северная', 'is_active' => true]);
+        $otherStore = Store::query()->create(['name' => 'Редкая точка Южная', 'address' => 'Южная', 'is_active' => true]);
         $matchingAccount = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $matchingStore->id]);
         $otherAccount = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $otherStore->id]);
         DB::table('bakery_account_stores')->insert([
@@ -69,7 +69,7 @@ class StoreAccountAssignmentTest extends MultiStoreOrderingCase
 
     public function testStoreCanBeUnassignedAndThenAssignedToAnotherAccount(): void
     {
-        $store = Bakery::query()->create(['name' => 'Тестовый свободный магазин', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Тестовый свободный магазин', 'address' => 'Адрес', 'is_active' => true]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $first = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
         DB::table('bakery_account_stores')->insert(['user_id' => $first->id, 'bakery_id' => $store->id]);

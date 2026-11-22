@@ -3,8 +3,8 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\AnalyticsService;
-use Domains\Bakery\Application\OrderingService;
+use Domains\Analytics\Application\AnalyticsService;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;

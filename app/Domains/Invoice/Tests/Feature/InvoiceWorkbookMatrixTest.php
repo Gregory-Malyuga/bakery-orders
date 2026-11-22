@@ -2,12 +2,12 @@
 
 namespace Domains\Invoice\Tests\Feature;
 
-use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\Invoice\Infrastructure\Exports\MatrixInvoiceWorkbook;
 use Illuminate\Foundation\Testing\TestCase;
 use PharData;
 use PHPUnit\Framework\Attributes\DataProvider;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class InvoiceWorkbookMatrixTest extends TestCase
 {
     /**

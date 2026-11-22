@@ -2,8 +2,8 @@
 
 namespace Domains\OrderReturn\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Domains\OrderReturn\Application\Repositories\OrderReturnRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 

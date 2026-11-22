@@ -2,10 +2,10 @@
 
 namespace Domains\Invoice\Application\Queries\Batch;
 
-use Domains\Bakery\Application\GroupInvoiceService;
 use Domains\Invoice\Application\Data\InvoiceOrdersData;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Shared\Bus\QueryHandlerInterface;
 
 readonly class BatchInvoiceHandler implements QueryHandlerInterface

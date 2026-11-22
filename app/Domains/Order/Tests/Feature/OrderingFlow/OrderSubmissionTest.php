@@ -3,10 +3,10 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\Bakery\Domain\Models\Price;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\Price\Domain\Models\Price;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -29,7 +29,7 @@ class OrderSubmissionTest extends OrderingFlowCase
         $again = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])['order'];
         $this->assertSame($first->id, $again?->id);
         Price::query()->where('bakery_id', $firstStore->id)->where('product_id', $product->id)->update(['kopecks' => 9900]);
-        $this->assertSame(3000, app(OrderingRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks);
+        $this->assertSame(3000, app(OrderRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks);
         $this->actingAs($secondUser)->get('/orders/'.$first->id)->assertNotFound();
         $this->actingAs($firstUser)->get('/orders/'.$first->id)->assertOk();
     }
@@ -47,7 +47,7 @@ class OrderSubmissionTest extends OrderingFlowCase
         $freshQuote = $result['quote'];
         $this->assertNotNull($freshQuote);
         $this->assertSame(8000, $freshQuote['total']);
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders($quote['date']));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
         $this->actingAs($user)->get('/admin/catalog')->assertForbidden();
 
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:30:00', 'Europe/Moscow'));

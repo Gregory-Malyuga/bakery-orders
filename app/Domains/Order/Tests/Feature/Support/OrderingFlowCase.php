@@ -3,9 +3,9 @@
 namespace Domains\Order\Tests\Feature\Support;
 
 use Carbon\Carbon;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -22,10 +22,10 @@ abstract class OrderingFlowCase extends TestCase
         parent::tearDown();
     }
 
-    /** @return array{0:Bakery,1:User,2:Product} */
+    /** @return array{0:Store,1:User,2:Product} */
     protected function shop(string $name, int $kopecks): array
     {
-        $store = Bakery::query()->create(['name' => $name, 'address' => $name.' 1', 'is_active' => true]);
+        $store = Store::query()->create(['name' => $name, 'address' => $name.' 1', 'is_active' => true]);
         $user = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
         $product = Product::query()->firstOrCreate(['name' => 'Тестовый пирожок'], ['is_active' => true, 'packaging_mode' => 'single']);
         Price::query()->updateOrCreate(['bakery_id' => $store->id, 'product_id' => $product->id], ['kopecks' => $kopecks]);

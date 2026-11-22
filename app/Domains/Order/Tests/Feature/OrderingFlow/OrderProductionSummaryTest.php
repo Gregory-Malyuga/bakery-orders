@@ -3,10 +3,10 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;

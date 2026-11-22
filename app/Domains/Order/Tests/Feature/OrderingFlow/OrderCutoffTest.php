@@ -3,8 +3,8 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
@@ -23,7 +23,7 @@ class OrderCutoffTest extends OrderingFlowCase
         $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash'])['order'];
         $this->assertNotNull($order);
         $service->cancel($store->id, $order->id);
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders($quote['date']));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
         $this->actingAs($admin)->get('/admin/print?date='.$quote['date'])->assertOk()->assertDontSee('Третий');
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:30:00', 'Europe/Moscow'));
@@ -47,6 +47,6 @@ class OrderCutoffTest extends OrderingFlowCase
             'delivery_date' => $quote['date'],
             'client_time' => '12:00',
         ])->assertSessionHasErrors('order');
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders($quote['date']));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
     }
 }

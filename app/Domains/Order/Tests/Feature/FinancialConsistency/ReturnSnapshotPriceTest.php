@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\FinancialConsistency;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\FinancialConsistencyCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -21,7 +21,7 @@ class ReturnSnapshotPriceTest extends FinancialConsistencyCase
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-26 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create(['name' => 'Магазин возвратов', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Магазин возвратов', 'address' => 'Адрес', 'is_active' => true]);
         $sausage = Product::query()->create(['name' => 'Сосиска', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $cabbage = Product::query()->create(['name' => 'Капуста', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $sausage->id, 'kopecks' => 1000]);

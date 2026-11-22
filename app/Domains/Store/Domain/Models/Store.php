@@ -2,6 +2,8 @@
 
 namespace Domains\Store\Domain\Models;
 
+use Domains\Store\Domain\Database\Factories\StoreFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -34,6 +36,9 @@ use Illuminate\Support\Carbon;
  */
 class Store extends Model
 {
+    /** @use HasFactory<StoreFactory> */
+    use HasFactory;
+
     protected $table = 'bakeries';
 
     /** @var list<string> */
@@ -42,5 +47,10 @@ class Store extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean', 'is_cashless' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
+    }
+
+    protected static function newFactory(): StoreFactory
+    {
+        return StoreFactory::new();
     }
 }

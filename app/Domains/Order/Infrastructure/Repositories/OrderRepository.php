@@ -2,13 +2,13 @@
 
 namespace Domains\Order\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
 use Domains\Product\Application\Repositories\ProductOrderReadRepositoryInterface;
 use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 use Domains\StoreProductMinimum\Application\Repositories\StoreProductMinimumReadRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -25,7 +25,7 @@ class OrderRepository implements OrderRepositoryInterface
         private readonly StoreProductMinimumReadRepositoryInterface $minimumsRead,
     ) {}
 
-    public function store(int $id): ?Bakery
+    public function store(int $id): ?Store
     {
         return $this->storesRead->find($id);
     }
@@ -84,7 +84,7 @@ class OrderRepository implements OrderRepositoryInterface
         });
     }
 
-    private function validateOrderCompetitiveness(Carbon $date, Bakery $bakery): void
+    private function validateOrderCompetitiveness(Carbon $date, Store $bakery): void
     {
         $dateEnd = ($date->clone())->endOfDay();
         abort_if(Order::query()
@@ -96,7 +96,7 @@ class OrderRepository implements OrderRepositoryInterface
         );
     }
 
-    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order
+    public function createOrder(Store $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order
     {
         $normalizedDate = Carbon::parse($date)->startOfDay();
 

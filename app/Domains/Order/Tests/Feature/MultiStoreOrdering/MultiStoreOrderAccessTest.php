@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\MultiStoreOrdering;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\MultiStoreOrderingCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -21,9 +21,9 @@ class MultiStoreOrderAccessTest extends MultiStoreOrderingCase
     public function testAccountCanOrderForAssignedStoresOnlyAndCommentReachesInvoice(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Колпино, Седова', 'address' => 'Седова', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Колпино, Финляндская', 'address' => 'Финляндская', 'is_active' => true]);
-        $other = Bakery::query()->create(['name' => 'Балтийская', 'address' => 'Балтийская', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Колпино, Седова', 'address' => 'Седова', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Колпино, Финляндская', 'address' => 'Финляндская', 'is_active' => true]);
+        $other = Store::query()->create(['name' => 'Балтийская', 'address' => 'Балтийская', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         foreach ([$first, $second, $other] as $store) {
             Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 3000]);
@@ -69,8 +69,8 @@ class MultiStoreOrderAccessTest extends MultiStoreOrderingCase
     public function testOneAccountCanPlaceOneOrderPerStoreForTheSameDeliveryDate(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Тестовый магазин А', 'address' => 'Адрес А', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Тестовый магазин Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Тестовый магазин А', 'address' => 'Адрес А', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Тестовый магазин Б', 'address' => 'Адрес Б', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Тестовый пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         foreach ([$first, $second] as $store) {
             Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 3000]);
@@ -113,8 +113,8 @@ class MultiStoreOrderAccessTest extends MultiStoreOrderingCase
     public function testSharedPriceDoesNotForceTheSameAssortmentOnEveryStore(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Тестовый магазин 1', 'address' => 'Адрес 1', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Тестовый магазин 2', 'address' => 'Адрес 2', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Тестовый магазин 1', 'address' => 'Адрес 1', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Тестовый магазин 2', 'address' => 'Адрес 2', 'is_active' => true]);
         DB::table('bakeries')->where('id', $second->id)->update(['price_source_id' => $first->id]);
         $product = Product::query()->create(['name' => 'Тестовый товар', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 3000]);

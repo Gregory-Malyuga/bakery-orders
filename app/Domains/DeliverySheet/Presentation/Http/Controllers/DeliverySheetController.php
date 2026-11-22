@@ -49,7 +49,7 @@ readonly class DeliverySheetController
             isset($input['copy']) ? (int) $input['copy'] : null,
         ));
 
-        return view('bakery.delivery-routes', $data->data);
+        return view('bakery.delivery.delivery-routes', $data->data);
     }
 
     public function createSheet(Request $request): RedirectResponse
@@ -69,7 +69,7 @@ readonly class DeliverySheetController
         assert(is_int($printId));
         $printed = $this->printed->handle(new PrintedSheetQuery($printId));
 
-        return view('bakery.delivery-sheet', [
+        return view('bakery.delivery.delivery-sheet', [
             'sheet' => $printed->data['sheet'],
             'autoPrint' => true,
             'printId' => $printId,
@@ -78,12 +78,12 @@ readonly class DeliverySheetController
 
     public function printedSheet(int $print): View
     {
-        return view('bakery.delivery-sheet', $this->printed->handle(new PrintedSheetQuery($print))->data);
+        return view('bakery.delivery.delivery-sheet', $this->printed->handle(new PrintedSheetQuery($print))->data);
     }
 
     public function editSheet(int $sheet): View
     {
-        return view('bakery.delivery-sheet-edit', $this->edit->handle(new EditSheetQuery($sheet))->data);
+        return view('bakery.delivery.delivery-sheet-edit', $this->edit->handle(new EditSheetQuery($sheet))->data);
     }
 
     public function updateSheet(Request $request, int $sheet): RedirectResponse
@@ -96,7 +96,7 @@ readonly class DeliverySheetController
 
     public function sheet(int $sheet): View
     {
-        return view('bakery.delivery-sheet', $this->get->handle(new GetSheetQuery($sheet))->data);
+        return view('bakery.delivery.delivery-sheet', $this->get->handle(new GetSheetQuery($sheet))->data);
     }
 
     public function deleteSheet(int $sheet): RedirectResponse

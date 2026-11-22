@@ -2,16 +2,16 @@
 
 namespace Domains\Invoice\Infrastructure\Exports;
 
-use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\Product;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\Product\Domain\Models\Product;
 use Illuminate\Support\Carbon;
 use Phar;
 use PharData;
 use RuntimeException;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class MatrixInvoiceWorkbook implements InvoiceWorkbookInterface
 {
     public function __construct(private readonly OrderReturnSummary $returnSummary) {}

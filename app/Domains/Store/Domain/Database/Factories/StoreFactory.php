@@ -1,16 +1,16 @@
 <?php
 
-namespace Domains\Bakery\Domain\Database\Factories;
+namespace Domains\Store\Domain\Database\Factories;
 
-use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Bakery>
+ * @extends Factory<Store>
  */
-class BakeryFactory extends Factory
+class StoreFactory extends Factory
 {
-    protected $model = Bakery::class;
+    protected $model = Store::class;
 
     /** @return array<string, mixed> */
     public function definition(): array

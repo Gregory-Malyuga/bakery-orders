@@ -2,8 +2,8 @@
 
 namespace Domains\DeliverySheet\Tests\Feature\DeliveryRoutes;
 
-use Domains\Bakery\Domain\Models\Bakery;
 use Domains\DeliverySheet\Tests\Feature\Support\DeliveryRoutesCase;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -18,8 +18,8 @@ class DeliverySheetEditingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $a = Bakery::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
-        $b = Bakery::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $a = Store::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
+        $b = Store::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
 
         $this->actingAs($admin)->get('/admin/delivery-routes?date=2026-11-12')->assertOk()
             ->assertSee('Новый маршрутный лист')->assertSee('Сохранить лист')
@@ -46,8 +46,8 @@ class DeliverySheetEditingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $a = Bakery::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
-        $b = Bakery::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $a = Store::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
+        $b = Store::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
 
         $this->actingAs($admin)->post('/admin/delivery-sheets', [
             'date' => '2026-11-12', 'name' => 'Мой маршрут', 'driver' => 'Первый водитель', 'salary' => '3500,50',

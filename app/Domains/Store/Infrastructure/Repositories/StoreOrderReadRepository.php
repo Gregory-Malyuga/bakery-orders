@@ -2,25 +2,25 @@
 
 namespace Domains\Store\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 final class StoreOrderReadRepository implements StoreOrderReadRepositoryInterface
 {
-    public function find(int $id): ?Bakery
+    public function find(int $id): ?Store
     {
-        return Bakery::query()->find($id);
+        return Store::query()->find($id);
     }
 
-    /** @return Collection<int, Bakery> */
+    /** @return Collection<int, Store> */
     public function all(): Collection
     {
-        return Bakery::query()->orderBy('name')->get();
+        return Store::query()->orderBy('name')->get();
     }
 
     public function lockForUpdate(int $id): void
     {
-        Bakery::query()->whereKey($id)->lockForUpdate()->firstOrFail();
+        Store::query()->whereKey($id)->lockForUpdate()->firstOrFail();
     }
 }

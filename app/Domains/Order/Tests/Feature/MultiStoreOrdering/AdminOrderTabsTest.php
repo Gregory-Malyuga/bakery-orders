@@ -2,8 +2,8 @@
 
 namespace Domains\Order\Tests\Feature\MultiStoreOrdering;
 
-use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Order\Tests\Feature\Support\MultiStoreOrderingCase;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -30,7 +30,7 @@ class AdminOrderTabsTest extends MultiStoreOrderingCase
             ->assertOk()->assertSee('Персональные цены')->assertDontSee('Аккаунты магазинов');
 
         for ($number = 1; $number <= 21; $number++) {
-            Bakery::query()->create(['name' => sprintf('Магазин %02d', $number), 'address' => 'Тест', 'is_active' => true]);
+            Store::query()->create(['name' => sprintf('Магазин %02d', $number), 'address' => 'Тест', 'is_active' => true]);
         }
         $this->actingAs($admin)->get('/admin/catalog?tab=stores')
             ->assertOk()->assertSee('Магазин 01')->assertDontSee('Магазин 21')->assertSee('page=2');

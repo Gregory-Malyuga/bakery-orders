@@ -2,9 +2,9 @@
 
 namespace Domains\OrderAdjustment\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\Order\Domain\Models\Order;
 use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentRepositoryInterface;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 

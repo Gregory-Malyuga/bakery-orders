@@ -2,7 +2,7 @@
 
 namespace Domains\Report\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
+use Domains\Order\Domain\Models\Order;
 use Domains\Report\Application\Repositories\PeriodOrderRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 

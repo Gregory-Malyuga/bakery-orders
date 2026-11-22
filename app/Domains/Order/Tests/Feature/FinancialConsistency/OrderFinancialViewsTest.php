@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\FinancialConsistency;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\FinancialConsistencyCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -20,8 +20,8 @@ class OrderFinancialViewsTest extends FinancialConsistencyCase
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Проверка А', 'address' => 'Адрес А', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Проверка Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Проверка А', 'address' => 'Адрес А', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Проверка Б', 'address' => 'Адрес Б', 'is_active' => true]);
         $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $bun = Product::query()->create(['name' => 'Булочка', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         foreach ([[$first, $pizza, 1234], [$first, $bun, 205], [$second, $pizza, 1530]] as [$store, $product, $kopecks]) {

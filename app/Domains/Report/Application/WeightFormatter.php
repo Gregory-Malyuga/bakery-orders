@@ -1,6 +1,6 @@
 <?php
 
-namespace Domains\Bakery\Application;
+namespace Domains\Report\Application;
 
 class WeightFormatter
 {

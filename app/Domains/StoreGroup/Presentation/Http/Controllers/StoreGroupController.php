@@ -2,11 +2,11 @@
 
 namespace Domains\StoreGroup\Presentation\Http\Controllers;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\StoreGroup\Application\Commands\Save\SaveStoreGroupCommand;
 use Domains\StoreGroup\Application\Commands\Save\SaveStoreGroupHandler;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Domains\StoreGroup\Application\Queries\ListAll\ListStoreGroupsHandler;
 use Domains\StoreGroup\Application\Queries\ListAll\ListStoreGroupsQuery;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +15,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class StoreGroupController
 {
     public function __construct(
-        private readonly OrderingRepositoryInterface $orders,
+        private readonly OrderRepositoryInterface $orders,
         private readonly GroupInvoiceService $invoices,
         private readonly InvoiceWorkbookInterface $workbook,
         private readonly ListStoreGroupsHandler $listGroups,

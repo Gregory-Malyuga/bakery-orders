@@ -2,14 +2,14 @@
 
 namespace Domains\Recipe\Tests\Feature\RecipeEditing;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\PeriodReportService;
-use Domains\Bakery\Application\ProductionCalculator;
-use Domains\Bakery\Application\ProductionRecipeStore;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Production\Application\ProductionCalculator;
+use Domains\Recipe\Application\ProductionRecipeStore;
 use Domains\Recipe\Tests\Feature\Support\RecipeEditingCase;
+use Domains\Report\Application\PeriodReportService;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -25,7 +25,7 @@ class RecipeNormsTest extends RecipeEditingCase
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-17 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create(['name' => 'Рецептурная точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Рецептурная точка', 'address' => 'Адрес', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 3000]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);

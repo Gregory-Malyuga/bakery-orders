@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\FinancialConsistency;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\FinancialConsistencyCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -21,8 +21,8 @@ class LabelExclusionTotalsTest extends FinancialConsistencyCase
     {
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
-        $first = Bakery::query()->create(['name' => 'Без этикеток', 'address' => 'Первый адрес', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'С этикетками', 'address' => 'Второй адрес', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Без этикеток', 'address' => 'Первый адрес', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'С этикетками', 'address' => 'Второй адрес', 'is_active' => true]);
         $products = [];
         foreach ([['По одной', 'single', 1], ['По две', 'pair', 2], ['По три', 'mixed', 3], ['По пять', 'mixed', 5]] as [$name, $mode, $quantity]) {
             $product = Product::query()->create(['name' => $name, 'sort_order' => count($products) + 1, 'minimum_quantity' => 1, 'packaging_mode' => $mode, 'is_active' => true]);

@@ -2,10 +2,10 @@
 
 namespace Domains\StoreAccount\Tests\Feature;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -26,8 +26,8 @@ class SharedAccountPricingTest extends TestCase
 
     public function testSharedAccountUsesFirstStoresPricesForBothStores(): void
     {
-        $first = Bakery::query()->create(['name' => 'Колпино 1', 'address' => '1', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Колпино 2', 'address' => '2', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Колпино 1', 'address' => '1', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Колпино 2', 'address' => '2', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 3000]);
         Price::query()->create(['bakery_id' => $second->id, 'product_id' => $product->id, 'kopecks' => 4000]);

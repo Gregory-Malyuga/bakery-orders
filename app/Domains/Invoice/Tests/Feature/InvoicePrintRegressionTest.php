@@ -2,13 +2,13 @@
 
 namespace Domains\Invoice\Tests\Feature;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
-use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\Invoice\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -33,7 +33,7 @@ class InvoicePrintRegressionTest extends TestCase
     private function fixture(): array
     {
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create(['name' => 'Печатная точка', 'address' => 'Печатный адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Печатная точка', 'address' => 'Печатный адрес', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Проверочная булочка', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1234]);
         $service = app(OrderingService::class);

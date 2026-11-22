@@ -2,7 +2,7 @@
 
 namespace Domains\OrderReturn\Application;
 
-use Domains\Bakery\Domain\Models\Order;
+use Domains\Order\Domain\Models\Order;
 use Domains\OrderReturn\Application\Repositories\OrderReturnReadRepositoryInterface;
 
 class OrderReturnSummary

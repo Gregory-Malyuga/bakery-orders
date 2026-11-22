@@ -2,11 +2,11 @@
 
 namespace Domains\Order\Tests\Feature\FinancialConsistency;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\FinancialConsistencyCase;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -18,7 +18,7 @@ class EmptyPeriodReportTest extends FinancialConsistencyCase
     public function testEmptyDateAndReportExportZeroesWithoutLeakingOrders(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-16 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create(['name' => 'Проверка пустой даты', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Проверка пустой даты', 'address' => 'Адрес', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Пирог', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1250]);
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);

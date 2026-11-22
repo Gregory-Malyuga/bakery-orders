@@ -2,14 +2,14 @@
 
 namespace Domains\Store\Application\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 interface StoreOrderReadRepositoryInterface
 {
-    public function find(int $id): ?Bakery;
+    public function find(int $id): ?Store;
 
-    /** @return Collection<int, Bakery> */
+    /** @return Collection<int, Store> */
     public function all(): Collection;
 
     public function lockForUpdate(int $id): void;

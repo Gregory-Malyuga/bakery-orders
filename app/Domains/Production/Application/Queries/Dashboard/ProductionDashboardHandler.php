@@ -2,12 +2,12 @@
 
 namespace Domains\Production\Application\Queries\Dashboard;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\LabelPlanService;
-use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Application\ProductionCalculator;
+use Domains\Label\Application\LabelPlanService;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\OrderReturn\Application\OrderReturnSummary;
 use Domains\Production\Application\Data\ProductionDashboardData;
+use Domains\Production\Application\ProductionCalculator;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Shared\Bus\QueryHandlerInterface;
 
 readonly class ProductionDashboardHandler implements QueryHandlerInterface
