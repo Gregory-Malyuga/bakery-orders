@@ -1,6 +1,5 @@
 <?php
 
-use Domains\Bakery\Providers\BakeryServiceProvider;
 use Domains\Catalog\Providers\CatalogServiceProvider;
 use Domains\DeliverySchedule\Providers\DeliveryScheduleServiceProvider;
 use Domains\DeliverySheet\Providers\DeliverySheetServiceProvider;
@@ -30,7 +29,6 @@ use Shared\Providers\AppServiceProvider;
 return [
     AppServiceProvider::class,
     UserServiceProvider::class,
-    BakeryServiceProvider::class,
     DeliveryScheduleServiceProvider::class,
     DeliverySheetServiceProvider::class,
     IngredientServiceProvider::class,

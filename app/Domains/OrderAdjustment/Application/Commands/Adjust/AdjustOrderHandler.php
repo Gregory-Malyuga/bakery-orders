@@ -2,9 +2,9 @@
 
 namespace Domains\OrderAdjustment\Application\Commands\Adjust;
 
-use Domains\Bakery\Domain\Models\OrderItem;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentRepositoryInterface;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Domains\Product\Application\PackagingPlanner;
 use Illuminate\Validation\ValidationException;
 use Shared\Bus\CommandHandlerInterface;

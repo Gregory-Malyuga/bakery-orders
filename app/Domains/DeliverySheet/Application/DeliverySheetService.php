@@ -2,17 +2,17 @@
 
 namespace Domains\DeliverySheet\Application;
 
-use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\DeliverySchedule\Application\Repositories\ClosedDateRepositoryInterface;
 use Domains\Order\Application\OrderCutoff;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\OrderReturn\Application\OrderReturnSummary;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 readonly class DeliverySheetService
 {
     public function __construct(
-        private OrderingRepositoryInterface $orders,
+        private OrderRepositoryInterface $orders,
         private OrderReturnSummary $returns,
         private ClosedDateRepositoryInterface $dates,
         private OrderCutoff $cutoff,

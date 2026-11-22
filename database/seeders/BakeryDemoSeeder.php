@@ -2,9 +2,9 @@
 
 namespace Database\Seeders;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -23,7 +23,7 @@ class BakeryDemoSeeder extends Seeder
             Product::query()->updateOrCreate(['name' => $name], ['sort_order' => $position + 1, 'is_active' => true]);
         }
         foreach ($stores as $storeData) {
-            $store = Bakery::query()->updateOrCreate(['name' => $storeData['name'], 'address' => $storeData['address']], ['is_active' => true]);
+            $store = Store::query()->updateOrCreate(['name' => $storeData['name'], 'address' => $storeData['address']], ['is_active' => true]);
             DB::table('users')->updateOrInsert(['email' => $storeData['email']], ['name' => $storeData['name'], 'bakery_id' => $store->id, 'password' => Hash::make('Demo123456!'), 'role' => 'user', 'status' => 'verify', 'updated_at' => now(), 'created_at' => now()]);
             foreach ($products as $position => $name) {
                 $product = Product::query()->where('name', $name)->firstOrFail();

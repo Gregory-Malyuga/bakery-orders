@@ -2,20 +2,20 @@
 
 namespace Domains\Invoice\Presentation\Http\Controllers;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceHandler;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceQuery;
 use Domains\Invoice\Application\Queries\Single\SingleInvoiceHandler;
 use Domains\Invoice\Application\Queries\Single\SingleInvoiceQuery;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class InvoiceController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly InvoiceWorkbookInterface $workbook, private readonly GroupInvoiceService $groupInvoices,
+    public function __construct(private readonly OrderRepositoryInterface $orders, private readonly InvoiceWorkbookInterface $workbook, private readonly GroupInvoiceService $groupInvoices,
         private readonly SingleInvoiceHandler $single,
         private readonly BatchInvoiceHandler $batch) {}
 

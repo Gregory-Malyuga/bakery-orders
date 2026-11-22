@@ -2,7 +2,7 @@
 
 namespace Domains\Order\Domain\Models;
 
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

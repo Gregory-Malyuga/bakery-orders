@@ -2,7 +2,7 @@
 
 namespace Domains\StoreGroup\Application;
 
-use Domains\Bakery\Domain\Models\Order;
+use Domains\Order\Domain\Models\Order;
 use Domains\OrderReturn\Application\OrderReturnSummary;
 use Domains\StoreGroup\Application\Repositories\GroupInvoiceReadRepositoryInterface;
 

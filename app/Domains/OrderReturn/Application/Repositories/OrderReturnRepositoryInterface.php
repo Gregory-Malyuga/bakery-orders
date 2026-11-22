@@ -2,8 +2,8 @@
 
 namespace Domains\OrderReturn\Application\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderItem\Domain\Models\OrderItem;
 
 interface OrderReturnRepositoryInterface
 {

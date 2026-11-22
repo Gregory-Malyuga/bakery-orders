@@ -2,8 +2,8 @@
 
 namespace Domains\Order\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
 use Domains\Order\Application\Repositories\OrderAnalyticsReadRepositoryInterface;
+use Domains\Order\Domain\Models\Order;
 use Illuminate\Database\Eloquent\Collection;
 
 final class OrderAnalyticsReadRepository implements OrderAnalyticsReadRepositoryInterface
