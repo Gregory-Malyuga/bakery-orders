@@ -25,7 +25,7 @@ class RegisterHandlerTest extends TestCase
         $this->handler = new RegisterHandler(app(UserRepositoryInterface::class));
     }
 
-    public function test_creates_user_with_user_role(): void
+    public function testCreatesUserWithUserRole(): void
     {
         $id = $this->handler->handle(new RegisterCommand('Test User', 'register@test.com', 'password123'));
 
@@ -37,7 +37,7 @@ class RegisterHandlerTest extends TestCase
         $this->assertEquals(UserRole::User, $user->role);
     }
 
-    public function test_hashes_password(): void
+    public function testHashesPassword(): void
     {
         $id = $this->handler->handle(new RegisterCommand('Test', 'hash@test.com', 'secret123'));
 
@@ -45,7 +45,7 @@ class RegisterHandlerTest extends TestCase
         $this->assertTrue(Hash::check('secret123', $user->password));
     }
 
-    public function test_dispatches_user_created_event(): void
+    public function testDispatchesUserCreatedEvent(): void
     {
         Event::fake([UserCreated::class]);
 

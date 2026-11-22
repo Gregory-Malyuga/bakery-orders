@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class BaseDataTest extends TestCase
 {
-    public function test_can_be_instantiated_with_properties(): void
+    public function testCanBeInstantiatedWithProperties(): void
     {
         $data = new StubData(name: 'test', value: 42);
 
@@ -16,7 +16,7 @@ class BaseDataTest extends TestCase
         $this->assertSame(42, $data->value);
     }
 
-    public function test_from_creates_instance_from_array(): void
+    public function testFromCreatesInstanceFromArray(): void
     {
         $data = StubData::from(['name' => 'hello', 'value' => 7]);
 
@@ -24,7 +24,7 @@ class BaseDataTest extends TestCase
         $this->assertSame(7, $data->value);
     }
 
-    public function test_from_creates_instance_from_request(): void
+    public function testFromCreatesInstanceFromRequest(): void
     {
         $request = Request::create('/', 'GET', ['name' => 'req', 'value' => 3]);
 
@@ -34,14 +34,14 @@ class BaseDataTest extends TestCase
         $this->assertSame(3, $data->value);
     }
 
-    public function test_to_array_serializes_all_properties(): void
+    public function testToArraySerializesAllProperties(): void
     {
         $data = new StubData(name: 'arr', value: 99);
 
         $this->assertSame(['name' => 'arr', 'value' => 99], $data->toArray());
     }
 
-    public function test_to_response_returns_json_response(): void
+    public function testToResponseReturnsJsonResponse(): void
     {
         $data = new StubData(name: 'resp', value: 1);
         $request = Request::create('/', 'GET');
@@ -53,7 +53,7 @@ class BaseDataTest extends TestCase
         $this->assertSame(['name' => 'resp', 'value' => 1], $response->getData(true));
     }
 
-    public function test_to_response_returns_201_on_post(): void
+    public function testToResponseReturns201OnPost(): void
     {
         $data = new StubData(name: 'post', value: 2);
         $request = Request::create('/', 'POST');

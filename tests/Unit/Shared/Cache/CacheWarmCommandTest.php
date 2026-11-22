@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 class CacheWarmCommandTest extends TestCase
 {
-    public function test_runs_all_registered_warmers(): void
+    public function testRunsAllRegisteredWarmers(): void
     {
         $warmerA = new SpyWarmer(priority: 10);
         $warmerB = new SpyWarmer(priority: 20);
@@ -22,7 +22,7 @@ class CacheWarmCommandTest extends TestCase
         $this->assertTrue($warmerB->warmed);
     }
 
-    public function test_runs_warmers_in_descending_priority_order(): void
+    public function testRunsWarmersInDescendingPriorityOrder(): void
     {
         $log = new WarmLog;
 
@@ -36,7 +36,7 @@ class CacheWarmCommandTest extends TestCase
         $this->assertSame(['high', 'mid', 'low'], $log->order);
     }
 
-    public function test_succeeds_with_no_warmers_registered(): void
+    public function testSucceedsWithNoWarmersRegistered(): void
     {
         $this->artisan('cache:warm')->assertSuccessful();
     }

@@ -21,7 +21,7 @@ class LaravelCommandBusTest extends TestCase
         $this->bus = new LaravelCommandBus($this->container);
     }
 
-    public function test_dispatches_command_to_resolved_handler(): void
+    public function testDispatchesCommandToResolvedHandler(): void
     {
         $this->container->bind(StubHandler::class, fn () => new StubHandler);
 
@@ -30,7 +30,7 @@ class LaravelCommandBusTest extends TestCase
         $this->assertSame(42, $result);
     }
 
-    public function test_resolves_handler_by_replacing_command_suffix(): void
+    public function testResolvesHandlerByReplacingCommandSuffix(): void
     {
         $handler = new StubHandler;
         $this->container->bind(StubHandler::class, fn () => $handler);
@@ -40,7 +40,7 @@ class LaravelCommandBusTest extends TestCase
         $this->assertTrue($handler->called);
     }
 
-    public function test_throws_when_class_does_not_end_with_command(): void
+    public function testThrowsWhenClassDoesNotEndWithCommand(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches("/must end with 'Command'/");
@@ -48,7 +48,7 @@ class LaravelCommandBusTest extends TestCase
         $this->bus->dispatch(new class implements BaseCommand {});
     }
 
-    public function test_throws_when_handler_does_not_implement_handler_interface(): void
+    public function testThrowsWhenHandlerDoesNotImplementHandlerInterface(): void
     {
         $this->container->bind(StubHandler::class, fn () => new \stdClass);
 

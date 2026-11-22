@@ -20,21 +20,21 @@ class UserRequestValidationTest extends TestCase
 
     // ── ListUsersRequest ──────────────────────────────────────────────────
 
-    public function test_index_rejects_invalid_sort_field(): void
+    public function testIndexRejectsInvalidSortField(): void
     {
         $this->getJson('/api/v1/users?sort=password')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['sort']);
     }
 
-    public function test_index_rejects_invalid_sort_direction(): void
+    public function testIndexRejectsInvalidSortDirection(): void
     {
         $this->getJson('/api/v1/users?direction=random')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['direction']);
     }
 
-    public function test_index_accepts_valid_sort_fields(): void
+    public function testIndexAcceptsValidSortFields(): void
     {
         foreach (['id', 'name', 'email', 'created_at'] as $field) {
             $this->getJson("/api/v1/users?sort={$field}&direction=asc")
@@ -44,14 +44,14 @@ class UserRequestValidationTest extends TestCase
 
     // ── StoreUserRequest ──────────────────────────────────────────────────
 
-    public function test_store_rejects_missing_required_fields(): void
+    public function testStoreRejectsMissingRequiredFields(): void
     {
         $this->postJson('/api/v1/users', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'email', 'password']);
     }
 
-    public function test_store_rejects_invalid_email(): void
+    public function testStoreRejectsInvalidEmail(): void
     {
         $this->postJson('/api/v1/users', [
             'name' => 'Test',
@@ -61,7 +61,7 @@ class UserRequestValidationTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function test_store_rejects_duplicate_email(): void
+    public function testStoreRejectsDuplicateEmail(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
@@ -75,7 +75,7 @@ class UserRequestValidationTest extends TestCase
 
     // ── UpdateUserRequest ─────────────────────────────────────────────────
 
-    public function test_update_rejects_duplicate_email(): void
+    public function testUpdateRejectsDuplicateEmail(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
         $user = User::factory()->create(['email' => 'mine@example.com', 'role' => UserRole::User]);
@@ -88,7 +88,7 @@ class UserRequestValidationTest extends TestCase
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function test_update_allows_keeping_own_email(): void
+    public function testUpdateAllowsKeepingOwnEmail(): void
     {
         $user = User::factory()->create(['email' => 'own@example.com', 'role' => UserRole::User]);
 
@@ -99,7 +99,7 @@ class UserRequestValidationTest extends TestCase
         ])->assertStatus(200);
     }
 
-    public function test_update_rejects_missing_required_fields(): void
+    public function testUpdateRejectsMissingRequiredFields(): void
     {
         $user = User::factory()->create();
 

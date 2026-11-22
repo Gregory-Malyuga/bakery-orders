@@ -32,7 +32,7 @@ trait HasRepositoryTests
         return $this->repository()->create($this->makeModelData());
     }
 
-    public function test_find_returns_model(): void
+    public function testFindReturnsModel(): void
     {
         $model = $this->createRecord();
         /** @var int|string $key */
@@ -44,12 +44,12 @@ trait HasRepositoryTests
         $this->assertSame($key, $result->getKey());
     }
 
-    public function test_find_returns_null_for_missing(): void
+    public function testFindReturnsNullForMissing(): void
     {
         $this->assertNull($this->repository()->find(PHP_INT_MAX));
     }
 
-    public function test_find_or_fail_returns_model(): void
+    public function testFindOrFailReturnsModel(): void
     {
         $model = $this->createRecord();
         /** @var int|string $key */
@@ -60,14 +60,14 @@ trait HasRepositoryTests
         $this->assertSame($model->getKey(), $result->getKey());
     }
 
-    public function test_find_or_fail_throws_for_missing(): void
+    public function testFindOrFailThrowsForMissing(): void
     {
         $this->expectException(ModelNotFoundException::class);
 
         $this->repository()->findOrFail(PHP_INT_MAX);
     }
 
-    public function test_create_persists_and_returns_model(): void
+    public function testCreatePersistsAndReturnsModel(): void
     {
         $model = $this->repository()->create($this->makeModelData());
 
@@ -78,7 +78,7 @@ trait HasRepositoryTests
         $this->assertNotNull($this->repository()->find($key));
     }
 
-    public function test_update_modifies_model(): void
+    public function testUpdateModifiesModel(): void
     {
         $model = $this->createRecord();
         $data = $this->updateModelData();
@@ -90,7 +90,7 @@ trait HasRepositoryTests
         }
     }
 
-    public function test_delete_removes_model(): void
+    public function testDeleteRemovesModel(): void
     {
         $model = $this->createRecord();
         /** @var int|string $key */
@@ -101,7 +101,7 @@ trait HasRepositoryTests
         $this->assertNull($this->repository()->find($key));
     }
 
-    public function test_list_returns_paginated_results(): void
+    public function testListReturnsPaginatedResults(): void
     {
         $this->createRecord();
         $this->createRecord();

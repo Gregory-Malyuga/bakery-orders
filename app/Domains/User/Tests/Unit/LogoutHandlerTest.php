@@ -23,7 +23,7 @@ class LogoutHandlerTest extends TestCase
         $this->handler = new LogoutHandler(app(UserRepositoryInterface::class));
     }
 
-    public function test_deletes_token(): void
+    public function testDeletesToken(): void
     {
         $user = User::factory()->create(['role' => UserRole::User]);
         $tokenId = $user->createToken('api')->accessToken->id;
@@ -33,7 +33,7 @@ class LogoutHandlerTest extends TestCase
         $this->assertNull(PersonalAccessToken::find($tokenId));
     }
 
-    public function test_noop_for_nonexistent_token(): void
+    public function testNoopForNonexistentToken(): void
     {
         $this->expectNotToPerformAssertions();
 

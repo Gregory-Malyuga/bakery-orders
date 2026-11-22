@@ -18,14 +18,14 @@ class UserStatusGateTest extends TestCase
         config(['features.user_status_gate' => true]);
     }
 
-    public function test_verified_user_can_access_users_list(): void
+    public function testVerifiedUserCanAccessUsersList(): void
     {
         Sanctum::actingAs(User::factory()->verified()->create(['role' => UserRole::Manager]));
 
         $this->getJson('/api/v1/users')->assertStatus(200);
     }
 
-    public function test_pending_user_is_blocked(): void
+    public function testPendingUserIsBlocked(): void
     {
         Sanctum::actingAs(User::factory()->create(['role' => UserRole::Manager])); // pending по дефолту
 
@@ -33,14 +33,14 @@ class UserStatusGateTest extends TestCase
             ->assertJsonPath('message', 'Аккаунт не верифицирован.');
     }
 
-    public function test_banned_user_is_blocked(): void
+    public function testBannedUserIsBlocked(): void
     {
         Sanctum::actingAs(User::factory()->banned()->create(['role' => UserRole::Manager]));
 
         $this->getJson('/api/v1/users')->assertStatus(403);
     }
 
-    public function test_flag_off_pending_user_passes(): void
+    public function testFlagOffPendingUserPasses(): void
     {
         config(['features.user_status_gate' => false]);
         Sanctum::actingAs(User::factory()->create(['role' => UserRole::Manager])); // pending

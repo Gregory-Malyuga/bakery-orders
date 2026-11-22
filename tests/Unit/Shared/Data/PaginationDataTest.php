@@ -8,7 +8,7 @@ use Tests\TestCase;
 
 class PaginationDataTest extends TestCase
 {
-    public function test_defaults(): void
+    public function testDefaults(): void
     {
         $data = new PaginationData;
 
@@ -16,7 +16,7 @@ class PaginationDataTest extends TestCase
         $this->assertSame(15, $data->perPage);
     }
 
-    public function test_from_request_with_params(): void
+    public function testFromRequestWithParams(): void
     {
         $request = Request::create('/', 'GET', ['page' => '3', 'per_page' => '50']);
 
@@ -26,7 +26,7 @@ class PaginationDataTest extends TestCase
         $this->assertSame(50, $data->perPage);
     }
 
-    public function test_from_request_uses_defaults_when_absent(): void
+    public function testFromRequestUsesDefaultsWhenAbsent(): void
     {
         $request = Request::create('/', 'GET');
 

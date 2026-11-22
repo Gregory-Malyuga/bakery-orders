@@ -21,7 +21,7 @@ class LaravelQueryBusTest extends TestCase
         $this->bus = new LaravelQueryBus($this->container);
     }
 
-    public function test_asks_query_to_resolved_handler(): void
+    public function testAsksQueryToResolvedHandler(): void
     {
         $this->container->bind(FindUserByIdHandler::class, fn () => new FindUserByIdHandler);
 
@@ -31,7 +31,7 @@ class LaravelQueryBusTest extends TestCase
         $this->assertSame(42, $result->id);
     }
 
-    public function test_resolves_handler_by_replacing_query_suffix(): void
+    public function testResolvesHandlerByReplacingQuerySuffix(): void
     {
         $handler = new FindUserByIdHandler;
         $this->container->bind(FindUserByIdHandler::class, fn () => $handler);
@@ -41,7 +41,7 @@ class LaravelQueryBusTest extends TestCase
         $this->assertTrue($handler->called);
     }
 
-    public function test_throws_when_class_does_not_end_with_query(): void
+    public function testThrowsWhenClassDoesNotEndWithQuery(): void
     {
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches("/must end with 'Query'/");
@@ -49,7 +49,7 @@ class LaravelQueryBusTest extends TestCase
         $this->bus->ask(new class implements BaseQuery {});
     }
 
-    public function test_throws_when_handler_does_not_implement_handler_interface(): void
+    public function testThrowsWhenHandlerDoesNotImplementHandlerInterface(): void
     {
         $this->container->bind(FindUserByIdHandler::class, fn () => new \stdClass);
 

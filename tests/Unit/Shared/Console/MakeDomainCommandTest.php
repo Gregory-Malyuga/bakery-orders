@@ -68,21 +68,21 @@ class MakeDomainCommandTest extends StubGenTestCase
     // ── ISOLATED TESTS ────────────────────────────────────────────────────────
     // Each test generates its own domain variant with its own setUp/tearDown cycle.
 
-    public function test_capitalises_first_letter_of_domain_name(): void
+    public function testCapitalisesFirstLetterOfDomainName(): void
     {
         $this->artisan('make:domain stubIso')->assertSuccessful();
 
         $this->assertFileExists("{$this->domainBase}/Infrastructure/Repositories/StubIsoRepository.php");
     }
 
-    public function test_creates_cache_warmer_with_flag(): void
+    public function testCreatesCacheWarmerWithFlag(): void
     {
         $this->artisan('make:domain StubIso --with-cache-warmer')->assertSuccessful();
 
         $this->assertFileExists("{$this->domainBase}/Infrastructure/Cache/StubIsoCacheWarmer.php");
     }
 
-    public function test_skips_existing_files_on_second_run(): void
+    public function testSkipsExistingFilesOnSecondRun(): void
     {
         $this->artisan('make:domain StubIso')->assertSuccessful();
 
@@ -94,7 +94,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertStringContainsString('sentinel', $this->files->get($path));
     }
 
-    public function test_creates_and_runs_migration(): void
+    public function testCreatesAndRunsMigration(): void
     {
         $this->artisan('make:domain StubIso')->assertSuccessful();
 
@@ -109,7 +109,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertTrue(Schema::hasTable($table), 'Table should exist after migrate');
     }
 
-    public function test_skips_migration_if_already_exists(): void
+    public function testSkipsMigrationIfAlreadyExists(): void
     {
         $this->artisan('make:domain StubIso')->assertSuccessful();
 
@@ -122,7 +122,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertCount(count($before), $after, 'No extra migration should be created on second run');
     }
 
-    public function test_fields_appear_in_model_fillable(): void
+    public function testFieldsAppearInModelFillable(): void
     {
         $this->artisan('make:domain StubIso title:string count:integer')->assertSuccessful();
 
@@ -131,7 +131,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertStringContainsString("'count'", $content);
     }
 
-    public function test_fields_appear_in_migration(): void
+    public function testFieldsAppearInMigration(): void
     {
         $this->artisan('make:domain StubIso title:string count:integer')->assertSuccessful();
 
@@ -142,7 +142,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertStringContainsString("'count'", $content);
     }
 
-    public function test_provider_registration_is_idempotent(): void
+    public function testProviderRegistrationIsIdempotent(): void
     {
         $this->artisan('make:domain StubIso')->assertSuccessful();
         $this->artisan('make:domain StubIso')->assertSuccessful();
@@ -152,7 +152,7 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertSame(1, substr_count($content, 'StubIsoServiceProvider::class'));
     }
 
-    public function test_nested_domain_uses_parent_namespace(): void
+    public function testNestedDomainUsesParentNamespace(): void
     {
         $nestedBase = base_path('app/Domains/StubGroup/StubNested');
         $files = $this->files;

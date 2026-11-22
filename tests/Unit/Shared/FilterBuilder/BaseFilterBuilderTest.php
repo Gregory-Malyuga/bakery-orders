@@ -14,7 +14,7 @@ class BaseFilterBuilderTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_null_values_are_skipped(): void
+    public function testNullValuesAreSkipped(): void
     {
         $filters = new class(null) extends Data
         {
@@ -29,7 +29,7 @@ class BaseFilterBuilderTest extends TestCase
         $this->assertStringNotContainsString('where', strtolower($result->toRawSql()));
     }
 
-    public function test_convention_camel_to_snake_where(): void
+    public function testConventionCamelToSnakeWhere(): void
     {
         $filters = new class('test@example.com') extends Data
         {
@@ -44,7 +44,7 @@ class BaseFilterBuilderTest extends TestCase
         $this->assertStringContainsString('email_verified_at', $result->toRawSql());
     }
 
-    public function test_filter_map_uses_custom_filter(): void
+    public function testFilterMapUsesCustomFilter(): void
     {
         $filters = new class('alice') extends Data
         {
@@ -72,7 +72,7 @@ class BaseFilterBuilderTest extends TestCase
         $this->assertStringContainsString('LIKE', $result->toRawSql());
     }
 
-    public function test_filters_narrow_results(): void
+    public function testFiltersNarrowResults(): void
     {
         User::factory()->create(['name' => 'Alice']);
         User::factory()->create(['name' => 'Bob']);

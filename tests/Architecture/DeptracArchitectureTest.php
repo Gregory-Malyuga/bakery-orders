@@ -9,7 +9,7 @@ use Symfony\Component\Process\Process;
 
 final class DeptracArchitectureTest extends TestCase
 {
-    public function test_deptrac_architecture_rules_pass(): void
+    public function testDeptracArchitectureRulesPass(): void
     {
         $projectRoot = dirname(__DIR__, 2);
         $process = new Process([
