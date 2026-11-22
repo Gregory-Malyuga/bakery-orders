@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Validation\ValidationException;
 
 class OrderRepository implements OrderRepositoryInterface
 {
@@ -86,7 +86,7 @@ class OrderRepository implements OrderRepositoryInterface
 
     private function validateOrderCompetitiveness (Carbon $date, Bakery $bakery): void
     {
-        $dateEnd = $date->clone()->endOfDay();
+        $dateEnd = ($date->clone())->endOfDay();
         abort_if(Order::query()
                 ->whereBetween('delivery_date', [$date->toDateTimeString(), $dateEnd->toDateTimeString()])
                 ->where('bakery_id', $bakery->id)
@@ -104,7 +104,9 @@ class OrderRepository implements OrderRepositoryInterface
         $lock = Cache::lock($lockKey, 10);
 
         try {
-            $lock->block(5);
+            if (! $lock->get()) {
+                throw ValidationException::withMessages(['order' => 'Система занята, попробуйте повторить запрос.']);
+            }
             $this->validateOrderCompetitiveness($normalizedDate, $store);
             DB::beginTransaction();
             try {
@@ -128,8 +130,6 @@ class OrderRepository implements OrderRepositoryInterface
                 throw $exception;
             }
             return $order->load('items');
-        } catch (LockTimeoutException $e) {
-            throw new \Exception('Система занята, попробуйте повторить запрос.');
         } finally {
             $lock?->release();
         }
