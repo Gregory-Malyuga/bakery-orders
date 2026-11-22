@@ -29,8 +29,8 @@ class ClosedDeliveryDateTest extends OrderingFlowCase
             ->assertSee('Заказы принимаются с 03.11.2026, поставка 04.11.2026')
             ->assertDontSee('id="order-form"', false);
         $input = ['store' => $store->id, 'request_key' => (string) Str::uuid(), 'quantities' => [$product->id => 1]];
-        $this->actingAs($user)->post('/orders/preview', $input)->assertStatus(422);
-        $this->actingAs($user)->post('/orders/edit-preview', $input)->assertStatus(422);
+        $this->actingAs($user)->post('/orders/preview', $input, ['Accept' => 'application/json'])->assertStatus(422);
+        $this->actingAs($user)->post('/orders/edit-preview', $input, ['Accept' => 'application/json'])->assertStatus(422);
         $this->actingAs($user)->post('/orders', $input + ['quote_hash' => str_repeat('a', 64)])->assertSessionHasErrors('order');
 
         Carbon::setTestNow(Carbon::parse('2026-11-02 12:00:00', 'Europe/Moscow'));

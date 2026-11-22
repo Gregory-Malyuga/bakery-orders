@@ -43,10 +43,10 @@ class ReturnCancellationViewsTest extends FinancialConsistencyCase
         $this->assertCount(2, $returnIds);
         $cancelUrl = $url.'/'.$returnIds[0].'/cancel';
 
-        $this->actingAs($customer)->post($cancelUrl, ['reason' => 'Дубль'])->assertForbidden();
+        $this->actingAs($customer)->post($cancelUrl, ['reason' => 'Дубль'], ['Accept' => 'application/json'])->assertForbidden();
         $this->actingAs($admin)->post($cancelUrl, ['reason' => '   '])->assertSessionHasErrors('reason');
         $this->actingAs($admin)->post($cancelUrl, ['reason' => 'Дублированная запись'])->assertRedirect();
-        $this->actingAs($admin)->post($cancelUrl, ['reason' => 'Повтор'])->assertStatus(422);
+        $this->actingAs($admin)->post($cancelUrl, ['reason' => 'Повтор'], ['Accept' => 'application/json'])->assertStatus(422);
         $this->assertDatabaseCount('bakery_returns', 2);
         $this->assertDatabaseHas('bakery_returns', ['id' => $returnIds[0], 'status' => 'cancelled', 'cancelled_by_user_id' => $admin->id, 'cancellation_reason' => 'Дублированная запись']);
         $this->assertDatabaseHas('bakery_returns', ['id' => $returnIds[1], 'status' => 'active', 'cancelled_at' => null]);
@@ -67,6 +67,6 @@ class ReturnCancellationViewsTest extends FinancialConsistencyCase
         $this->assertEqualsWithDelta(40.0, (float) $this->reportValue($report[1], 'Точка возврата', 'Пирог', 'I'), 0.001);
 
         $service->cancel($store->id, $order->id);
-        $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1])->assertStatus(422);
+        $this->actingAs($admin)->post($url, ['product' => $product->id, 'quantity' => 1], ['Accept' => 'application/json'])->assertStatus(422);
     }
 }
