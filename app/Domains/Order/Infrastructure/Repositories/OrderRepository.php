@@ -102,9 +102,10 @@ class OrderRepository implements OrderRepositoryInterface
 
         $lockKey = "create_order_lock:{$store->id}:" . $date;
         $lock = Cache::lock($lockKey, 10);
+        $acquired = false;
 
         try {
-            if (! $lock->get()) {
+            if (! ($acquired = $lock->get())) {
                 throw ValidationException::withMessages(['order' => 'Система занята, попробуйте повторить запрос.']);
             }
             $this->validateOrderCompetitiveness($normalizedDate, $store);
@@ -131,7 +132,9 @@ class OrderRepository implements OrderRepositoryInterface
             }
             return $order->load('items');
         } finally {
-            $lock?->release();
+            if ($acquired) {
+                $lock->release();
+            }
         }
     }
 
