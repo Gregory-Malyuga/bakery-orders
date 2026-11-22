@@ -1,13 +1,7 @@
-ARG BASE_IMAGE=dunglas/frankenphp:1-php8.5-alpine@sha256:2e95565f69e5295e1a0a5ceb5dc81b6039c9e552e819da47f8c313f466926a83
+ARG BASE_IMAGE=ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
 FROM ${BASE_IMAGE} AS base
 
-RUN php -r 'exit(version_compare(PHP_VERSION, "8.5.12", ">=") ? 0 : 1);'
-
-RUN apk upgrade --no-cache curl libcurl \
-    && apk add --no-cache git \
-    && install-php-extensions pdo_pgsql pcntl sockets
-
-COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
+ENV APP_BASE_DIR=/var/www/app AUTORUN_ENABLED=false
 
 COPY docker/php/10-bakery.ini docker/php/20-bakery-opcache.ini /usr/local/etc/php/conf.d/
 

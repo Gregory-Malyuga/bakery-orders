@@ -13,6 +13,10 @@
 
 # State
 
+## 2026-11-22 · BAK-25 · базовый Docker-образ и отчёты безопасности
+
+В локальной `main` приложение переведено на `ghcr.io/gregory-malyuga/bootstrap-docker-php:latest`. Из Dockerfile убраны повторная установка расширений, Composer и системных пакетов; для нового образа указаны каталог приложения и отключение встроенных Laravel automations. Задания Trivy FS/Image сохраняют SARIF как артефакты и не блокируют релиз; отдельные шаги с `exit-code: 1` удалены. Локальный dev-образ собран, PHP и PostgreSQL healthy. В Docker на отдельной `laravel-database-test` прошли `composer pre-commit` и полный `composer pre-push`: 271 тест, 1801 утверждение; побочные правки моделей после генератора отменены. Push, CI и production-деплой не выполнялись.
+
 ## 2026-11-21 · BUG-10 · локальная разработка в Docker
 
 После bind mount пользовательский `composer test` дал 13 ошибок HTTP 419 и предупреждение Git `dubious ownership`. Причина и исправление описаны в [HIST-008](history/HIST-008.md). `phpunit.xml` теперь задаёт `APP_ENV=testing` и отдельную БД также через `$_SERVER`; `composer test` больше не запускает миграцию локальной БД до PHPUnit, а Compose задаёт точечное Git `safe.directory`. Повторный `docker compose exec -T php composer test`: 271 тест, 1801 утверждение. Коммита, push, CI и production-деплоя нет.

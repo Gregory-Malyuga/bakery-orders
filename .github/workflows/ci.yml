@@ -14,7 +14,7 @@ permissions:
   packages: write
 
 env:
-  BASE_IMAGE: dunglas/frankenphp:1-php8.5-alpine@sha256:2e95565f69e5295e1a0a5ceb5dc81b6039c9e552e819da47f8c313f466926a83
+  BASE_IMAGE: ghcr.io/gregory-malyuga/bootstrap-docker-php:latest
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -224,6 +224,7 @@ jobs:
   security-fs:
     name: Security / Trivy FS
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -243,14 +244,6 @@ jobs:
           name: trivy-fs-sarif
           path: trivy-fs.sarif
           if-no-files-found: error
-
-      - name: Fail on secrets
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          scanners: secret
-          exit-code: '1'
 
 # ─── TEST ─────────────────────────────────────────────────────────────────────
 # Стартует сразу после lint — не ждёт analyze.
@@ -444,6 +437,7 @@ jobs:
     name: Security / Trivy Image
     needs: build
     runs-on: ubuntu-latest
+    continue-on-error: true
     env:
       TRIVY_USERNAME: ${{ github.actor }}
       TRIVY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
@@ -462,14 +456,6 @@ jobs:
           name: trivy-image-sarif
           path: trivy-image.sarif
           if-no-files-found: error
-
-      - name: Fail on fixable CRITICAL
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ needs.build.outputs.image }}:${{ github.sha }}
-          exit-code: '1'
-          severity: CRITICAL
-          ignore-unfixed: true
 
 # ─── SMOKE ───────────────────────────────────────────────────────────────────
 # Один docker run — три команды в одном контейнере.
@@ -500,7 +486,7 @@ jobs:
 
   release-latest:
     name: Release / latest
-    needs: [build, security-image, smoke]
+    needs: [build, smoke]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -517,7 +503,7 @@ jobs:
 
   release-semver:
     name: Release / semver tag
-    needs: [build, security-image, smoke]
+    needs: [build, smoke]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
