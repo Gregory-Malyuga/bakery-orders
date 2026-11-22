@@ -4,10 +4,10 @@ namespace Domains\Analytics\Application\Queries\Dashboard;
 
 use Domains\Analytics\Application\AnalyticsService;
 use Domains\Analytics\Application\Data\AnalyticsDashboardData;
-use Domains\StockItem\Application\Repositories\IngredientStockReadRepositoryInterface;
-use Domains\Store\Application\Repositories\StoreAnalyticsReadRepositoryInterface;
 use Domains\Product\Application\Repositories\ProductOptionsReadRepositoryInterface;
+use Domains\StockItem\Application\Repositories\IngredientStockReadRepositoryInterface;
 use Domains\StockPrice\Application\StockPrices;
+use Domains\Store\Application\Repositories\StoreAnalyticsReadRepositoryInterface;
 use Shared\Bus\QueryHandlerInterface;
 
 readonly class AnalyticsDashboardHandler implements QueryHandlerInterface

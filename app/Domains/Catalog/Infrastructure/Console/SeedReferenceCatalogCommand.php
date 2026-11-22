@@ -2,9 +2,9 @@
 
 namespace Domains\Catalog\Infrastructure\Console;
 
-use Domains\Catalog\Infrastructure\Import\ReferenceWorkbookReader;
 use Domains\Catalog\Application\Commands\SeedReference\SeedReferenceCommand;
 use Domains\Catalog\Application\Commands\SeedReference\SeedReferenceHandler;
+use Domains\Catalog\Infrastructure\Import\ReferenceWorkbookReader;
 use Illuminate\Console\Command;
 use RuntimeException;
 

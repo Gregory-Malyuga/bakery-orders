@@ -2,12 +2,12 @@
 
 namespace Domains\StoreGroup\Providers;
 
-use Domains\StoreGroup\Application\Repositories\StoreGroupRepositoryInterface;
 use Domains\StoreGroup\Application\Repositories\GroupInvoiceReadRepositoryInterface;
-use Domains\StoreGroup\Infrastructure\Repositories\GroupInvoiceReadRepository;
-use Domains\StoreGroup\Infrastructure\Repositories\StoreGroupRepository;
 use Domains\StoreGroup\Application\Repositories\LabelGroupExclusionRepositoryInterface;
+use Domains\StoreGroup\Application\Repositories\StoreGroupRepositoryInterface;
+use Domains\StoreGroup\Infrastructure\Repositories\GroupInvoiceReadRepository;
 use Domains\StoreGroup\Infrastructure\Repositories\LabelGroupExclusionRepository;
+use Domains\StoreGroup\Infrastructure\Repositories\StoreGroupRepository;
 use Illuminate\Support\ServiceProvider;
 
 class StoreGroupServiceProvider extends ServiceProvider

@@ -16,7 +16,7 @@ readonly class StorefrontReadService
     ) {}
 
     /**
-     * @param list<int> $accessible
+     * @param  list<int>  $accessible
      * @return array<string, mixed>
      */
     public function home(int $storeId, array $accessible): array
@@ -44,7 +44,7 @@ readonly class StorefrontReadService
     }
 
     /**
-     * @param list<int> $accessible
+     * @param  list<int>  $accessible
      * @return array<string, mixed>
      */
     public function repeat(int $orderId, array $accessible): array
@@ -73,7 +73,7 @@ readonly class StorefrontReadService
     }
 
     /**
-     * @param list<int> $accessible
+     * @param  list<int>  $accessible
      * @return array<string, mixed>
      */
     public function show(int $orderId, array $accessible): array

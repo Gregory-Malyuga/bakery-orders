@@ -1,11 +1,11 @@
 <?php
 
-use Domains\User\Presentation\Http\Middleware\EnsureBakeryRole;
 use Domains\User\Domain\Exceptions\InvalidCredentialsException;
 use Domains\User\Domain\Exceptions\UserForbiddenException;
 use Domains\User\Domain\Exceptions\UserInsufficientRoleException;
 use Domains\User\Domain\Exceptions\UserNotFoundException;
 use Domains\User\Domain\Exceptions\UserNotVerifiedException;
+use Domains\User\Presentation\Http\Middleware\EnsureBakeryRole;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;

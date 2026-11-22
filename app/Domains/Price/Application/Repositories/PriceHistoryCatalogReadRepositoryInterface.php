@@ -10,7 +10,7 @@ interface PriceHistoryCatalogReadRepositoryInterface
     public function priceOperations(int $productId): Collection;
 
     /**
-     * @param Collection<int, \stdClass> $history
+     * @param  Collection<int, \stdClass>  $history
      * @return Collection<int|string, Collection<int, \stdClass>>
      */
     public function priceOperationItems(Collection $history): Collection;

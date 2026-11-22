@@ -3,7 +3,6 @@
 namespace Domains\User\Providers;
 
 use Domains\User\Application\Commands\Create\CreateUserHandler;
-use Domains\User\Infrastructure\Console\CreateAdminCommand;
 use Domains\User\Application\Commands\Delete\DeleteUserHandler;
 use Domains\User\Application\Commands\Logout\LogoutHandler;
 use Domains\User\Application\Commands\Register\RegisterHandler;
@@ -12,6 +11,7 @@ use Domains\User\Application\Queries\FindByCredentials\FindUserByCredentialsHand
 use Domains\User\Application\Queries\FindById\FindUserByIdHandler;
 use Domains\User\Application\Queries\ListAll\ListUsersHandler;
 use Domains\User\Application\Repositories\UserRepositoryInterface;
+use Domains\User\Infrastructure\Console\CreateAdminCommand;
 use Domains\User\Infrastructure\Repositories\UserRepository;
 use Domains\User\Presentation\Http\Middleware\EnsureUserIsVerified;
 use Illuminate\Support\Facades\Route;

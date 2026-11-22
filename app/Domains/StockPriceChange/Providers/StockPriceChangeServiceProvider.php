@@ -2,10 +2,10 @@
 
 namespace Domains\StockPriceChange\Providers;
 
-use Domains\StockPriceChange\Application\Repositories\StockPriceChangeRepositoryInterface;
-use Domains\StockPriceChange\Infrastructure\Repositories\StockPriceChangeRepository;
 use Domains\StockPriceChange\Application\Repositories\StockPriceChangeDashboardRepositoryInterface;
+use Domains\StockPriceChange\Application\Repositories\StockPriceChangeRepositoryInterface;
 use Domains\StockPriceChange\Infrastructure\Repositories\StockPriceChangeDashboardRepository;
+use Domains\StockPriceChange\Infrastructure\Repositories\StockPriceChangeRepository;
 use Illuminate\Support\ServiceProvider;
 
 class StockPriceChangeServiceProvider extends ServiceProvider

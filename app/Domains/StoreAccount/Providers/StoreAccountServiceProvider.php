@@ -2,11 +2,11 @@
 
 namespace Domains\StoreAccount\Providers;
 
-use Domains\StoreAccount\Application\Repositories\StoreAccountRepositoryInterface;
-use Domains\StoreAccount\Infrastructure\Repositories\StoreAccountRepository;
 use Domains\StoreAccount\Application\Repositories\StoreAccountMembershipRepositoryInterface;
-use Domains\StoreAccount\Infrastructure\Repositories\StoreAccountMembershipRepository;
+use Domains\StoreAccount\Application\Repositories\StoreAccountRepositoryInterface;
 use Domains\StoreAccount\Application\Repositories\StoreOwnerReadRepositoryInterface;
+use Domains\StoreAccount\Infrastructure\Repositories\StoreAccountMembershipRepository;
+use Domains\StoreAccount\Infrastructure\Repositories\StoreAccountRepository;
 use Domains\StoreAccount\Infrastructure\Repositories\StoreOwnerReadRepository;
 use Illuminate\Support\ServiceProvider;
 

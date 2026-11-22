@@ -47,7 +47,6 @@ readonly class GetCatalogHandler implements QueryHandlerInterface
             ? $this->repository->unavailableProducts($selectedStore)
             : [];
 
-
         return new CatalogViewData(compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + [
             'prices' => $selectedStore ? $this->orders->prices($selectedStore, true, false) : [],
             'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [],

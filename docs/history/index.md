@@ -27,3 +27,4 @@
 [HIST-005](HIST-005.md) — HandlerInterface::handle(): mixed несовместим с void-реализациями
 
 [HIST-006](HIST-006.md) — релиз зависел от удалённого checkout на сервере
+[HIST-008](HIST-008.md) — тесты в локальном Docker получали HTTP 419 из-за APP_ENV=local

@@ -43,6 +43,4 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Order extends \Domains\Order\Domain\Models\Order
-{
-}
+class Order extends \Domains\Order\Domain\Models\Order {}

@@ -26,6 +26,7 @@ final class ProductReferenceImportRepository implements ProductReferenceImportRe
 
         return $product;
     }
+
     public function activate(int $productId, int $position): void
     {
         Product::query()->whereKey($productId)->update(['sort_order' => $position, 'is_active' => true]);

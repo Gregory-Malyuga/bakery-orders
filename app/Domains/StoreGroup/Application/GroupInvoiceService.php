@@ -2,10 +2,9 @@
 
 namespace Domains\StoreGroup\Application;
 
-use Domains\StoreGroup\Application\Repositories\GroupInvoiceReadRepositoryInterface;
-use Domains\OrderReturn\Application\OrderReturnSummary;
-
 use Domains\Bakery\Domain\Models\Order;
+use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\StoreGroup\Application\Repositories\GroupInvoiceReadRepositoryInterface;
 
 /**
  * @phpstan-type GroupMember array{name:string,address:string,comment:string|null,ordered:bool,quantity:int,gross:int,returns:int,net:int}

@@ -2,16 +2,19 @@
 
 namespace Domains\Order\Infrastructure\Repositories;
 
-use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Bakery\Domain\Models\Order;
 use Domains\Bakery\Domain\Models\OrderItem;
-use Illuminate\Database\Eloquent\Collection;
-use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
-use Domains\Product\Application\Repositories\ProductOrderReadRepositoryInterface;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
+use Domains\Product\Application\Repositories\ProductOrderReadRepositoryInterface;
+use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
 use Domains\StoreProductMinimum\Application\Repositories\StoreProductMinimumReadRepositoryInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\ValidationException;
 
 class OrderRepository implements OrderRepositoryInterface
 {
@@ -81,24 +84,58 @@ class OrderRepository implements OrderRepositoryInterface
         });
     }
 
+    private function validateOrderCompetitiveness (Carbon $date, Bakery $bakery): void
+    {
+        $dateEnd = ($date->clone())->endOfDay();
+        abort_if(Order::query()
+                ->whereBetween('delivery_date', [$date->toDateTimeString(), $dateEnd->toDateTimeString()])
+                ->where('bakery_id', $bakery->id)
+                ->exists() === true,
+            422,
+            'Заказ уже получен.'
+        );
+    }
+
     public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order
     {
-        $order = Order::query()->create([
-            'bakery_id' => $store->id,
-            'delivery_date' => $date,
-            'status' => 'accepted',
-            'active_slot' => 1,
-            'request_key' => $key,
-            'store_name' => $store->name,
-            'store_address' => $store->address,
-            'total_kopecks' => $total,
-            'comment' => $comment,
-        ]);
-        foreach ($items as $item) {
-            OrderItem::query()->create(['order_id' => $order->id] + $item);
-        }
+        $normalizedDate = Carbon::parse($date)->startOfDay();
 
-        return $order->load('items');
+        $lockKey = "create_order_lock:{$store->id}:" . $date;
+        $lock = Cache::lock($lockKey, 10);
+        $acquired = false;
+
+        try {
+            if (! ($acquired = $lock->get())) {
+                throw ValidationException::withMessages(['order' => 'Система занята, попробуйте повторить запрос.']);
+            }
+            $this->validateOrderCompetitiveness($normalizedDate, $store);
+            DB::beginTransaction();
+            try {
+                $order = Order::query()->create([
+                    'bakery_id' => $store->id,
+                    'delivery_date' => $normalizedDate,
+                    'status' => 'accepted',
+                    'active_slot' => 1,
+                    'request_key' => $key,
+                    'store_name' => $store->name,
+                    'store_address' => $store->address,
+                    'total_kopecks' => $total,
+                    'comment' => $comment,
+                ]);
+                foreach ($items as $item) {
+                    OrderItem::query()->create(['order_id' => $order->id] + $item);
+                }
+                DB::commit();
+            } catch (\Exception $exception) {
+                DB::rollBack();
+                throw $exception;
+            }
+            return $order->load('items');
+        } finally {
+            if ($acquired) {
+                $lock->release();
+            }
+        }
     }
 
     public function cancel(Order $order): void

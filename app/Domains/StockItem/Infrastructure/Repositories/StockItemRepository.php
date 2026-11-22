@@ -2,9 +2,9 @@
 
 namespace Domains\StockItem\Infrastructure\Repositories;
 
-use Domains\StockItem\Application\Repositories\StockItemRepositoryInterface;
 use Domains\Ingredient\Application\Repositories\IngredientRepositoryInterface;
 use Domains\Product\Application\Repositories\ProductOrderReadRepositoryInterface;
+use Domains\StockItem\Application\Repositories\StockItemRepositoryInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -38,7 +38,6 @@ final class StockItemRepository implements StockItemRepositoryInterface
         }
     }
 
-
     public function createPackaging(string $name, string $unit): void
     {
         $name = trim($name);
@@ -51,6 +50,7 @@ final class StockItemRepository implements StockItemRepositoryInterface
             'created_at' => now(), 'updated_at' => now(),
         ]);
     }
+
     public function findUnit(int $id): ?string
     {
         $unit = DB::table('bakery_stock_items')->where('id', $id)->value('unit');

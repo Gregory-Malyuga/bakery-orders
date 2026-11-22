@@ -56,7 +56,6 @@ readonly class DeliverySheetService
         return ['date' => $date, 'driver' => $driver, 'route' => trim($data['name']), 'salary_kopecks' => $salary, 'bonus_kopecks' => $bonus, 'closed' => $this->dates->isClosed($date), 'rows' => $rows, 'order' => array_sum(array_column($rows, 'order')), 'returns' => array_sum(array_column($rows, 'returns')), 'due' => array_sum(array_column($rows, 'due')), 'cash_due' => $cashDue, 'net_cash' => $cashDue - ($salary ?? 0) - ($bonus ?? 0)];
     }
 
-
     public function cutoffTime(): string
     {
         return $this->cutoff->time();
@@ -119,6 +118,4 @@ readonly class DeliverySheetService
             throw ValidationException::withMessages(['date' => 'Печать доступна после закрытия приёма заказов.']);
         }
     }
-
-
 }

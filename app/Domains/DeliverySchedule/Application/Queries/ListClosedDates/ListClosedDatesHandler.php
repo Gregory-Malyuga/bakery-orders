@@ -2,8 +2,8 @@
 
 namespace Domains\DeliverySchedule\Application\Queries\ListClosedDates;
 
-use Domains\DeliverySchedule\Application\Repositories\ClosedDateRepositoryInterface;
 use Domains\DeliverySchedule\Application\Data\ClosedDatesData;
+use Domains\DeliverySchedule\Application\Repositories\ClosedDateRepositoryInterface;
 use Domains\Order\Application\Repositories\OrderCalendarRepositoryInterface;
 use Shared\Bus\QueryHandlerInterface;
 

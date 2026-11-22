@@ -2,11 +2,10 @@
 
 namespace Domains\Order\Application;
 
-use Domains\Product\Application\PackagingPlanner;
-use Domains\DeliverySchedule\Application\DeliveryCalendar;
-
-use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Bakery\Domain\Models\Order;
+use Domains\DeliverySchedule\Application\DeliveryCalendar;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Product\Application\PackagingPlanner;
 use Illuminate\Validation\ValidationException;
 
 class OrderingService

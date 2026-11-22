@@ -35,7 +35,7 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Bakery extends \Domains\Store\Domain\Models\Store
+class Bakery extends Store
 {
     /** @use HasFactory<BakeryFactory> */
     use HasFactory;

@@ -2,8 +2,8 @@
 
 namespace Domains\Report\Infrastructure\Exports;
 
-use Domains\Report\Application\Exports\PeriodReportWorkbookInterface;
 use Domains\Bakery\Application\WeightFormatter;
+use Domains\Report\Application\Exports\PeriodReportWorkbookInterface;
 use Phar;
 use PharData;
 use RuntimeException;

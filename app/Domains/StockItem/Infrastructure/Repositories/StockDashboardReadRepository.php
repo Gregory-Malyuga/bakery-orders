@@ -3,11 +3,10 @@
 namespace Domains\StockItem\Infrastructure\Repositories;
 
 use Domains\StockItem\Application\Repositories\StockDashboardReadRepositoryInterface;
-use Domains\StockPrice\Application\StockPrices;
 use Domains\StockMovement\Application\Repositories\StockMovementDashboardRepositoryInterface;
-use Domains\StockPriceChange\Application\Repositories\StockPriceChangeDashboardRepositoryInterface;
 use Domains\StockPrice\Application\Repositories\StockDiscrepancyPriceReadRepositoryInterface;
-use Illuminate\Support\Collection;
+use Domains\StockPrice\Application\StockPrices;
+use Domains\StockPriceChange\Application\Repositories\StockPriceChangeDashboardRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 
 readonly class StockDashboardReadRepository implements StockDashboardReadRepositoryInterface

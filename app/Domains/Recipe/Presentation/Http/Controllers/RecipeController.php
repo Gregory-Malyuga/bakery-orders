@@ -85,5 +85,4 @@ class RecipeController
 
         return redirect()->route('bakery.recipes', $query)->with('success', 'Восстановлены исходные нормы из таблицы.');
     }
-
 }

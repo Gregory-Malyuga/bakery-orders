@@ -2,8 +2,8 @@
 
 namespace Domains\OrderAdjustment\Providers;
 
-use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentRepositoryInterface;
 use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentReadRepositoryInterface;
+use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentRepositoryInterface;
 use Domains\OrderAdjustment\Infrastructure\Repositories\OrderAdjustmentReadRepository;
 use Domains\OrderAdjustment\Infrastructure\Repositories\OrderAdjustmentRepository;
 use Illuminate\Support\ServiceProvider;

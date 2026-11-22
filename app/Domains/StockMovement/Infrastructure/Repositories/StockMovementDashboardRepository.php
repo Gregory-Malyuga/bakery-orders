@@ -14,6 +14,7 @@ final class StockMovementDashboardRepository implements StockMovementDashboardRe
         $balances = DB::table('bakery_stock_movements')->where('movement_date', '<=', $date)
             ->select('stock_item_id')->selectRaw('SUM(quantity_milli) AS balance')->groupBy('stock_item_id')
             ->pluck('balance', 'stock_item_id');
+
         return $balances;
     }
 
@@ -26,6 +27,7 @@ final class StockMovementDashboardRepository implements StockMovementDashboardRe
             ->where('movement.movement_date', '<=', $date)
             ->orderByDesc('movement.movement_date')->orderByDesc('movement.id')
             ->select('movement.*', 'item.name as item_name', 'item.unit', 'actor.name as actor_name')->limit(100)->get();
+
         return $movements;
     }
 
@@ -37,6 +39,7 @@ final class StockMovementDashboardRepository implements StockMovementDashboardRe
             ->where('movement.kind', 'inventory')->where('movement.movement_date', '<=', $date)
             ->whereNotIn('movement.id', DB::table('bakery_stock_movements')->whereNotNull('reverses_id')->select('reverses_id'))
             ->orderByDesc('movement.id')->select('movement.*', 'item.name as item_name', 'item.unit')->limit(50)->get();
+
         return $discrepancies;
     }
 }

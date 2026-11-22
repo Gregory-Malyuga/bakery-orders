@@ -28,6 +28,4 @@ use Illuminate\Support\Carbon;
  *
  * @mixin \Eloquent
  */
-class Product extends \Domains\Product\Domain\Models\Product
-{
-}
+class Product extends \Domains\Product\Domain\Models\Product {}

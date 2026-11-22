@@ -2,11 +2,10 @@
 
 namespace Domains\Label\Application;
 
-use Domains\Label\Application\Repositories\LabelGroupRepositoryInterface;
-use Domains\Product\Application\PackagingPlanner;
-
 use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Bakery\Domain\Models\Product;
+use Domains\Label\Application\Repositories\LabelGroupRepositoryInterface;
+use Domains\Product\Application\PackagingPlanner;
 use Illuminate\Database\Eloquent\Collection;
 
 class LabelPlanService
