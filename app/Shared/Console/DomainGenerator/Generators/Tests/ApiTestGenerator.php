@@ -74,7 +74,7 @@ class ApiTestGenerator extends AbstractGenerator
                 return {$ctx->name}::factory()->create();
             }
 
-            public function test_index_paginates(): void
+            public function testIndexPaginates(): void
             {
                 {$ctx->name}::factory()->count(5)->create();
 
@@ -85,7 +85,7 @@ class ApiTestGenerator extends AbstractGenerator
                 \$this->assertEquals(1, \$response->json('meta.current_page'));
             }
 
-            public function test_index_sorts_asc(): void
+            public function testIndexSortsAsc(): void
             {
                 {$ctx->name}::factory()->count(3)->create();
 
@@ -97,7 +97,7 @@ class ApiTestGenerator extends AbstractGenerator
                 \$this->assertLessThanOrEqual(\$data[1]['id'], \$data[0]['id']);
             }
 
-            public function test_index_sorts_desc(): void
+            public function testIndexSortsDesc(): void
             {
                 {$ctx->name}::factory()->count(3)->create();
 
@@ -117,10 +117,11 @@ class ApiTestGenerator extends AbstractGenerator
     private function apiFilterTestMethod(DomainContext $ctx, string $field, string $val1, string $val2): string
     {
         $plural = $ctx->plural;
+        $methodSuffix = str_replace(' ', '', ucwords(str_replace('_', ' ', $field)));
 
         return <<<PHP
 
-            public function test_index_filters_by_{$field}(): void
+            public function testIndexFiltersBy{$methodSuffix}(): void
             {
                 {$ctx->name}::factory()->create(['{$field}' => '{$val1}']);
                 {$ctx->name}::factory()->create(['{$field}' => '{$val2}']);

@@ -67,7 +67,7 @@ class RepositoryTestGenerator extends AbstractGenerator
     {
         $val1 = $this->values->valueFor($fieldName, $phpType);
         $val2 = $this->values->valueFor($fieldName, $phpType, true);
-        $methodName = 'test_list_filters_by_'.$fieldName;
+        $methodName = 'testListFiltersBy'.str_replace(' ', '', ucwords(str_replace('_', ' ', $fieldName)));
 
         return <<<PHP
 

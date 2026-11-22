@@ -16,7 +16,7 @@ class FindUserByCredentialsHandlerTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_returns_user_for_valid_credentials(): void
+    public function testReturnsUserForValidCredentials(): void
     {
         $user = User::factory()->create([
             'email' => 'admin@test.com',
@@ -31,7 +31,7 @@ class FindUserByCredentialsHandlerTest extends TestCase
         $this->assertEquals($user->id, $result->id);
     }
 
-    public function test_throws_invalid_credentials_for_wrong_password(): void
+    public function testThrowsInvalidCredentialsForWrongPassword(): void
     {
         User::factory()->create([
             'email' => 'admin@test.com',
@@ -45,7 +45,7 @@ class FindUserByCredentialsHandlerTest extends TestCase
         $handler->handle(new FindUserByCredentialsQuery('admin@test.com', 'wrong'));
     }
 
-    public function test_throws_invalid_credentials_for_unknown_email(): void
+    public function testThrowsInvalidCredentialsForUnknownEmail(): void
     {
         $this->expectException(InvalidCredentialsException::class);
 

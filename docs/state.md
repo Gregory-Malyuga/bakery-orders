@@ -13,6 +13,14 @@
 
 # State
 
+## 2026-11-22 · декомпозиция сценарных тестов
+
+Крупные `OrderingFlowTest`, `FinancialConsistencyTest`, `MultiStoreOrderingTest`, `DeliveryRoutesTest`, `RecipeEditingTest` и `UserRoleAuthorizationTest` разделены на классы по поведению: оформление и ограничения заказа, календарь, выгрузки, финансовые представления, назначения торговых точек, редактирование и печать маршрута, создание/изменение/удаление пользователя. Для связанных групп созданы подпапки; общие фикстуры вынесены в абстрактные `*Case` без тестовых методов. Доменных тестовых файлов стало 50 вместо 29; сценарии и утверждения сохранены. Локально в Docker на отдельной `laravel-database-test` прошли `composer pre-commit` и полный `composer pre-push`: 272 теста, 1805 утверждений; PHP lint, Pint, PHPStan, Deptrac и проверка ссылок прошли. Коммита, push, CI и production-деплоя нет.
+
+## 2026-11-22 · организация тестов по доменам
+
+Сценарные тесты перенесены из общего `app/Domains/Bakery/Tests` в `Tests` профильных доменов. `StockLedgerTest` разделён со сценарием истории складских цен, `OrderManagementTest` — со сценарием общего прайса аккаунта: вместо 17 файлов теперь 19. Методы PHPUnit переименованы в `testCamelCase`, генератор новых доменов создаёт такие же имена; Pint настроен сохранять их. Локально в Docker на отдельной `laravel-database-test` прошли `composer pre-commit` и полный `composer pre-push`: 272 теста, 1805 утверждений; также прошли PHP lint, Pint, PHPStan, Deptrac и проверка ссылок. Коммита, push, CI и production-деплоя нет.
+
 ## 2026-11-22 · BAK-25 · базовый Docker-образ и отчёты безопасности
 
 В локальной `main` приложение переведено на `ghcr.io/gregory-malyuga/bootstrap-docker-php:latest`. Из Dockerfile убраны повторная установка расширений, Composer и системных пакетов; для нового образа указаны каталог приложения и отключение встроенных Laravel automations. Задания Trivy FS/Image сохраняют SARIF как артефакты и не блокируют релиз; отдельные шаги с `exit-code: 1` удалены. Локальный dev-образ собран, PHP и PostgreSQL healthy. В Docker на отдельной `laravel-database-test` прошли `composer pre-commit` и полный `composer pre-push`: 271 тест, 1801 утверждение; побочные правки моделей после генератора отменены. Push, CI и production-деплой не выполнялись.

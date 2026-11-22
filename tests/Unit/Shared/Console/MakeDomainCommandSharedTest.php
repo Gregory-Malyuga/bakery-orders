@@ -54,7 +54,7 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
     // ── SHARED TESTS ──────────────────────────────────────────────────────────
     // All tests here read the single pre-generated StubGen domain. No artisan call in the body.
 
-    public function test_creates_standard_domain_structure(): void
+    public function testCreatesStandardDomainStructure(): void
     {
         $this->assertFileExists("{$this->domainBase}/Application/Data/CreateStubGenData.php");
         $this->assertFileExists("{$this->domainBase}/Application/Data/UpdateStubGenData.php");
@@ -67,12 +67,12 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertFileExists("{$this->unitTestBase}/StubGenRepositoryTest.php");
     }
 
-    public function test_no_cache_warmer_without_flag(): void
+    public function testNoCacheWarmerWithoutFlag(): void
     {
         $this->assertFileDoesNotExist("{$this->domainBase}/Infrastructure/Cache/StubGenCacheWarmer.php");
     }
 
-    public function test_generated_repository_has_correct_namespace(): void
+    public function testGeneratedRepositoryHasCorrectNamespace(): void
     {
         $content = $this->files->get("{$this->domainBase}/Infrastructure/Repositories/StubGenRepository.php");
 
@@ -80,14 +80,14 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertStringContainsString('class StubGenRepository extends BaseRepository', $content);
     }
 
-    public function test_creates_commands_queries_events_directories(): void
+    public function testCreatesCommandsQueriesEventsDirectories(): void
     {
         $this->assertDirectoryExists("{$this->domainBase}/Application/Commands");
         $this->assertDirectoryExists("{$this->domainBase}/Application/Queries");
         $this->assertDirectoryExists("{$this->domainBase}/Domain/Events");
     }
 
-    public function test_creates_cqrs_files(): void
+    public function testCreatesCqrsFiles(): void
     {
         $this->assertFileExists("{$this->domainBase}/Application/Commands/Create/CreateStubGenCommand.php");
         $this->assertFileExists("{$this->domainBase}/Application/Commands/Create/CreateStubGenHandler.php");
@@ -101,19 +101,19 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertFileExists("{$this->domainBase}/Application/Queries/FindById/FindStubGenByIdHandler.php");
     }
 
-    public function test_creates_model_in_domain(): void
+    public function testCreatesModelInDomain(): void
     {
         $this->assertFileExists("{$this->domainBase}/Domain/Models/StubGen.php");
         $content = $this->files->get("{$this->domainBase}/Domain/Models/StubGen.php");
         $this->assertStringContainsString('namespace Domains\StubGen\Domain\Models;', $content);
     }
 
-    public function test_creates_factory_in_domain(): void
+    public function testCreatesFactoryInDomain(): void
     {
         $this->assertFileExists("{$this->domainBase}/Domain/Database/Factories/StubGenFactory.php");
     }
 
-    public function test_creates_controller(): void
+    public function testCreatesController(): void
     {
         $this->assertFileExists("{$this->domainBase}/Presentation/Http/Controllers/StubGenController.php");
         $content = $this->files->get("{$this->domainBase}/Presentation/Http/Controllers/StubGenController.php");
@@ -124,7 +124,7 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertStringContainsString('UpdateStubGenRequest', $content);
     }
 
-    public function test_creates_form_requests(): void
+    public function testCreatesFormRequests(): void
     {
         $this->assertFileExists("{$this->domainBase}/Presentation/Http/Requests/ListStubGensRequest.php");
         $this->assertFileExists("{$this->domainBase}/Presentation/Http/Requests/StoreStubGenRequest.php");
@@ -141,47 +141,47 @@ class MakeDomainCommandSharedTest extends StubGenTestCase
         $this->assertStringContainsString('UpdateStubGenData::rules()', $updateContent);
     }
 
-    public function test_list_handler_uses_typed_paginator(): void
+    public function testListHandlerUsesTypedPaginator(): void
     {
         $content = $this->files->get("{$this->domainBase}/Application/Queries/ListAll/ListStubGensHandler.php");
         $this->assertStringContainsString('LengthAwarePaginator<int, StubGen>', $content);
         $this->assertStringNotContainsString('mixed', $content);
     }
 
-    public function test_list_query_extends_list_entity_query(): void
+    public function testListQueryExtendsListEntityQuery(): void
     {
         $content = $this->files->get("{$this->domainBase}/Application/Queries/ListAll/ListStubGensQuery.php");
         $this->assertStringContainsString('extends ListEntityQuery', $content);
         $this->assertStringContainsString('SORTABLE', $content);
     }
 
-    public function test_appends_routes_to_global_api_file(): void
+    public function testAppendsRoutesToGlobalApiFile(): void
     {
         $content = $this->files->get(base_path('routes/api.php'));
         $this->assertStringContainsString('StubGenController', $content);
     }
 
-    public function test_creates_api_test(): void
+    public function testCreatesApiTest(): void
     {
         $this->assertFileExists("{$this->featureTestBase}/StubGenApiTest.php");
         $content = $this->files->get("{$this->featureTestBase}/StubGenApiTest.php");
         $this->assertStringContainsString('BaseApiTest', $content);
     }
 
-    public function test_creates_events(): void
+    public function testCreatesEvents(): void
     {
         $this->assertFileExists("{$this->domainBase}/Domain/Events/StubGenCreated.php");
         $this->assertFileExists("{$this->domainBase}/Domain/Events/StubGenUpdated.php");
         $this->assertFileExists("{$this->domainBase}/Domain/Events/StubGenDeleted.php");
     }
 
-    public function test_registers_provider_in_bootstrap(): void
+    public function testRegistersProviderInBootstrap(): void
     {
         $content = $this->files->get(base_path('bootstrap/providers.php'));
         $this->assertStringContainsString('StubGenServiceProvider', $content);
     }
 
-    public function test_service_provider_has_handler_bindings(): void
+    public function testServiceProviderHasHandlerBindings(): void
     {
         $content = $this->files->get("{$this->domainBase}/Providers/StubGenServiceProvider.php");
         $this->assertStringContainsString('CreateStubGenHandler::class', $content);

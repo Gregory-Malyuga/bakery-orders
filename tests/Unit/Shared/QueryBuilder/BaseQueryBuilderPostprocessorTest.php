@@ -22,7 +22,7 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         }
     }
 
-    public function test_returns_paginator(): void
+    public function testReturnsPaginator(): void
     {
         $query = (new BaseQueryBuilder(User::class))->getQuery();
         $result = (new BaseQueryBuilderPostprocessor)->process(
@@ -34,7 +34,7 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         $this->assertInstanceOf(LengthAwarePaginator::class, $result);
     }
 
-    public function test_respects_per_page(): void
+    public function testRespectsPerPage(): void
     {
         $this->createUsers(5);
 
@@ -50,7 +50,7 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         $this->assertCount(2, $result->items());
     }
 
-    public function test_respects_page(): void
+    public function testRespectsPage(): void
     {
         $this->createUsers(5);
 

@@ -21,7 +21,7 @@ class AuthFlowTest extends TestCase
 
     // ── Login ──────────────────────────────────────────────────────────
 
-    public function test_login_returns_401_for_wrong_password(): void
+    public function testLoginReturns401ForWrongPassword(): void
     {
         User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('correct'), 'role' => UserRole::User]);
 
@@ -33,7 +33,7 @@ class AuthFlowTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function test_login_returns_200_with_token_for_user_role(): void
+    public function testLoginReturns200WithTokenForUserRole(): void
     {
         User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('secret123'), 'role' => UserRole::User]);
 
@@ -47,7 +47,7 @@ class AuthFlowTest extends TestCase
 
     // ── Logout ────────────────────────────────────────────────────────────
 
-    public function test_logout_invalidates_token(): void
+    public function testLogoutInvalidatesToken(): void
     {
         $user = User::factory()->create(['role' => UserRole::Admin]);
         $token = $user->createToken('api')->plainTextToken;
@@ -66,7 +66,7 @@ class AuthFlowTest extends TestCase
 
     // ── Register ──────────────────────────────────────────────────────────
 
-    public function test_registration_endpoint_is_unavailable(): void
+    public function testRegistrationEndpointIsUnavailable(): void
     {
         $response = $this->postJson('/api/auth/register', [
             'name' => 'Test User',

@@ -32,7 +32,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── find ──────────────────────────────────────────────────────────────────
 
-    public function test_find_returns_model(): void
+    public function testFindReturnsModel(): void
     {
         $user = User::factory()->create(['name' => 'Alice']);
 
@@ -42,14 +42,14 @@ class BaseRepositoryTest extends TestCase
         $this->assertSame($user->id, $result->id);
     }
 
-    public function test_find_returns_null_when_missing(): void
+    public function testFindReturnsNullWhenMissing(): void
     {
         $this->assertNull($this->repo->find(999));
     }
 
     // ── findOrFail ────────────────────────────────────────────────────────────
 
-    public function test_find_or_fail_returns_model(): void
+    public function testFindOrFailReturnsModel(): void
     {
         $user = User::factory()->create(['name' => 'Bob']);
 
@@ -58,7 +58,7 @@ class BaseRepositoryTest extends TestCase
         $this->assertSame($user->id, $result->id);
     }
 
-    public function test_find_or_fail_throws_model_not_found(): void
+    public function testFindOrFailThrowsModelNotFound(): void
     {
         $this->expectException(ModelNotFoundException::class);
 
@@ -67,7 +67,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── create ────────────────────────────────────────────────────────────────
 
-    public function test_create_persists_and_returns_model(): void
+    public function testCreatePersistsAndReturnsModel(): void
     {
         $user = $this->repo->create(['name' => 'Charlie', 'email' => 'charlie@example.com', 'password' => 'secret123']);
 
@@ -77,7 +77,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── update ────────────────────────────────────────────────────────────────
 
-    public function test_update_modifies_model(): void
+    public function testUpdateModifiesModel(): void
     {
         $user = User::factory()->create(['name' => 'Dave']);
 
@@ -89,7 +89,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── delete ────────────────────────────────────────────────────────────────
 
-    public function test_delete_removes_model(): void
+    public function testDeleteRemovesModel(): void
     {
         $user = User::factory()->create(['name' => 'Eve']);
 
@@ -100,7 +100,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── list ──────────────────────────────────────────────────────────────────
 
-    public function test_list_returns_paginator(): void
+    public function testListReturnsPaginator(): void
     {
         $emptyFilters = new class extends Data {};
 
@@ -109,7 +109,7 @@ class BaseRepositoryTest extends TestCase
         $this->assertInstanceOf(LengthAwarePaginator::class, $result);
     }
 
-    public function test_list_returns_all_records(): void
+    public function testListReturnsAllRecords(): void
     {
         User::factory()->create(['name' => 'Frank']);
         User::factory()->create(['name' => 'Grace']);
@@ -120,7 +120,7 @@ class BaseRepositoryTest extends TestCase
         $this->assertSame(2, $result->total());
     }
 
-    public function test_list_respects_pagination(): void
+    public function testListRespectsPagination(): void
     {
         for ($i = 1; $i <= 5; $i++) {
             User::factory()->create(['name' => "User {$i}"]);
@@ -134,7 +134,7 @@ class BaseRepositoryTest extends TestCase
         $this->assertCount(2, $result->items());
     }
 
-    public function test_list_respects_sort(): void
+    public function testListRespectsSort(): void
     {
         User::factory()->create(['name' => 'Zara']);
         User::factory()->create(['name' => 'Apple']);
@@ -147,14 +147,14 @@ class BaseRepositoryTest extends TestCase
 
     // ── newQuery ──────────────────────────────────────────────────────────────
 
-    public function test_new_query_returns_query_builder(): void
+    public function testNewQueryReturnsQueryBuilder(): void
     {
         $this->assertInstanceOf(BaseQueryBuilder::class, $this->repo->newQuery());
     }
 
     // ── applyBaseFilters hook ─────────────────────────────────────────────────
 
-    public function test_apply_base_filters_constrains_list(): void
+    public function testApplyBaseFiltersConstrainsList(): void
     {
         User::factory()->create(['name' => 'Alice']);
         User::factory()->create(['name' => 'Bob']);
@@ -177,7 +177,7 @@ class BaseRepositoryTest extends TestCase
 
     // ── boot() type-safety ────────────────────────────────────────────────────
 
-    public function test_boot_throws_on_invalid_query_builder(): void
+    public function testBootThrowsOnInvalidQueryBuilder(): void
     {
         $repo = new class extends BaseRepository
         {
