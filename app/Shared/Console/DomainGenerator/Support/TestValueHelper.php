@@ -52,7 +52,11 @@ class TestValueHelper
             return $alternate ? "'UK'" : "'US'";
         }
 
-        if (str_contains($fieldName, 'description') || str_contains($fieldName, 'note') || str_contains($fieldName, 'comment')) {
+        if (
+            str_contains($fieldName, 'description') ||
+            str_contains($fieldName, 'note') ||
+            str_contains($fieldName, 'comment')
+        ) {
             return $alternate ? "'Updated description'" : "'Test description'";
         }
 
@@ -60,7 +64,11 @@ class TestValueHelper
             return $alternate ? "'Other Title'" : "'Test Title'";
         }
 
-        if (str_contains($fieldName, 'url') || str_contains($fieldName, 'website') || str_contains($fieldName, 'link')) {
+        if (
+            str_contains($fieldName, 'url') ||
+            str_contains($fieldName, 'website') ||
+            str_contains($fieldName, 'link')
+        ) {
             return $alternate ? "'http://other.example.com'" : "'http://test.example.com'";
         }
 

@@ -13,7 +13,10 @@ readonly class ReversePriceHandler implements CommandHandlerInterface
     {
         assert($message instanceof ReversePriceCommand);
 
-        abort_unless($this->repository->belongsToProduct($message->operationId, $message->productId), 404);
+        abort_unless(
+            $this->repository->belongsToProduct($message->operationId, $message->productId),
+            404,
+        );
         $this->repository->reverse($message->operationId, $message->reason, $message->actorId);
 
         return null;

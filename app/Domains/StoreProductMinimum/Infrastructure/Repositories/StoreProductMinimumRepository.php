@@ -9,7 +9,9 @@ final class StoreProductMinimumRepository implements StoreProductMinimumReposito
 {
     public function delete(int $storeId, int $productId): void
     {
-        DB::table('bakery_store_product_minimums')->where(['bakery_id' => $storeId, 'product_id' => $productId])->delete();
+        DB::table('bakery_store_product_minimums')
+            ->where(['bakery_id' => $storeId, 'product_id' => $productId])
+            ->delete();
     }
 
     public function save(int $storeId, int $productId, int $minimum): void
@@ -22,7 +24,8 @@ final class StoreProductMinimumRepository implements StoreProductMinimumReposito
 
     public function normalizeForProduct(int $productId, int $minimum): void
     {
-        DB::table('bakery_store_product_minimums')->where('product_id', $productId)
+        DB::table('bakery_store_product_minimums')
+            ->where('product_id', $productId)
             ->where('minimum_quantity', '<', $minimum)
             ->update(['minimum_quantity' => $minimum]);
     }

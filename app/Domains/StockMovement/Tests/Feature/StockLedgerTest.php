@@ -3,7 +3,7 @@
 namespace Domains\StockMovement\Tests\Feature;
 
 use Carbon\Carbon;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Product\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;

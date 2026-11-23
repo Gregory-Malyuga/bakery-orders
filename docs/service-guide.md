@@ -1,6 +1,6 @@
 # Сервис заказов пекарни: страницы и функции
 
-Этот документ описывает реализованное поведение **текущего кода репозитория**. Данные, настройки времени приёма и доступность конкретных магазинов зависят от базы установленного экземпляра. Документ не подтверждает состояние рабочего сервера. Основные источники: `routes/web.php`, `routes/api.php`, контроллеры `app/Domains/Bakery/Presentation/Http/Controllers`, классы `app/Domains/Bakery/Application` и шаблоны `resources/views/bakery`.
+Этот документ описывает реализованное поведение **текущего кода репозитория**. Данные, настройки времени приёма и доступность конкретных магазинов зависят от базы установленного экземпляра. Документ не подтверждает состояние рабочего сервера. Основные источники: `routes/web.php`, `routes/api.php`, контроллеры и сервисы профильных модулей в `app/Domains/` и шаблоны `resources/views/bakery`.
 
 ## Для кого предназначен сервис
 
@@ -123,4 +123,4 @@
 
 ## Где искать реализацию
 
-Маршруты — `routes/web.php` и `routes/api.php`; доступ — `EnsureBakeryRole`, `WebAuthController`, `ImpersonationController`; магазин — `StoreWebController`, `OrderingService`; панель — `AdminWebController`, `OrderManagementService`, `PeriodReportService`, `PackagingPlanner`; рецептуры и сырьё — `RecipeWebController`, `IngredientCatalogWebController`, `ProductionCalculator`; данные — репозитории в `app/Domains/Bakery/Infrastructure/Repositories`; HTML — `resources/views/bakery`; Excel — `app/Domains/Bakery/Infrastructure/Exports`. Проверки сценариев — в `Tests` соответствующих доменов `app/Domains`.
+Маршруты — `routes/web.php` и `routes/api.php`; доступ — `app/Domains/User`; заказы — `app/Domains/Order`; торговые точки — `app/Domains/Store`; выпуск — `app/Domains/Production`; отчёты и Excel — `app/Domains/Report` и `app/Domains/Invoice`; маршрутные листы — `app/Domains/DeliverySheet`; HTML — `resources/views/bakery`. Сценарные проверки расположены в `Tests` соответствующих доменов.

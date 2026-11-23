@@ -13,17 +13,29 @@ readonly class StockMovementService
     {
         $value = str_replace(',', '.', trim($value));
         if (! preg_match('/^\d{1,9}(?:\.\d{1,3})?$/', $value)) {
-            throw ValidationException::withMessages(['quantity' => 'Укажите количество до трёх знаков после запятой.']);
+            throw ValidationException::withMessages([
+                'quantity' => 'Укажите количество до трёх знаков после запятой.',
+            ]);
         }
         [$whole, $fraction] = array_pad(explode('.', $value, 2), 2, '');
 
         return (int) $whole * 1000 + (int) str_pad($fraction, 3, '0');
     }
 
-    public function record(int $itemId, string $kind, int $quantity, string $reason, int $actorId): void
-    {
-        if (! in_array($kind, ['opening', 'receipt', 'consumption', 'writeoff', 'return'], true) || $quantity <= 0) {
-            throw ValidationException::withMessages(['quantity' => 'Укажите положительное количество.']);
+    public function record(
+        int $itemId,
+        string $kind,
+        int $quantity,
+        string $reason,
+        int $actorId,
+    ): void {
+        if (
+            ! in_array($kind, ['opening', 'receipt', 'consumption', 'writeoff', 'return'], true) ||
+            $quantity <= 0
+        ) {
+            throw ValidationException::withMessages([
+                'quantity' => 'Укажите положительное количество.',
+            ]);
         }
 
         $delta = in_array($kind, ['consumption', 'writeoff'], true) ? -$quantity : $quantity;
@@ -33,7 +45,9 @@ readonly class StockMovementService
     public function inventory(int $itemId, int $counted, string $reason, int $actorId): void
     {
         if ($counted < 0) {
-            throw ValidationException::withMessages(['quantity' => 'Остаток не может быть отрицательным.']);
+            throw ValidationException::withMessages([
+                'quantity' => 'Остаток не может быть отрицательным.',
+            ]);
         }
 
         $this->repository->append($itemId, 'inventory', null, $reason, $actorId, $counted);

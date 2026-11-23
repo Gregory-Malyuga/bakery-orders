@@ -13,7 +13,10 @@ readonly class StoreController
 
     public function save(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,name:string,address:string,is_active:bool|int|string,is_cashless?:bool|int|string,discount_percent?:int|string|null} $data */
+        /**
+         * @var array{id?:int|string,name:string,address:string,is_active:bool|int|string,
+         *     is_cashless?:bool|int|string,discount_percent?:int|string|null} $data
+         */
         $data = $request->validate([
             'id' => ['nullable', 'integer', 'exists:bakeries,id'],
             'name' => ['required', 'string', 'max:255'],
@@ -23,14 +26,16 @@ readonly class StoreController
             'discount_percent' => ['nullable', 'integer', 'min:0', 'max:100'],
         ]);
 
-        $this->save->handle(new SaveStoreCommand(
-            isset($data['id']) ? (int) $data['id'] : null,
-            $data['name'],
-            $data['address'],
-            (bool) $data['is_active'],
-            isset($data['is_cashless']) ? (bool) $data['is_cashless'] : null,
-            (int) ($data['discount_percent'] ?? 0),
-        ));
+        $this->save->handle(
+            new SaveStoreCommand(
+                isset($data['id']) ? (int) $data['id'] : null,
+                $data['name'],
+                $data['address'],
+                (bool) $data['is_active'],
+                isset($data['is_cashless']) ? (bool) $data['is_cashless'] : null,
+                (int) ($data['discount_percent'] ?? 0),
+            ),
+        );
 
         return back()->with('success', 'Магазин сохранён.');
     }

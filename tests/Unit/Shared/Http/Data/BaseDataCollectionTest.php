@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class BaseDataCollectionTest extends TestCase
 {
-    public function testFromPaginatorReturnsPaginatedDataCollection(): void
+    public function test_from_paginator_returns_paginated_data_collection(): void
     {
         $paginator = $this->makePaginator([['name' => 'a', 'value' => 1]]);
 
@@ -20,7 +20,7 @@ class BaseDataCollectionTest extends TestCase
         $this->assertInstanceOf(PaginatedDataCollection::class, $collection);
     }
 
-    public function testFromPaginatorWrapsItemsAsDataObjects(): void
+    public function test_from_paginator_wraps_items_as_data_objects(): void
     {
         $paginator = $this->makePaginator([
             ['name' => 'x', 'value' => 10],
@@ -35,7 +35,7 @@ class BaseDataCollectionTest extends TestCase
         $this->assertSame('x', $items[0]->name);
     }
 
-    public function testToResponseReturnsJsonWithDataMetaLinks(): void
+    public function test_to_response_returns_json_with_data_meta_links(): void
     {
         $paginator = $this->makePaginator([['name' => 'n', 'value' => 5]], total: 1);
 
@@ -50,7 +50,7 @@ class BaseDataCollectionTest extends TestCase
         $this->assertArrayHasKey('links', $body);
     }
 
-    public function testToResponseDataContainsSerializedItems(): void
+    public function test_to_response_data_contains_serialized_items(): void
     {
         $paginator = $this->makePaginator([['name' => 'item', 'value' => 7]], total: 1);
 
@@ -60,7 +60,7 @@ class BaseDataCollectionTest extends TestCase
         $this->assertSame([['name' => 'item', 'value' => 7]], $body['data']);
     }
 
-    public function testCanBeUsedAsRegularDataCollection(): void
+    public function test_can_be_used_as_regular_data_collection(): void
     {
         $collection = new BaseDataCollection(StubData::class, [
             new StubData('a', 1),
@@ -73,11 +73,6 @@ class BaseDataCollectionTest extends TestCase
     /** @param array<int, array<string, mixed>> $items */
     private function makePaginator(array $items, int $total = 10): LengthAwarePaginator
     {
-        return new LengthAwarePaginator(
-            items: $items,
-            total: $total,
-            perPage: 15,
-            currentPage: 1,
-        );
+        return new LengthAwarePaginator(items: $items, total: $total, perPage: 15, currentPage: 1);
     }
 }

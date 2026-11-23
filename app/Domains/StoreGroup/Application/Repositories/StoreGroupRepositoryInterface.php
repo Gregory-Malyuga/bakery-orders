@@ -13,5 +13,11 @@ interface StoreGroupRepositoryInterface
     public function members(): Collection;
 
     /** @param list<int> $storeIds */
-    public function save(?int $id, string $name, bool $showInInvoice, bool $excludeFromLabels, array $storeIds): int;
+    public function save(
+        ?int $id,
+        string $name,
+        bool $showInInvoice,
+        bool $excludeFromLabels,
+        array $storeIds,
+    ): int;
 }

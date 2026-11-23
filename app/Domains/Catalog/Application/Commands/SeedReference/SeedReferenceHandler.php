@@ -37,7 +37,9 @@ readonly class SeedReferenceHandler implements CommandHandlerInterface
             foreach ($this->stores->all() as $store) {
                 $key = $this->normalizer->key($store->name);
                 if (isset($storesByName[$key])) {
-                    throw new RuntimeException("В БД есть повторяющиеся названия магазинов: {$store->name}.");
+                    throw new RuntimeException(
+                        "В БД есть повторяющиеся названия магазинов: {$store->name}.",
+                    );
                 }
                 $storesByName[$key] = $store;
             }
@@ -46,7 +48,9 @@ readonly class SeedReferenceHandler implements CommandHandlerInterface
             foreach ($this->products->all() as $product) {
                 $key = $this->normalizer->key($product->name);
                 if (isset($productsByName[$key])) {
-                    throw new RuntimeException("В БД есть повторяющиеся названия товаров: {$product->name}.");
+                    throw new RuntimeException(
+                        "В БД есть повторяющиеся названия товаров: {$product->name}.",
+                    );
                 }
                 $productsByName[$key] = $product;
             }
@@ -70,8 +74,13 @@ readonly class SeedReferenceHandler implements CommandHandlerInterface
                         'bakery_id' => $store->id,
                     ]);
                     $createdAccounts++;
-                } elseif ($user->role !== UserRole::User || (int) $user->bakery_id !== (int) $store->id) {
-                    throw new RuntimeException("Почта {$email} уже принадлежит другому аккаунту или магазину.");
+                } elseif (
+                    $user->role !== UserRole::User ||
+                    (int) $user->bakery_id !== (int) $store->id
+                ) {
+                    throw new RuntimeException(
+                        "Почта {$email} уже принадлежит другому аккаунту или магазину.",
+                    );
                 }
 
                 $this->memberships->ensureMember((int) $user->id, (int) $store->id);
@@ -80,18 +89,30 @@ readonly class SeedReferenceHandler implements CommandHandlerInterface
             $productIds = [];
             foreach ($message->data['products'] as $index => $name) {
                 $key = $this->normalizer->key($name);
-                $mode = in_array($key, ['пицца', 'ватрушка', 'хачапури', 'лепёшка', 'лепешка'], true)
+                $mode = in_array(
+                    $key,
+                    ['пицца', 'ватрушка', 'хачапури', 'лепёшка', 'лепешка'],
+                    true,
+                )
                     ? 'single'
-                    : (in_array($key, ['мак', 'изюм', 'косичка с маком'], true) ? 'pair' : 'mixed');
+                    : (in_array($key, ['мак', 'изюм', 'косичка с маком'], true)
+                        ? 'pair'
+                        : 'mixed');
                 $minimum = $mode === 'mixed' ? 3 : ($mode === 'pair' ? 2 : 1);
-                $product = $productsByName[$key] ?? $this->products->activateOrCreate($name, $index + 1, $mode, $minimum);
+                $product =
+                    $productsByName[$key] ??
+                    $this->products->activateOrCreate($name, $index + 1, $mode, $minimum);
                 $this->products->activate((int) $product->id, $index + 1);
                 $productIds[] = (int) $product->id;
             }
 
             foreach ($message->data['prices'] as $productIndex => $row) {
                 foreach ($row as $storeIndex => $kopecks) {
-                    $this->prices->setOrDelete($storeIds[$storeIndex], $productIds[$productIndex], $kopecks);
+                    $this->prices->setOrDelete(
+                        $storeIds[$storeIndex],
+                        $productIds[$productIndex],
+                        $kopecks,
+                    );
                 }
             }
         });

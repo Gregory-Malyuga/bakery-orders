@@ -7,25 +7,62 @@ use Domains\Recipe\Application\ProductionRecipeStore;
 
 class ProductionCalculator
 {
-    public function __construct(private readonly ?ProductionRecipeStore $store = null, private readonly ?IngredientCatalog $catalog = null) {}
+    public function __construct(
+        private readonly ?ProductionRecipeStore $store = null,
+        private readonly ?IngredientCatalog $catalog = null,
+    ) {}
 
     /** @var array<string, int> Grams of main dough per item, from sheet 12.09. */
     private const DOUGH = [
-        'сосиска' => 62, 'капуста' => 68, 'картошка' => 62, 'курица' => 62,
-        'курица лук' => 62, 'яйцо' => 62, 'яйцо рис' => 62, 'ветчина' => 62,
-        'беляш' => 90, 'пицца' => 136, 'мак' => 150, 'вишня' => 62,
-        'изюм' => 150, 'яблоко' => 62, 'косичка' => 68, 'косичка с маком' => 68,
-        'ватрушка' => 100, 'курник' => 68, 'лимон' => 62, 'малина' => 62,
+        'сосиска' => 62,
+        'капуста' => 68,
+        'картошка' => 62,
+        'курица' => 62,
+        'курица лук' => 62,
+        'яйцо' => 62,
+        'яйцо рис' => 62,
+        'ветчина' => 62,
+        'беляш' => 90,
+        'пицца' => 136,
+        'мак' => 150,
+        'вишня' => 62,
+        'изюм' => 150,
+        'яблоко' => 62,
+        'косичка' => 68,
+        'косичка с маком' => 68,
+        'ватрушка' => 100,
+        'курник' => 68,
+        'лимон' => 62,
+        'малина' => 62,
         'тропикано' => 62,
     ];
 
     /** @var array<string, array<string, int|float>> Grams per item, from the worksheet's prep formulas. */
     private const FILLINGS = [
-        'пицца' => ['Помидоры' => 40, 'Колбаса' => 30, 'Сыр' => 19, 'Огурцы' => 7, 'Майонез' => 4, 'Томатная паста' => 4],
+        'пицца' => [
+            'Помидоры' => 40,
+            'Колбаса' => 30,
+            'Сыр' => 19,
+            'Огурцы' => 7,
+            'Майонез' => 4,
+            'Томатная паста' => 4,
+        ],
         'ветчина' => ['Ветчина' => 35, 'Майонез' => 10, 'Сыр' => 12],
-        'ватрушка' => ['Творог' => 35.64, 'Сахар' => 4.5, 'Яйцо, г' => 3.6, 'Масло' => 1.8, 'Мука' => 1.8],
+        'ватрушка' => [
+            'Творог' => 35.64,
+            'Сахар' => 4.5,
+            'Яйцо, г' => 3.6,
+            'Масло' => 1.8,
+            'Мука' => 1.8,
+        ],
         'курник' => ['Картофель' => 20, 'Курица' => 20, 'Лук' => 20],
-        'хачапури' => ['Творог' => 15, 'Гауда' => 30, 'Сулугуни' => 5, 'Яйцо, г' => 5, 'Соль' => 0.5],
+        'хачапури' => [
+            'Творог' => 15,
+            'Гауда' => 30,
+            'Сулугуни' => 5,
+            'Яйцо, г' => 5,
+            'Соль' => 0.5,
+        ],
         'самса' => ['Курица' => 45, 'Лук' => 35],
         'самса курица' => ['Курица' => 45, 'Лук' => 35],
         'самса с говядиной' => ['Говядина' => 42, 'Лук' => 35],
@@ -49,9 +86,23 @@ class ProductionCalculator
         'самса говядина' => ['Специи' => ['quantity' => 0.042, 'unit' => 'ст. л.']],
     ];
 
-    private const MAIN_DOUGH = ['batch_size' => 1000, 'ingredients' => ['Вода' => 174, 'Мука' => 564, 'Масло' => 50, 'Молоко' => 152, 'Сахар' => 58, 'Дрожжи' => 11, 'Соль' => 6]];
+    private const MAIN_DOUGH = [
+        'batch_size' => 1000,
+        'ingredients' => [
+            'Вода' => 174,
+            'Мука' => 564,
+            'Масло' => 50,
+            'Молоко' => 152,
+            'Сахар' => 58,
+            'Дрожжи' => 11,
+            'Соль' => 6,
+        ],
+    ];
 
-    private const SAMSA_DOUGH = ['batch_size' => 44, 'ingredients' => ['Мука' => 3000, 'Вода' => 1500, 'Соль' => 60, 'Маргарин' => 600]];
+    private const SAMSA_DOUGH = [
+        'batch_size' => 44,
+        'ingredients' => ['Мука' => 3000, 'Вода' => 1500, 'Соль' => 60, 'Маргарин' => 600],
+    ];
 
     /** @return list<array{name:string,unit:string}> */
     public static function defaultIngredientVariants(): array
@@ -64,7 +115,10 @@ class ProductionCalculator
         }
         foreach (self::OTHER_INGREDIENTS as $ingredients) {
             foreach ($ingredients as $name => $measure) {
-                $variants[] = ['name' => $name, 'unit' => $measure['unit'] === 'шт.' ? 'pcs' : 'tbsp'];
+                $variants[] = [
+                    'name' => $name,
+                    'unit' => $measure['unit'] === 'шт.' ? 'pcs' : 'tbsp',
+                ];
             }
         }
         foreach ([self::MAIN_DOUGH, self::SAMSA_DOUGH] as $dough) {
@@ -76,7 +130,10 @@ class ProductionCalculator
         return $variants;
     }
 
-    /** @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string}>} */
+    /**
+     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,
+     *     amount:float,unit:string}>}
+     */
     public function productDefinition(string $name, ?int $productId = null): array
     {
         $key = $this->normalize($name);
@@ -87,7 +144,11 @@ class ProductionCalculator
         }
         foreach (self::OTHER_INGREDIENTS[$key] ?? [] as $ingredient => $measure) {
             $unit = $measure['unit'] === 'шт.' ? 'pcs' : 'tbsp';
-            $ingredients[] = ['name' => $ingredient, 'amount' => (float) $measure['quantity'], 'unit' => $unit];
+            $ingredients[] = [
+                'name' => $ingredient,
+                'amount' => (float) $measure['quantity'],
+                'unit' => $unit,
+            ];
         }
         $default = [
             'dough_type' => $this->defaultDoughType($key),
@@ -95,20 +156,27 @@ class ProductionCalculator
             'ingredients' => $ingredients,
         ];
         if ($productId === null || $this->store === null) {
-            $default['ingredients'] = $this->catalog?->resolveRows($default['ingredients']) ?? $default['ingredients'];
+            $default['ingredients'] =
+                $this->catalog?->resolveRows($default['ingredients']) ?? $default['ingredients'];
 
             return $default;
         }
 
-        /** @var array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}|null $override */
-        $override = $this->store->overrides(['product:'.$productId])['product:'.$productId] ?? null;
+        /**
+         * @var array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,
+         *     amount:float,unit:string,ingredient_id?:int}>}|null $override
+         */
+        $override =
+            $this->store->overrides(['product:'.$productId])['product:'.$productId] ?? null;
 
         if ($override !== null) {
-            $override['ingredients'] = $this->catalog?->resolveRows($override['ingredients']) ?? $override['ingredients'];
+            $override['ingredients'] =
+                $this->catalog?->resolveRows($override['ingredients']) ?? $override['ingredients'];
         }
 
         if ($override === null) {
-            $default['ingredients'] = $this->catalog?->resolveRows($default['ingredients']) ?? $default['ingredients'];
+            $default['ingredients'] =
+                $this->catalog?->resolveRows($default['ingredients']) ?? $default['ingredients'];
 
             return $default;
         }
@@ -129,8 +197,12 @@ class ProductionCalculator
         /** @var array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>}|null $override */
         $override = $this->store?->overrides([$kind])[$kind] ?? null;
 
-        $definition = $override ?? ['batch_size' => $default['batch_size'], 'ingredients' => $ingredients];
-        $definition['ingredients'] = $this->catalog?->resolveRows($definition['ingredients']) ?? $definition['ingredients'];
+        $definition = $override ?? [
+            'batch_size' => $default['batch_size'],
+            'ingredients' => $ingredients,
+        ];
+        $definition['ingredients'] =
+            $this->catalog?->resolveRows($definition['ingredients']) ?? $definition['ingredients'];
 
         return $definition;
     }
@@ -149,8 +221,11 @@ class ProductionCalculator
         return isset(self::DOUGH[$key]) ? 'main' : 'none';
     }
 
-    /** @param array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>} $definition
-     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}
+    /**
+     * @param array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,
+     *     amount:float,unit:string,ingredient_id?:int}>} $definition
+     * @return array{dough_type:string,dough_grams:float|null,ingredients:list<array{name:string,
+     *     amount:float,unit:string,ingredient_id?:int}>}
      */
     private function withDoughType(array $definition, string $key): array
     {
@@ -158,7 +233,8 @@ class ProductionCalculator
         $doughType = $definition['dough_type'] ?? null;
 
         return [
-            'dough_type' => $doughType ?? ($doughGrams !== null && $doughGrams > 0 ? 'main' : $this->defaultDoughType($key)),
+            'dough_type' => $doughType ??
+                ($doughGrams !== null && $doughGrams > 0 ? 'main' : $this->defaultDoughType($key)),
             'dough_grams' => $doughGrams,
             'ingredients' => $definition['ingredients'],
         ];
@@ -166,7 +242,11 @@ class ProductionCalculator
 
     /** @param array<string, int> $quantities
      * @param  array<string, int>  $productIdsByName
-     * @return array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,recipes:array<string, array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,array{quantity:int|float,unit:string}>}>,without_recipe:list<string>}
+     * @return array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,
+     *     samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,
+     *     other_ingredients:array<string,array<string,int|float>>,recipes:array<string,
+     *     array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,
+     *     array{quantity:int|float,unit:string}>}>,without_recipe:list<string>}
      */
     public function calculate(array $quantities, array $productIdsByName = []): array
     {
@@ -176,7 +256,10 @@ class ProductionCalculator
         $ingredients = [];
         /** @var array<string, array<string, int|float>> $otherIngredients */
         $otherIngredients = [];
-        /** @var array<string, array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,array{quantity:int|float,unit:string}>}> $recipes */
+        /**
+         * @var array<string, array{quantity:int,ingredients:array<string,int|float>,
+         *     other_ingredients:array<string,array{quantity:int|float,unit:string}>}> $recipes
+         */
         $recipes = [];
         $withoutRecipe = [];
         $keys = ['main_dough', 'samsa_dough'];
@@ -187,14 +270,23 @@ class ProductionCalculator
         $overrides = $this->store?->overrides($keys) ?? [];
         foreach ($quantities as $name => $quantity) {
             $key = $this->normalize($name);
-            $productKey = isset($productIdsByName[$name]) ? 'product:'.$productIdsByName[$name] : null;
-            /** @var array{dough_type?:string,dough_grams?:float|null,ingredients:list<array{name:string,amount:float,unit:string,ingredient_id?:int}>}|null $productOverride */
-            $productOverride = $productKey !== null ? ($overrides[$productKey] ?? null) : null;
-            $definition = $productOverride !== null
-                ? $this->withDoughType($productOverride, $key)
-                : $this->productDefinition($name);
+            $productKey = isset($productIdsByName[$name])
+                ? 'product:'.$productIdsByName[$name]
+                : null;
+            /**
+             * @var array{dough_type?:string,dough_grams?:float|null,
+             *     ingredients:list<array{name:string,amount:float,unit:string,
+             *     ingredient_id?:int}>}|null $productOverride
+             */
+            $productOverride = $productKey !== null ? $overrides[$productKey] ?? null : null;
+            $definition =
+                $productOverride !== null
+                    ? $this->withDoughType($productOverride, $key)
+                    : $this->productDefinition($name);
             if ($productOverride !== null) {
-                $definition['ingredients'] = $this->catalog?->resolveRows($definition['ingredients']) ?? $definition['ingredients'];
+                $definition['ingredients'] =
+                    $this->catalog?->resolveRows($definition['ingredients']) ??
+                    $definition['ingredients'];
             }
             if ($definition['dough_type'] === 'main') {
                 $doughGrams += ($definition['dough_grams'] ?? 0) * $quantity;
@@ -211,32 +303,52 @@ class ProductionCalculator
             foreach ($definition['ingredients'] as $ingredient) {
                 $amount = $ingredient['amount'] * $quantity;
                 if ($ingredient['unit'] === 'g') {
-                    $ingredients[$ingredient['name']] = ($ingredients[$ingredient['name']] ?? 0) + $amount;
-                    $recipeIngredients[$ingredient['name']] = ($recipeIngredients[$ingredient['name']] ?? 0) + $amount;
+                    $ingredients[$ingredient['name']] =
+                        ($ingredients[$ingredient['name']] ?? 0) + $amount;
+                    $recipeIngredients[$ingredient['name']] =
+                        ($recipeIngredients[$ingredient['name']] ?? 0) + $amount;
                 } else {
                     $unit = $ingredient['unit'] === 'pcs' ? 'шт.' : 'ст. л.';
-                    $recipeOtherIngredients[$ingredient['name']] = ['quantity' => $amount, 'unit' => $unit];
-                    $otherIngredients[$unit][$ingredient['name']] = ($otherIngredients[$unit][$ingredient['name']] ?? 0) + $amount;
+                    $recipeOtherIngredients[$ingredient['name']] = [
+                        'quantity' => $amount,
+                        'unit' => $unit,
+                    ];
+                    $otherIngredients[$unit][$ingredient['name']] =
+                        ($otherIngredients[$unit][$ingredient['name']] ?? 0) + $amount;
                 }
             }
-            $recipes[$name] = ['quantity' => $quantity, 'ingredients' => $recipeIngredients, 'other_ingredients' => $recipeOtherIngredients];
+            $recipes[$name] = [
+                'quantity' => $quantity,
+                'ingredients' => $recipeIngredients,
+                'other_ingredients' => $recipeOtherIngredients,
+            ];
         }
         ksort($ingredients);
-        /** @var array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>}|null $mainOverride */
+        /**
+         * @var array{batch_size:float,ingredients:list<array{name:string,amount:float,
+         *     unit:string}>}|null $mainOverride
+         */
         $mainOverride = $overrides['main_dough'] ?? null;
-        /** @var array{batch_size:float,ingredients:list<array{name:string,amount:float,unit:string}>}|null $samsaOverride */
+        /**
+         * @var array{batch_size:float,ingredients:list<array{name:string,amount:float,
+         *     unit:string}>}|null $samsaOverride
+         */
         $samsaOverride = $overrides['samsa_dough'] ?? null;
         $mainDough = $mainOverride ?? $this->doughDefinition('main_dough');
         $samsaDough = $samsaOverride ?? $this->doughDefinition('samsa_dough');
-        $mainDough['ingredients'] = $this->catalog?->resolveRows($mainDough['ingredients']) ?? $mainDough['ingredients'];
-        $samsaDough['ingredients'] = $this->catalog?->resolveRows($samsaDough['ingredients']) ?? $samsaDough['ingredients'];
+        $mainDough['ingredients'] =
+            $this->catalog?->resolveRows($mainDough['ingredients']) ?? $mainDough['ingredients'];
+        $samsaDough['ingredients'] =
+            $this->catalog?->resolveRows($samsaDough['ingredients']) ?? $samsaDough['ingredients'];
         $mainIngredients = [];
         foreach ($mainDough['ingredients'] as $ingredient) {
-            $mainIngredients[$ingredient['name']] = $ingredient['amount'] * $doughGrams / $mainDough['batch_size'];
+            $mainIngredients[$ingredient['name']] =
+                ($ingredient['amount'] * $doughGrams) / $mainDough['batch_size'];
         }
         $samsaIngredients = [];
         foreach ($samsaDough['ingredients'] as $ingredient) {
-            $samsaIngredients[$ingredient['name']] = $ingredient['amount'] * $samsaCount / $samsaDough['batch_size'];
+            $samsaIngredients[$ingredient['name']] =
+                ($ingredient['amount'] * $samsaCount) / $samsaDough['batch_size'];
         }
 
         return [

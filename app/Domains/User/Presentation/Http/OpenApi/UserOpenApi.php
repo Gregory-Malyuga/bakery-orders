@@ -12,8 +12,18 @@ use OpenApi\Attributes as OA;
         new OA\Property(property: 'name', type: 'string'),
         new OA\Property(property: 'email', type: 'string', format: 'email'),
         new OA\Property(property: 'role', type: 'string'),
-        new OA\Property(property: 'created_at', type: 'string', nullable: true, format: 'date-time'),
-        new OA\Property(property: 'updated_at', type: 'string', nullable: true, format: 'date-time'),
+        new OA\Property(
+            property: 'created_at',
+            type: 'string',
+            nullable: true,
+            format: 'date-time',
+        ),
+        new OA\Property(
+            property: 'updated_at',
+            type: 'string',
+            nullable: true,
+            format: 'date-time',
+        ),
     ],
 )]
 #[OA\Get(
@@ -22,12 +32,42 @@ use OpenApi\Attributes as OA;
     summary: 'List Users',
     security: [['bearerAuth' => []]],
     parameters: [
-        new OA\Parameter(name: 'search', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
-        new OA\Parameter(name: 'name', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
-        new OA\Parameter(name: 'email', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
-        new OA\Parameter(name: 'role', in: 'query', required: false, schema: new OA\Schema(type: 'string')),
-        new OA\Parameter(name: 'page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 1)),
-        new OA\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\Schema(type: 'integer', default: 15)),
+        new OA\Parameter(
+            name: 'search',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'string'),
+        ),
+        new OA\Parameter(
+            name: 'name',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'string'),
+        ),
+        new OA\Parameter(
+            name: 'email',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'string'),
+        ),
+        new OA\Parameter(
+            name: 'role',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'string'),
+        ),
+        new OA\Parameter(
+            name: 'page',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'integer', default: 1),
+        ),
+        new OA\Parameter(
+            name: 'per_page',
+            in: 'query',
+            required: false,
+            schema: new OA\Schema(type: 'integer', default: 15),
+        ),
     ],
     responses: [
         new OA\Response(
@@ -35,11 +75,15 @@ use OpenApi\Attributes as OA;
             description: 'Paginated list',
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: '#/components/schemas/User')),
+                    new OA\Property(
+                        property: 'data',
+                        type: 'array',
+                        items: new OA\Items(ref: '#/components/schemas/User'),
+                    ),
                     new OA\Property(property: 'meta', type: 'object'),
                     new OA\Property(property: 'links', type: 'object'),
-                ]
-            )
+                ],
+            ),
         ),
         new OA\Response(response: 401, description: 'Unauthenticated'),
     ],
@@ -50,10 +94,19 @@ use OpenApi\Attributes as OA;
     summary: 'Get User by ID',
     security: [['bearerAuth' => []]],
     parameters: [
-        new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer'),
+        ),
     ],
     responses: [
-        new OA\Response(response: 200, description: 'Success', content: new OA\JsonContent(ref: '#/components/schemas/User')),
+        new OA\Response(
+            response: 200,
+            description: 'Success',
+            content: new OA\JsonContent(ref: '#/components/schemas/User'),
+        ),
         new OA\Response(response: 401, description: 'Unauthenticated'),
         new OA\Response(response: 404, description: 'Not found'),
     ],
@@ -76,7 +129,11 @@ use OpenApi\Attributes as OA;
         ),
     ),
     responses: [
-        new OA\Response(response: 201, description: 'Created', content: new OA\JsonContent(ref: '#/components/schemas/User')),
+        new OA\Response(
+            response: 201,
+            description: 'Created',
+            content: new OA\JsonContent(ref: '#/components/schemas/User'),
+        ),
         new OA\Response(response: 401, description: 'Unauthenticated'),
         new OA\Response(response: 403, description: 'Forbidden'),
         new OA\Response(response: 422, description: 'Validation error'),
@@ -88,7 +145,12 @@ use OpenApi\Attributes as OA;
     summary: 'Update User',
     security: [['bearerAuth' => []]],
     parameters: [
-        new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer'),
+        ),
     ],
     requestBody: new OA\RequestBody(
         required: false,
@@ -102,7 +164,11 @@ use OpenApi\Attributes as OA;
         ),
     ),
     responses: [
-        new OA\Response(response: 200, description: 'Updated', content: new OA\JsonContent(ref: '#/components/schemas/User')),
+        new OA\Response(
+            response: 200,
+            description: 'Updated',
+            content: new OA\JsonContent(ref: '#/components/schemas/User'),
+        ),
         new OA\Response(response: 401, description: 'Unauthenticated'),
         new OA\Response(response: 403, description: 'Forbidden'),
         new OA\Response(response: 404, description: 'Not found'),
@@ -115,7 +181,12 @@ use OpenApi\Attributes as OA;
     summary: 'Delete User',
     security: [['bearerAuth' => []]],
     parameters: [
-        new OA\Parameter(name: 'id', in: 'path', required: true, schema: new OA\Schema(type: 'integer')),
+        new OA\Parameter(
+            name: 'id',
+            in: 'path',
+            required: true,
+            schema: new OA\Schema(type: 'integer'),
+        ),
     ],
     responses: [
         new OA\Response(response: 204, description: 'Deleted'),

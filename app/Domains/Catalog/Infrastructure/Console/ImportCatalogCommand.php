@@ -45,8 +45,16 @@ class ImportCatalogCommand extends Command
 
                 continue;
             }
-            [$product, $store, $address, $price] = array_map(fn (?string $value): string => trim($value ?? ''), $values);
-            if ($product === '' || $store === '' || $address === '' || ! preg_match('/^\d{1,8}(?:[.,]\d{1,2})?$/', $price)) {
+            [$product, $store, $address, $price] = array_map(
+                fn (?string $value): string => trim($value ?? ''),
+                $values,
+            );
+            if (
+                $product === '' ||
+                $store === '' ||
+                $address === '' ||
+                ! preg_match('/^\d{1,8}(?:[.,]\d{1,2})?$/', $price)
+            ) {
                 $errors[] = "Строка {$line}: пропуск или некорректная цена.";
 
                 continue;
@@ -64,7 +72,11 @@ class ImportCatalogCommand extends Command
             $products[$productKey] = $product;
             $stores[$storeKey] = [$store, $address];
             [$rubles, $kopecks] = array_pad(explode('.', str_replace(',', '.', $price)), 2, '0');
-            $rows[] = [$storeKey, $productKey, (int) $rubles * 100 + (int) str_pad($kopecks, 2, '0')];
+            $rows[] = [
+                $storeKey,
+                $productKey,
+                (int) $rubles * 100 + (int) str_pad($kopecks, 2, '0'),
+            ];
         }
         fclose($handle);
         foreach (array_keys($stores) as $storeKey) {
@@ -84,7 +96,14 @@ class ImportCatalogCommand extends Command
 
             return self::FAILURE;
         }
-        $this->info(count($stores).' магазинов, '.count($products).' товаров, '.count($rows).' цен. Проверка пройдена.');
+        $this->info(
+            count($stores).
+                ' магазинов, '.
+                count($products).
+                ' товаров, '.
+                count($rows).
+                ' цен. Проверка пройдена.',
+        );
         if (! $this->option('apply')) {
             return self::SUCCESS;
         }

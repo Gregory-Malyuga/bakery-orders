@@ -30,6 +30,10 @@ class ListRequestGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Presentation/Http/Requests/List{$ctx->name}sRequest.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Presentation/Http/Requests/List{$ctx->name}sRequest.php",
+            $content,
+        );
     }
 }

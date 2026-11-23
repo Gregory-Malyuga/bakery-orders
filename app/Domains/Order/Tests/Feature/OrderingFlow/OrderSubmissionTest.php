@@ -3,17 +3,17 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\Bakery\Domain\Models\Price;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\Price\Domain\Models\Price;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class OrderSubmissionTest extends OrderingFlowCase
 {
-    public function testPersonalPricesSnapshotAndDuplicateSubmission(): void
+    public function test_personal_prices_snapshot_and_duplicate_submission(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
         [$firstStore, $firstUser, $product] = $this->shop('Первый', 3000);
@@ -24,30 +24,47 @@ class OrderSubmissionTest extends OrderingFlowCase
         $this->assertSame(6000, $firstQuote['total']);
         $this->assertSame(7000, $secondQuote['total']);
         $key = (string) Str::uuid();
-        $first = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])['order'];
+        $first = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])[
+            'order'
+        ];
         $this->assertNotNull($first);
-        $again = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])['order'];
+        $again = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])[
+            'order'
+        ];
         $this->assertSame($first->id, $again?->id);
-        Price::query()->where('bakery_id', $firstStore->id)->where('product_id', $product->id)->update(['kopecks' => 9900]);
-        $this->assertSame(3000, app(OrderingRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks);
-        $this->actingAs($secondUser)->get('/orders/'.$first->id)->assertNotFound();
-        $this->actingAs($firstUser)->get('/orders/'.$first->id)->assertOk();
+        Price::query()
+            ->where('bakery_id', $firstStore->id)
+            ->where('product_id', $product->id)
+            ->update(['kopecks' => 9900]);
+        $this->assertSame(
+            3000,
+            app(OrderRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks,
+        );
+        $this->actingAs($secondUser)
+            ->get('/orders/'.$first->id)
+            ->assertNotFound();
+        $this->actingAs($firstUser)
+            ->get('/orders/'.$first->id)
+            ->assertOk();
     }
 
-    public function testChangedPriceRequiresFreshConfirmationAndCutoffRejectsSubmission(): void
+    public function test_changed_price_requires_fresh_confirmation_and_cutoff_rejects_submission(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:29:59', 'Europe/Moscow'));
         [$store, $user, $product] = $this->shop('Четвёртый', 3000);
         $service = app(OrderingService::class);
         $quote = $service->quote($store->id, [$product->id => 2]);
-        Price::query()->where('bakery_id', $store->id)->where('product_id', $product->id)->update(['kopecks' => 4000]);
+        Price::query()
+            ->where('bakery_id', $store->id)
+            ->where('product_id', $product->id)
+            ->update(['kopecks' => 4000]);
         $key = (string) Str::uuid();
         $result = $service->place($store->id, $key, [$product->id => 2], $quote['hash']);
         $this->assertNull($result['order']);
         $freshQuote = $result['quote'];
         $this->assertNotNull($freshQuote);
         $this->assertSame(8000, $freshQuote['total']);
-        $this->assertCount(0, app(OrderingRepositoryInterface::class)->orders($quote['date']));
+        $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
         $this->actingAs($user)->get('/admin/catalog')->assertForbidden();
 
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:30:00', 'Europe/Moscow'));
@@ -55,7 +72,7 @@ class OrderSubmissionTest extends OrderingFlowCase
         $service->place($store->id, $key, [$product->id => 2], $freshQuote['hash']);
     }
 
-    public function testOrderPlacementIsBlockedWhenCacheLockIsHeld(): void
+    public function test_order_placement_is_blocked_when_cache_lock_is_held(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
         [$store, , $product] = $this->shop('Пекарня с локом', 3000);

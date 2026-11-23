@@ -2,9 +2,9 @@
 
 namespace Domains\Price\Tests\Feature;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -20,8 +20,8 @@ class BulkProductPricesTest extends TestCase
     public function testSharedPriceRequiresAllLinkedStoresAndStoreUserCannotAccessCard(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $first = Bakery::query()->create(['name' => 'Общий 1', 'address' => '1', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Общий 2', 'address' => '2', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Общий 1', 'address' => '1', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Общий 2', 'address' => '2', 'is_active' => true]);
         DB::table('bakeries')->where('id', $second->id)->update(['price_source_id' => $first->id]);
         $product = Product::query()->create(['name' => 'Общий товар', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 500]);
@@ -38,9 +38,9 @@ class BulkProductPricesTest extends TestCase
     public function testBulkPriceIsAtomicIdempotentAndReversibleUntilAnotherEdit(): void
     {
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $first = Bakery::query()->create(['name' => 'Первая', 'address' => '1', 'is_active' => true]);
-        $second = Bakery::query()->create(['name' => 'Вторая', 'address' => '2', 'is_active' => true]);
-        $third = Bakery::query()->create(['name' => 'Третья', 'address' => '3', 'is_active' => true]);
+        $first = Store::query()->create(['name' => 'Первая', 'address' => '1', 'is_active' => true]);
+        $second = Store::query()->create(['name' => 'Вторая', 'address' => '2', 'is_active' => true]);
+        $third = Store::query()->create(['name' => 'Третья', 'address' => '3', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Товар', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         foreach ([[$first, 1000], [$second, 100], [$third, 500]] as [$store, $amount]) {
             Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => $amount]);

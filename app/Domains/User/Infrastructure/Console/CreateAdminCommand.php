@@ -25,7 +25,12 @@ class CreateAdminCommand extends Command
     {
         $email = mb_strtolower(trim((string) $this->argument('email')));
         $name = trim((string) $this->option('name'));
-        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false || mb_strlen($email) > 255 || $name === '' || mb_strlen($name) > 255) {
+        if (
+            filter_var($email, FILTER_VALIDATE_EMAIL) === false ||
+            mb_strlen($email) > 255 ||
+            $name === '' ||
+            mb_strlen($name) > 255
+        ) {
             $this->error('Укажите корректную почту и имя длиной не более 255 символов.');
 
             return self::FAILURE;
@@ -36,14 +41,18 @@ class CreateAdminCommand extends Command
             return self::FAILURE;
         }
         if (! $this->input->isInteractive()) {
-            $this->error('Для скрытого ввода пароля запустите команду в интерактивном терминале без флага -T.');
+            $this->error(
+                'Для скрытого ввода пароля запустите команду в интерактивном терминале без флага -T.',
+            );
 
             return self::FAILURE;
         }
         $password = $this->secret('Пароль администратора (не менее 10 символов)');
         $confirmation = $this->secret('Повторите пароль');
         if (! is_string($password) || mb_strlen($password) < 10 || $password !== $confirmation) {
-            $this->error('Пароль должен содержать не менее 10 символов и совпадать с повторным вводом.');
+            $this->error(
+                'Пароль должен содержать не менее 10 символов и совпадать с повторным вводом.',
+            );
 
             return self::FAILURE;
         }

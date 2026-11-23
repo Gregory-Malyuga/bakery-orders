@@ -2,14 +2,14 @@
 
 namespace Domains\Store\Tests\Feature;
 
-use Domains\Bakery\Application\AnalyticsService;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Analytics\Application\AnalyticsService;
+use Domains\Order\Application\OrderingService;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderItem\Domain\Models\OrderItem;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Carbon;
@@ -28,11 +28,11 @@ class StoreDiscountTest extends TestCase
     public function testDiscountIsRoundedToKopecksPerUnitAndIsolatedPerStore(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
-        $discounted = Bakery::query()->create([
+        $discounted = Store::query()->create([
             'name' => 'СНТ Надежда тест', 'address' => 'Адрес',
             'is_active' => true, 'discount_enabled' => true, 'discount_percent' => 10,
         ]);
-        $regular = Bakery::query()->create([
+        $regular = Store::query()->create([
             'name' => 'Другая точка', 'address' => 'Другой адрес', 'is_active' => true,
         ]);
         $product = Product::query()->create([
@@ -42,7 +42,7 @@ class StoreDiscountTest extends TestCase
         Price::query()->create(['bakery_id' => $discounted->id, 'product_id' => $product->id, 'kopecks' => 12345]);
         Price::query()->create(['bakery_id' => $regular->id, 'product_id' => $product->id, 'kopecks' => 12345]);
 
-        $repo = app(OrderingRepositoryInterface::class);
+        $repo = app(OrderRepositoryInterface::class);
         $this->assertSame(12345, $repo->prices($discounted->id, true, false)[$product->id]);
         $this->assertSame(11111, $repo->prices($discounted->id)[$product->id]);
         $this->assertSame(12345, $repo->prices($regular->id)[$product->id]);
@@ -70,7 +70,7 @@ class StoreDiscountTest extends TestCase
 
     public function testDiscountRoundsHalfKopeckUpWithoutFloatingPoint(): void
     {
-        $store = Bakery::query()->create([
+        $store = Store::query()->create([
             'name' => 'Точка округления', 'address' => 'Адрес',
             'is_active' => true, 'discount_enabled' => true, 'discount_percent' => 50,
         ]);
@@ -79,15 +79,15 @@ class StoreDiscountTest extends TestCase
             'packaging_mode' => 'single', 'is_active' => true,
         ]);
         Price::query()->create(['bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 1]);
-        $this->assertSame(1, app(OrderingRepositoryInterface::class)->prices($store->id)[$product->id]);
+        $this->assertSame(1, app(OrderRepositoryInterface::class)->prices($store->id)[$product->id]);
     }
 
     public function testSharedBasePriceOnlyDiscountsSelectedStore(): void
     {
-        $source = Bakery::query()->create([
+        $source = Store::query()->create([
             'name' => 'Общий прайс', 'address' => 'Адрес 1', 'is_active' => true,
         ]);
-        $discounted = Bakery::query()->create([
+        $discounted = Store::query()->create([
             'name' => 'Точка со скидкой', 'address' => 'Адрес 2', 'is_active' => true,
             'discount_enabled' => true, 'discount_percent' => 10,
         ]);
@@ -100,7 +100,7 @@ class StoreDiscountTest extends TestCase
             'bakery_id' => $source->id, 'product_id' => $product->id, 'kopecks' => 1099,
         ]);
 
-        $prices = app(OrderingRepositoryInterface::class);
+        $prices = app(OrderRepositoryInterface::class);
         $this->assertSame(1099, $prices->prices($source->id)[$product->id]);
         $this->assertSame(989, $prices->prices($discounted->id)[$product->id]);
         $this->assertSame(1099, $prices->prices($discounted->id, true, false)[$product->id]);
@@ -108,7 +108,7 @@ class StoreDiscountTest extends TestCase
 
     public function testZeroAndFullDiscountBoundaries(): void
     {
-        $store = Bakery::query()->create([
+        $store = Store::query()->create([
             'name' => 'Граничные скидки', 'address' => 'Адрес', 'is_active' => true,
             'discount_enabled' => true, 'discount_percent' => 0,
         ]);
@@ -119,7 +119,7 @@ class StoreDiscountTest extends TestCase
         Price::query()->create([
             'bakery_id' => $store->id, 'product_id' => $product->id, 'kopecks' => 12345,
         ]);
-        $prices = app(OrderingRepositoryInterface::class);
+        $prices = app(OrderRepositoryInterface::class);
 
         $this->assertSame(12345, $prices->prices($store->id)[$product->id]);
         $store->update(['discount_percent' => 100]);

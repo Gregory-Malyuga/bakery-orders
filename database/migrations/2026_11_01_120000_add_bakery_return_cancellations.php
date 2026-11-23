@@ -10,7 +10,11 @@ return new class extends Migration
     {
         Schema::table('bakery_returns', function (Blueprint $table): void {
             $table->string('status', 16)->default('active');
-            $table->foreignId('cancelled_by_user_id')->nullable()->constrained('users')->restrictOnDelete();
+            $table
+                ->foreignId('cancelled_by_user_id')
+                ->nullable()
+                ->constrained('users')
+                ->restrictOnDelete();
             $table->timestamp('cancelled_at')->nullable();
             $table->text('cancellation_reason')->nullable();
         });

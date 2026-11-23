@@ -2,9 +2,9 @@
 
 namespace Domains\DeliverySheet\Tests\Feature\DeliveryRoutes;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
+use Domains\Order\Domain\Models\Order;
+use Domains\Product\Domain\Models\Product;
 use Domains\DeliverySheet\Tests\Feature\Support\DeliveryRoutesCase;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
@@ -21,7 +21,7 @@ class DeliverySheetPrintingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         $product = Product::query()->create(['name' => 'Хлеб', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $order = Order::query()->create(['bakery_id' => $store->id, 'delivery_date' => '2026-11-12', 'status' => 'accepted', 'active_slot' => 1, 'request_key' => (string) Str::uuid(), 'store_name' => 'Точка', 'store_address' => 'Адрес', 'total_kopecks' => 100000]);
         DB::table('bakery_order_items')->insert(['order_id' => $order->id, 'product_id' => $product->id, 'product_name' => 'Хлеб', 'quantity' => 10, 'unit_kopecks' => 10000, 'total_kopecks' => 100000]);
@@ -40,7 +40,7 @@ class DeliverySheetPrintingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         $this->actingAs($admin)->post('/admin/delivery-sheets', [
             'date' => '2026-11-12', 'name' => 'Маршрут', 'driver' => 'Водитель', 'stores' => [$store->id],
         ])->assertRedirect();
@@ -63,8 +63,8 @@ class DeliverySheetPrintingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-11 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $store = Bakery::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
-        $other = Bakery::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка А', 'address' => 'Адрес А', 'is_active' => true]);
+        $other = Store::query()->create(['name' => 'Точка Б', 'address' => 'Адрес Б', 'is_active' => true]);
 
         foreach (['Первый', 'Второй'] as $name) {
             $this->actingAs($admin)->post('/admin/delivery-sheets', [
@@ -102,8 +102,8 @@ class DeliverySheetPrintingTest extends DeliveryRoutesCase
         $this->withoutMiddleware(PreventRequestForgery::class);
         Carbon::setTestNow(Carbon::parse('2026-11-13 19:00:00', 'Europe/Moscow'));
         $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $cash = Bakery::query()->create(['name' => 'Наличная точка', 'address' => 'А', 'is_active' => true]);
-        $bank = Bakery::query()->create(['name' => 'Безналичная точка', 'address' => 'Б', 'is_active' => true, 'is_cashless' => true]);
+        $cash = Store::query()->create(['name' => 'Наличная точка', 'address' => 'А', 'is_active' => true]);
+        $bank = Store::query()->create(['name' => 'Безналичная точка', 'address' => 'Б', 'is_active' => true, 'is_cashless' => true]);
         foreach (['2026-11-13' => [100000, 200000], '2026-11-14' => [150000, 300000]] as $date => $amounts) {
             foreach ([$cash, $bank] as $index => $store) {
                 Order::query()->create(['bakery_id' => $store->id, 'delivery_date' => $date, 'status' => 'accepted', 'active_slot' => 1, 'request_key' => (string) Str::uuid(), 'store_name' => $store->name, 'store_address' => $store->address, 'total_kopecks' => $amounts[$index]]);

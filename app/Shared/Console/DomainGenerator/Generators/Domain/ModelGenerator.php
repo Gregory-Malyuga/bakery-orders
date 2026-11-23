@@ -20,8 +20,14 @@ class ModelGenerator extends AbstractGenerator
                 $castsMap[$fieldName] = 'boolean';
             }
         }
-        $castsLines = implode(', ', array_map(fn ($f, $c) => "'{$f}' => '{$c}'", array_keys($castsMap), $castsMap));
-        $castsProperty = $castsMap !== [] ? "\n            /** @var array<string, string> */\n            protected \$casts = [{$castsLines}];\n" : '';
+        $castsLines = implode(
+            ', ',
+            array_map(fn ($f, $c) => "'{$f}' => '{$c}'", array_keys($castsMap), $castsMap),
+        );
+        $castsProperty =
+            $castsMap !== []
+                ? "\n            /** @var array<string, string> */\n            protected \$casts = [{$castsLines}];\n"
+                : '';
 
         $content = <<<PHP
         <?php

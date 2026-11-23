@@ -16,7 +16,12 @@ use OpenApi\Attributes as OA;
     properties: [
         new OA\Property(property: 'id', type: 'integer', example: 1),
         new OA\Property(property: 'name', type: 'string', example: 'Иван Иванов'),
-        new OA\Property(property: 'email', type: 'string', format: 'email', example: 'ivan@example.com'),
+        new OA\Property(
+            property: 'email',
+            type: 'string',
+            format: 'email',
+            example: 'ivan@example.com',
+        ),
         new OA\Property(property: 'role', type: 'string', example: 'user'),
     ],
 )]
@@ -36,10 +41,30 @@ use OpenApi\Attributes as OA;
         content: new OA\JsonContent(
             required: ['name', 'email', 'password', 'password_confirmation'],
             properties: [
-                new OA\Property(property: 'name', type: 'string', maxLength: 255, example: 'Иван Иванов'),
-                new OA\Property(property: 'email', type: 'string', format: 'email', maxLength: 255, example: 'ivan@example.com'),
-                new OA\Property(property: 'password', type: 'string', minLength: 8, example: 'secret123'),
-                new OA\Property(property: 'password_confirmation', type: 'string', example: 'secret123'),
+                new OA\Property(
+                    property: 'name',
+                    type: 'string',
+                    maxLength: 255,
+                    example: 'Иван Иванов',
+                ),
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    format: 'email',
+                    maxLength: 255,
+                    example: 'ivan@example.com',
+                ),
+                new OA\Property(
+                    property: 'password',
+                    type: 'string',
+                    minLength: 8,
+                    example: 'secret123',
+                ),
+                new OA\Property(
+                    property: 'password_confirmation',
+                    type: 'string',
+                    example: 'secret123',
+                ),
             ],
         ),
     ),
@@ -49,7 +74,10 @@ use OpenApi\Attributes as OA;
             description: 'Пользователь создан, токен выдан',
             content: new OA\JsonContent(ref: '#/components/schemas/AuthTokenResponse'),
         ),
-        new OA\Response(response: 422, description: 'Ошибка валидации (email занят, пароли не совпадают и т.д.)'),
+        new OA\Response(
+            response: 422,
+            description: 'Ошибка валидации (email занят, пароли не совпадают и т.д.)',
+        ),
     ],
 )]
 #[OA\Post(
@@ -61,7 +89,12 @@ use OpenApi\Attributes as OA;
         content: new OA\JsonContent(
             required: ['email', 'password'],
             properties: [
-                new OA\Property(property: 'email', type: 'string', format: 'email', example: 'ivan@example.com'),
+                new OA\Property(
+                    property: 'email',
+                    type: 'string',
+                    format: 'email',
+                    example: 'ivan@example.com',
+                ),
                 new OA\Property(property: 'password', type: 'string', example: 'secret123'),
             ],
         ),
@@ -87,7 +120,11 @@ use OpenApi\Attributes as OA;
             description: 'Токен удалён',
             content: new OA\JsonContent(
                 properties: [
-                    new OA\Property(property: 'message', type: 'string', example: 'Выход выполнен.'),
+                    new OA\Property(
+                        property: 'message',
+                        type: 'string',
+                        example: 'Выход выполнен.',
+                    ),
                 ],
             ),
         ),

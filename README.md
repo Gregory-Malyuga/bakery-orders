@@ -79,7 +79,7 @@ docker compose exec -T php php artisan db:seed --class=BakeryDemoSeeder --force
 
 Все Composer, PHP и Artisan-команды выполняются в контейнере `php`.
 
-Локальный Compose подключает исходники к PHP-контейнеру и запускает Laravel development server. Изменения PHP, шаблонов и статических файлов видны при следующем запросе без пересборки или перезапуска. Общие PHP-настройки находятся в `docker/php/10-bakery.ini`, OPcache — в `docker/php/20-bakery-opcache.ini`, а `docker/php/dev/99-bakery-dev.ini` переопределяет только параметры, нужные при разработке. Compose монтирует все три файла только для чтения. После изменения Composer-зависимостей пересоберите образ командой `docker compose up -d --build`. Production-образ использует FrankenPHP/Octane и получает только общие настройки при сборке.
+Локальный Compose подключает исходники к PHP-контейнеру и запускает Laravel development server. Изменения PHP, шаблонов и статических файлов видны при следующем запросе без пересборки или перезапуска. Общие PHP и OPcache настройки берутся из базового образа `bootstrap-docker-php`. Локальный Compose задаёт dev-параметры OPcache через переменные `PHP_OPCACHE_*` базового образа, чтобы обновления кода были видны без пересборки. Зависимости `vendor/` находятся в локальной папке (игнорируются Git) и доступны PhpStorm. При первом запуске контейнер установит их в эту папку. После изменения `composer.lock` выполните `docker compose exec -T php composer install --prefer-dist --no-progress`; пересборка образа для этого не нужна. Production-образ использует FrankenPHP/Octane и получает только общие настройки при сборке.
 
 ```bash
 # Создать отдельную тестовую базу (один раз)

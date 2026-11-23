@@ -25,7 +25,9 @@ readonly class SaveStockPriceHandler implements CommandHandlerInterface
 
         $price = str_replace(',', '.', trim($message->price));
         if (! preg_match('/^\d{1,9}(?:\.\d{1,2})?$/', $price)) {
-            throw ValidationException::withMessages(['price' => 'Укажите цену в рублях с точностью до копейки.']);
+            throw ValidationException::withMessages([
+                'price' => 'Укажите цену в рублях с точностью до копейки.',
+            ]);
         }
 
         [$rubles, $kopecks] = array_pad(explode('.', $price, 2), 2, '');
@@ -57,20 +59,27 @@ readonly class SaveStockPriceHandler implements CommandHandlerInterface
             default => $stockUnit,
         };
         if ($baseUnit !== $normalizedStockUnit) {
-            throw ValidationException::withMessages(['measure' => 'Мера цены должна соответствовать единице складской позиции.']);
+            throw ValidationException::withMessages([
+                'measure' => 'Мера цены должна соответствовать единице складской позиции.',
+            ]);
         }
 
         $quantity = str_replace(',', '.', trim($quantity));
         if (! preg_match('/^\d{1,9}(?:\.\d{1,3})?$/', $quantity)) {
-            throw ValidationException::withMessages(['custom_quantity' => 'Укажите положительную меру до трёх знаков после запятой.']);
+            throw ValidationException::withMessages([
+                'custom_quantity' => 'Укажите положительную меру до трёх знаков после запятой.',
+            ]);
         }
 
         [$whole, $fraction] = array_pad(explode('.', $quantity, 2), 2, '');
-        $measureMilli = ((int) $whole * 1000 + (int) str_pad($fraction, 3, '0'))
-            * (in_array($unit, ['kg', 'l'], true) ? 1000 : 1);
+        $measureMilli =
+            ((int) $whole * 1000 + (int) str_pad($fraction, 3, '0')) *
+            (in_array($unit, ['kg', 'l'], true) ? 1000 : 1);
 
         if ($measureMilli <= 0) {
-            throw ValidationException::withMessages(['custom_quantity' => 'Мера должна быть больше нуля.']);
+            throw ValidationException::withMessages([
+                'custom_quantity' => 'Мера должна быть больше нуля.',
+            ]);
         }
 
         $effectiveDate = now('Europe/Moscow')->addDay()->toDateString();

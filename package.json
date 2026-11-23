@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "scripts": {
+    "format": "npm run format:php && docker compose exec -T php composer cs:fix",
+    "format:php": "prettier --write \"{app,routes,tests,database}/**/*.php\" && node bin/wrap-phpdoc.mjs"
+  },
+  "devDependencies": {
+    "@prettier/plugin-php": "0.26.0",
+    "prettier": "3.10.1"
+  }
+}

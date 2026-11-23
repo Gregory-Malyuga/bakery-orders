@@ -8,7 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('bakeries', fn (Blueprint $table) => $table->boolean('is_cashless')->default(false));
+        Schema::table(
+            'bakeries',
+            fn (Blueprint $table) => $table->boolean('is_cashless')->default(false),
+        );
     }
 
     public function down(): void

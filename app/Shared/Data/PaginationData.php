@@ -7,10 +7,7 @@ use Spatie\LaravelData\Data;
 
 class PaginationData extends Data
 {
-    public function __construct(
-        public readonly int $page = 1,
-        public readonly int $perPage = 15,
-    ) {}
+    public function __construct(public readonly int $page = 1, public readonly int $perPage = 15) {}
 
     public static function fromRequest(Request $request): self
     {

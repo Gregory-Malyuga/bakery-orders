@@ -34,6 +34,8 @@ final class StoreAnalyticsReadRepository implements StoreAnalyticsReadRepository
     /** @return Collection<int, \stdClass> */
     public function storeOptions(): Collection
     {
-        return DB::table('bakeries')->orderBy('name')->get(['id', 'name']);
+        return DB::table('bakeries')
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 }

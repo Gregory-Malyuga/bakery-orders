@@ -25,7 +25,10 @@ class ImpersonationController
         Auth::login($user);
         $request->session()->regenerate();
         $request->session()->put(self::SESSION_KEY, $adminId);
-        Log::info('Bakery admin started user session', ['admin_id' => $adminId, 'user_id' => $user->id]);
+        Log::info('Bakery admin started user session', [
+            'admin_id' => $adminId,
+            'user_id' => $user->id,
+        ]);
 
         return redirect()->route('bakery.store');
     }
@@ -36,7 +39,11 @@ class ImpersonationController
         abort_unless(is_int($adminId) && $request->user()?->role === UserRole::User, 403);
 
         $admin = User::query()->find($adminId);
-        if ($admin === null || $admin->role !== UserRole::Admin || $admin->status !== UserStatus::Verify) {
+        if (
+            $admin === null ||
+            $admin->role !== UserRole::Admin ||
+            $admin->status !== UserStatus::Verify
+        ) {
             Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
@@ -48,7 +55,10 @@ class ImpersonationController
         Auth::login($admin);
         $request->session()->regenerate();
         $request->session()->forget(self::SESSION_KEY);
-        Log::info('Bakery admin returned from user session', ['admin_id' => $admin->id, 'user_id' => $userId]);
+        Log::info('Bakery admin returned from user session', [
+            'admin_id' => $admin->id,
+            'user_id' => $userId,
+        ]);
 
         return redirect()->route('bakery.catalog', ['tab' => 'accounts']);
     }

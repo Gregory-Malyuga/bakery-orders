@@ -2,6 +2,7 @@
 
 namespace Domains\Production\Presentation\Http\Controllers;
 
+use Domains\Production\Application\Data\ProductionDashboardData;
 use Domains\Production\Application\Queries\Dashboard\ProductionDashboardHandler;
 use Domains\Production\Application\Queries\Dashboard\ProductionDashboardQuery;
 use Illuminate\Http\Request;
@@ -20,10 +21,19 @@ readonly class ProductionDashboardController
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        return view('bakery.admin', $this->dashboard->handle(new ProductionDashboardQuery(
-            $input['date'] ?? now('Europe/Moscow')->addDay()->toDateString(),
-            $input['tab'] ?? 'orders',
-            isset($input['page']) ? (int) $input['page'] : 1,
-        ))->view);
+        return $this->renderDashboard(
+            $this->dashboard->handle(
+                new ProductionDashboardQuery(
+                    $input['date'] ?? now('Europe/Moscow')->addDay()->toDateString(),
+                    $input['tab'] ?? 'orders',
+                    isset($input['page']) ? (int) $input['page'] : 1,
+                ),
+            ),
+        );
+    }
+
+    private function renderDashboard(ProductionDashboardData $data): View
+    {
+        return view('bakery.admin', $data->viewData());
     }
 }

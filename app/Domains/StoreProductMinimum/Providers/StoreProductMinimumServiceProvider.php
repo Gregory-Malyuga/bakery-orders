@@ -12,7 +12,13 @@ class StoreProductMinimumServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StoreProductMinimumRepositoryInterface::class, StoreProductMinimumRepository::class);
-        $this->app->bind(StoreProductMinimumReadRepositoryInterface::class, StoreProductMinimumReadRepository::class);
+        $this->app->bind(
+            StoreProductMinimumRepositoryInterface::class,
+            StoreProductMinimumRepository::class,
+        );
+        $this->app->bind(
+            StoreProductMinimumReadRepositoryInterface::class,
+            StoreProductMinimumReadRepository::class,
+        );
     }
 }

@@ -40,7 +40,7 @@ class UserApiTest extends BaseApiTest
         return User::factory()->create();
     }
 
-    public function testIndexPaginates(): void
+    public function test_index_paginates(): void
     {
         User::factory()->count(5)->create();
 
@@ -53,7 +53,7 @@ class UserApiTest extends BaseApiTest
         $this->assertEquals(1, $response->json('meta.current_page'));
     }
 
-    public function testIndexSortsAsc(): void
+    public function test_index_sorts_asc(): void
     {
         User::factory()->count(3)->create();
 
@@ -66,7 +66,7 @@ class UserApiTest extends BaseApiTest
         $this->assertLessThanOrEqual($data[1]['id'] ?? PHP_INT_MAX, $data[0]['id']);
     }
 
-    public function testIndexSortsDesc(): void
+    public function test_index_sorts_desc(): void
     {
         User::factory()->count(3)->create();
 
@@ -79,7 +79,7 @@ class UserApiTest extends BaseApiTest
         $this->assertGreaterThanOrEqual($data[1]['id'] ?? 0, $data[0]['id']);
     }
 
-    public function testUpdateReturnsUpdatedData(): void
+    public function test_update_returns_updated_data(): void
     {
         $user = User::factory()->create(['role' => 'user']);
 
@@ -89,13 +89,14 @@ class UserApiTest extends BaseApiTest
             'role' => 'manager',
         ]);
 
-        $response->assertStatus(200)
+        $response
+            ->assertStatus(200)
             ->assertJsonPath('name', 'Updated Name')
             ->assertJsonPath('email', 'changed@example.com')
             ->assertJsonPath('role', 'manager');
     }
 
-    public function testUpdateAllowsKeepingOwnEmail(): void
+    public function test_update_allows_keeping_own_email(): void
     {
         $user = User::factory()->create(['email' => 'keep@example.com', 'role' => 'user']);
 
@@ -108,7 +109,7 @@ class UserApiTest extends BaseApiTest
         $response->assertStatus(200);
     }
 
-    public function testUpdateRejectsDuplicateEmail(): void
+    public function test_update_rejects_duplicate_email(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
         $user = User::factory()->create(['email' => 'mine@example.com', 'role' => 'user']);
@@ -122,7 +123,7 @@ class UserApiTest extends BaseApiTest
         $response->assertStatus(422)->assertJsonValidationErrors(['email']);
     }
 
-    public function testIndexFiltersByName(): void
+    public function test_index_filters_by_name(): void
     {
         User::factory()->create(['name' => 'Alice Admin', 'email' => 'alice2@example.com']);
         User::factory()->create(['name' => 'Bob Admin', 'email' => 'bob2@example.com']);

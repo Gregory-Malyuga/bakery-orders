@@ -1,0 +1,4 @@
+app/Domains/Price/Infrastructure/Repositories/PriceOrderReadRepository.php
+app/Shared/Console/Commands/MakeDomainCommand.php
+app/Shared/FilterBuilder/BaseFilterBuilder.php
+app/Shared/Repository/BaseRepository.php

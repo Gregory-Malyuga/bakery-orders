@@ -16,6 +16,9 @@ final class OrderCutoffRepository implements OrderCutoffRepositoryInterface
 
     public function save(string $value): void
     {
-        DB::table('bakery_settings')->updateOrInsert(['key' => 'order_cutoff'], ['value' => $value]);
+        DB::table('bakery_settings')->updateOrInsert(
+            ['key' => 'order_cutoff'],
+            ['value' => $value],
+        );
     }
 }

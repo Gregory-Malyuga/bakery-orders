@@ -2,7 +2,7 @@
 
 namespace Domains\User\Tests\Feature;
 
-use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Store\Domain\Models\Store;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -21,7 +21,7 @@ class PersistentWebSessionTest extends TestCase
         config()->set('session.driver', 'database');
         $this->app['session']->forgetDrivers();
 
-        $store = Bakery::query()->create(['name' => 'Магазин', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Магазин', 'address' => 'Адрес', 'is_active' => true]);
         $user = User::factory()->create([
             'email' => 'persistent-session@example.test',
             'password' => Hash::make('same-password'),

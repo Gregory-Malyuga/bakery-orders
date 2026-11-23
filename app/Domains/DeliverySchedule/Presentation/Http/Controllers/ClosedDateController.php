@@ -24,26 +24,34 @@ class ClosedDateController
     {
         $result = $this->listDates->handle(new ListClosedDatesQuery);
 
-        return view('bakery.closed-dates', ['dates' => $result->dates, 'orderCounts' => $result->orderCounts]);
+        return view('bakery.closed-dates', [
+            'dates' => $result->dates,
+            'orderCounts' => $result->orderCounts,
+        ]);
     }
 
     public function save(Request $request): RedirectResponse
     {
         /** @var array{delivery_date:string,reason:string,keep_existing_orders?:bool} $data */
-        $data = $request->validate([
-            'delivery_date' => ['required', 'date_format:Y-m-d'],
-            'reason' => ['required', 'string', 'max:500'],
-            'keep_existing_orders' => ['sometimes', 'boolean'],
-        ], [
-            'delivery_date.required' => 'Выберите дату поставки.',
-            'delivery_date.date_format' => 'Укажите корректную дату поставки.',
-        ]);
+        $data = $request->validate(
+            [
+                'delivery_date' => ['required', 'date_format:Y-m-d'],
+                'reason' => ['required', 'string', 'max:500'],
+                'keep_existing_orders' => ['sometimes', 'boolean'],
+            ],
+            [
+                'delivery_date.required' => 'Выберите дату поставки.',
+                'delivery_date.date_format' => 'Укажите корректную дату поставки.',
+            ],
+        );
 
-        $this->closeDate->handle(new CloseDateCommand(
-            $data['delivery_date'],
-            $data['reason'],
-            (bool) ($data['keep_existing_orders'] ?? false),
-        ));
+        $this->closeDate->handle(
+            new CloseDateCommand(
+                $data['delivery_date'],
+                $data['reason'],
+                (bool) ($data['keep_existing_orders'] ?? false),
+            ),
+        );
 
         return redirect()->route('bakery.closed-dates')->with('success', 'Дата поставки закрыта.');
     }

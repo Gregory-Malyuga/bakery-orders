@@ -23,7 +23,13 @@ readonly class RecordStockMovementHandler implements CommandHandlerInterface
         if ($message->kind === 'inventory') {
             $this->ledger->inventory($message->itemId, $quantity, $reason, $message->actorId);
         } else {
-            $this->ledger->record($message->itemId, $message->kind, $quantity, $reason, $message->actorId);
+            $this->ledger->record(
+                $message->itemId,
+                $message->kind,
+                $quantity,
+                $reason,
+                $message->actorId,
+            );
         }
 
         return null;

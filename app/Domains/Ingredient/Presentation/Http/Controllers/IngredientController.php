@@ -25,7 +25,9 @@ class IngredientController
 
     public function index(): View
     {
-        return view('bakery.ingredients', ['ingredients' => $this->list->handle(new ListIngredientsQuery)]);
+        return view('bakery.ingredients', [
+            'ingredients' => $this->list->handle(new ListIngredientsQuery),
+        ]);
     }
 
     public function create(Request $request): RedirectResponse
@@ -48,15 +50,22 @@ class IngredientController
 
         $this->rename->handle(new RenameIngredientCommand($ingredient, $data['name']));
 
-        return redirect()->route('bakery.ingredients')->with('success', 'Название обновлено во всех рецептурах и расчётах.');
+        return redirect()
+            ->route('bakery.ingredients')
+            ->with('success', 'Название обновлено во всех рецептурах и расчётах.');
     }
 
     public function toggle(int $ingredient): RedirectResponse
     {
         $wasActive = $this->toggle->handle(new ToggleIngredientCommand($ingredient));
 
-        return redirect()->route('bakery.ingredients')->with('success', $wasActive
-            ? 'Ингредиент скрыт для новых рецептур. В существующих расчётах он сохранён.'
-            : 'Ингредиент снова доступен в рецептурах.');
+        return redirect()
+            ->route('bakery.ingredients')
+            ->with(
+                'success',
+                $wasActive
+                    ? 'Ингредиент скрыт для новых рецептур. В существующих расчётах он сохранён.'
+                    : 'Ингредиент снова доступен в рецептурах.',
+            );
     }
 }

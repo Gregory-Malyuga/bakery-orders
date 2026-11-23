@@ -2,11 +2,11 @@
 
 namespace Domains\StoreGroup\Presentation\Http\Controllers;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\StoreGroup\Application\Commands\Save\SaveStoreGroupCommand;
 use Domains\StoreGroup\Application\Commands\Save\SaveStoreGroupHandler;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Domains\StoreGroup\Application\Queries\ListAll\ListStoreGroupsHandler;
 use Domains\StoreGroup\Application\Queries\ListAll\ListStoreGroupsQuery;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +15,11 @@ use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class StoreGroupController
 {
     public function __construct(
-        private readonly OrderingRepositoryInterface $orders,
+        private readonly OrderRepositoryInterface $orders,
         private readonly GroupInvoiceService $invoices,
         private readonly InvoiceWorkbookInterface $workbook,
         private readonly ListStoreGroupsHandler $listGroups,
@@ -64,23 +64,34 @@ class StoreGroupController
         if (is_string($name)) {
             $request->merge(['name' => trim($name)]);
         }
-        /** @var array{id?:int|string,name:string,show_in_invoice?:bool,exclude_from_labels?:bool,stores?:list<int|string>} $data */
+        /**
+         * @var array{id?:int|string,name:string,show_in_invoice?:bool,exclude_from_labels?:bool,
+         *     stores?:list<int|string>} $data
+         */
         $data = $request->validate([
             'id' => ['nullable', 'integer', Rule::exists('bakery_store_groups', 'id')],
-            'name' => ['required', 'string', 'max:255', 'not_regex:/^\s*$/u', Rule::unique('bakery_store_groups', 'name')->ignore($request->integer('id'))],
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'not_regex:/^\s*$/u',
+                Rule::unique('bakery_store_groups', 'name')->ignore($request->integer('id')),
+            ],
             'show_in_invoice' => ['sometimes', 'boolean'],
             'exclude_from_labels' => ['sometimes', 'boolean'],
             'stores' => ['sometimes', 'array'],
             'stores.*' => ['integer', 'distinct', Rule::exists('bakeries', 'id')],
         ]);
 
-        $this->saveGroup->handle(new SaveStoreGroupCommand(
-            isset($data['id']) ? (int) $data['id'] : null,
-            $data['name'],
-            (bool) ($data['show_in_invoice'] ?? false),
-            (bool) ($data['exclude_from_labels'] ?? false),
-            array_map(static fn (int|string $id): int => (int) $id, $data['stores'] ?? []),
-        ));
+        $this->saveGroup->handle(
+            new SaveStoreGroupCommand(
+                isset($data['id']) ? (int) $data['id'] : null,
+                $data['name'],
+                (bool) ($data['show_in_invoice'] ?? false),
+                (bool) ($data['exclude_from_labels'] ?? false),
+                array_map(static fn (int|string $id): int => (int) $id, $data['stores'] ?? []),
+            ),
+        );
 
         return redirect()->route('bakery.groups')->with('success', 'Группа сохранена.');
     }
@@ -103,8 +114,20 @@ class StoreGroupController
         $date = $this->date($request);
         $invoice = $this->invoice($group, $date);
 
-        return response()->download($this->workbook->create([], [], [$invoice], $date, now('Europe/Moscow')->format('d.m.Y H:i')), "gruppa-{$group}-{$date}.xlsx", [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->workbook->create(
+                    [],
+                    [],
+                    [$invoice],
+                    $date,
+                    now('Europe/Moscow')->format('d.m.Y H:i'),
+                ),
+                "gruppa-{$group}-{$date}.xlsx",
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 }

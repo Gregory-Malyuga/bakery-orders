@@ -2,13 +2,13 @@
 
 namespace Domains\Order\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Order\Domain\Models\Order;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
 use Domains\Product\Application\Repositories\ProductOrderReadRepositoryInterface;
 use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 use Domains\StoreProductMinimum\Application\Repositories\StoreProductMinimumReadRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
@@ -25,7 +25,7 @@ class OrderRepository implements OrderRepositoryInterface
         private readonly StoreProductMinimumReadRepositoryInterface $minimumsRead,
     ) {}
 
-    public function store(int $id): ?Bakery
+    public function store(int $id): ?Store
     {
         return $this->storesRead->find($id);
     }
@@ -35,8 +35,11 @@ class OrderRepository implements OrderRepositoryInterface
         return $this->productsRead->all();
     }
 
-    public function prices(int $storeId, bool $includeUnavailable = false, bool $applyDiscount = true): array
-    {
+    public function prices(
+        int $storeId,
+        bool $includeUnavailable = false,
+        bool $applyDiscount = true,
+    ): array {
         return $this->pricesRead->forStore($storeId, $includeUnavailable, $applyDiscount);
     }
 
@@ -52,17 +55,32 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function orders(string $date): Collection
     {
-        return Order::query()->with('items')->whereDate('delivery_date', $date)->where('status', 'accepted')->orderBy('bakery_id')->get();
+        return Order::query()
+            ->with('items')
+            ->whereDate('delivery_date', $date)
+            ->where('status', 'accepted')
+            ->orderBy('bakery_id')
+            ->get();
     }
 
     public function history(int $storeId): Collection
     {
-        return Order::query()->with('items')->where('bakery_id', $storeId)->latest('id')->limit(30)->get();
+        return Order::query()
+            ->with('items')
+            ->where('bakery_id', $storeId)
+            ->latest('id')
+            ->limit(30)
+            ->get();
     }
 
     public function activeOrder(int $storeId, string $date): ?Order
     {
-        return Order::query()->with('items')->where('bakery_id', $storeId)->whereDate('delivery_date', $date)->where('status', 'accepted')->first();
+        return Order::query()
+            ->with('items')
+            ->where('bakery_id', $storeId)
+            ->whereDate('delivery_date', $date)
+            ->where('status', 'accepted')
+            ->first();
     }
 
     public function order(int $id): ?Order
@@ -72,7 +90,11 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function request(int $storeId, string $key): ?Order
     {
-        return Order::query()->with('items')->where('bakery_id', $storeId)->where('request_key', $key)->first();
+        return Order::query()
+            ->with('items')
+            ->where('bakery_id', $storeId)
+            ->where('request_key', $key)
+            ->first();
     }
 
     public function lockedStore(int $storeId, callable $operation): Order|array
@@ -84,20 +106,30 @@ class OrderRepository implements OrderRepositoryInterface
         });
     }
 
-    private function validateOrderCompetitiveness(Carbon $date, Bakery $bakery): void
+    private function validateOrderCompetitiveness(Carbon $date, Store $bakery): void
     {
-        $dateEnd = ($date->clone())->endOfDay();
-        abort_if(Order::query()
-            ->whereBetween('delivery_date', [$date->toDateTimeString(), $dateEnd->toDateTimeString()])
-            ->where('bakery_id', $bakery->id)
-            ->exists() === true,
+        $dateEnd = $date->clone()->endOfDay();
+        abort_if(
+            Order::query()
+                ->whereBetween('delivery_date', [
+                    $date->toDateTimeString(),
+                    $dateEnd->toDateTimeString(),
+                ])
+                ->where('bakery_id', $bakery->id)
+                ->exists() === true,
             422,
-            'Заказ уже получен.'
+            'Заказ уже получен.',
         );
     }
 
-    public function createOrder(Bakery $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order
-    {
+    public function createOrder(
+        Store $store,
+        string $date,
+        string $key,
+        array $items,
+        int $total,
+        ?string $comment = null,
+    ): Order {
         $normalizedDate = Carbon::parse($date)->startOfDay();
 
         $lockKey = "create_order_lock:{$store->id}:".$date;
@@ -106,7 +138,9 @@ class OrderRepository implements OrderRepositoryInterface
 
         try {
             if (! ($acquired = $lock->get())) {
-                throw ValidationException::withMessages(['order' => 'Система занята, попробуйте повторить запрос.']);
+                throw ValidationException::withMessages([
+                    'order' => 'Система занята, попробуйте повторить запрос.',
+                ]);
             }
             $this->validateOrderCompetitiveness($normalizedDate, $store);
             DB::beginTransaction();
@@ -141,6 +175,10 @@ class OrderRepository implements OrderRepositoryInterface
 
     public function cancel(Order $order): void
     {
-        $order->update(['status' => 'cancelled', 'active_slot' => null, 'cancelled_at' => now('Europe/Moscow')]);
+        $order->update([
+            'status' => 'cancelled',
+            'active_slot' => null,
+            'cancelled_at' => now('Europe/Moscow'),
+        ]);
     }
 }

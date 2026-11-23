@@ -19,7 +19,9 @@ final class PriceAccountMembershipRepository implements PriceAccountMembershipRe
             Price::query()->where('bakery_id', $storeId)->delete();
             foreach ($sharedPrices as $price) {
                 Price::query()->create([
-                    'bakery_id' => $storeId, 'product_id' => $price->product_id, 'kopecks' => $price->kopecks,
+                    'bakery_id' => $storeId,
+                    'product_id' => $price->product_id,
+                    'kopecks' => $price->kopecks,
                 ]);
             }
         }

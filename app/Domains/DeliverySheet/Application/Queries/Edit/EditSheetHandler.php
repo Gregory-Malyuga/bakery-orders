@@ -2,16 +2,16 @@
 
 namespace Domains\DeliverySheet\Application\Queries\Edit;
 
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
 use Domains\DeliverySheet\Application\Data\DeliverySheetViewData;
 use Domains\DeliverySheet\Application\Repositories\DeliverySheetRepositoryInterface;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Shared\Bus\QueryHandlerInterface;
 
 readonly class EditSheetHandler implements QueryHandlerInterface
 {
     public function __construct(
         private DeliverySheetRepositoryInterface $repository,
-        private OrderingRepositoryInterface $stores,
+        private OrderRepositoryInterface $stores,
     ) {}
 
     public function handle(object $message): DeliverySheetViewData

@@ -33,6 +33,10 @@ class StoreRequestGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Presentation/Http/Requests/Store{$ctx->name}Request.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Presentation/Http/Requests/Store{$ctx->name}Request.php",
+            $content,
+        );
     }
 }

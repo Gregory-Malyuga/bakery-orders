@@ -35,7 +35,7 @@ class UserRepositoryTest extends BaseRepositoryTest
         ];
     }
 
-    public function testUpdateModifiesModel(): void
+    public function test_update_modifies_model(): void
     {
         $model = $this->repository()->create($this->makeModelData());
         $data = $this->updateModelData();
@@ -47,10 +47,20 @@ class UserRepositoryTest extends BaseRepositoryTest
         $this->assertSame($data['email'], $updated->email);
     }
 
-    public function testListFiltersByName(): void
+    public function test_list_filters_by_name(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'user']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(name: 'Alice');
         $result = $this->repository()->list($filters);
@@ -58,10 +68,20 @@ class UserRepositoryTest extends BaseRepositoryTest
         $this->assertSame(1, $result->total());
     }
 
-    public function testListFiltersByEmail(): void
+    public function test_list_filters_by_email(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'user']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(email: 'ALICE@EXAMPLE.COM');
         $result = $this->repository()->list($filters);
@@ -69,10 +89,20 @@ class UserRepositoryTest extends BaseRepositoryTest
         $this->assertSame(1, $result->total());
     }
 
-    public function testListFiltersByRole(): void
+    public function test_list_filters_by_role(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'admin']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'admin',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(role: 'admin');
         $result = $this->repository()->list($filters);

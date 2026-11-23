@@ -3,9 +3,9 @@
 namespace Domains\Order\Tests\Feature\OrderingFlow;
 
 use Carbon\Carbon;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Price;
+use Domains\Order\Application\OrderingService;
 use Domains\Order\Tests\Feature\Support\OrderingFlowCase;
+use Domains\Price\Domain\Models\Price;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class OrderInvoiceExportTest extends OrderingFlowCase
 {
-    public function testExcelDownloadContainsOnlyAcceptedInvoiceSnapshots(): void
+    public function test_excel_download_contains_only_accepted_invoice_snapshots(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
         [$firstStore, $storeUser, $product] = $this->shop('Седьмой', 3150);
@@ -23,19 +23,47 @@ class OrderInvoiceExportTest extends OrderingFlowCase
         [$thirdStore] = $this->shop('Девятый', 3400);
         $service = app(OrderingService::class);
         $quote = $service->quote($firstStore->id, [$product->id => 2]);
-        $accepted = $service->place($firstStore->id, (string) Str::uuid(), [$product->id => 2], $quote['hash'])['order'];
+        $accepted = $service->place(
+            $firstStore->id,
+            (string) Str::uuid(),
+            [$product->id => 2],
+            $quote['hash'],
+        )['order'];
         $this->assertNotNull($accepted);
         $otherQuote = $service->quote($secondStore->id, [$product->id => 1]);
-        $cancelled = $service->place($secondStore->id, (string) Str::uuid(), [$product->id => 1], $otherQuote['hash'])['order'];
+        $cancelled = $service->place(
+            $secondStore->id,
+            (string) Str::uuid(),
+            [$product->id => 1],
+            $otherQuote['hash'],
+        )['order'];
         $this->assertNotNull($cancelled);
         $service->cancel($secondStore->id, $cancelled->id);
         $thirdQuote = $service->quote($thirdStore->id, [$product->id => 3]);
-        $this->assertNotNull($service->place($thirdStore->id, (string) Str::uuid(), [$product->id => 3], $thirdQuote['hash'])['order']);
-        Price::query()->where('bakery_id', $firstStore->id)->where('product_id', $product->id)->update(['kopecks' => 9900]);
+        $this->assertNotNull(
+            $service->place(
+                $thirdStore->id,
+                (string) Str::uuid(),
+                [$product->id => 3],
+                $thirdQuote['hash'],
+            )['order'],
+        );
+        Price::query()
+            ->where('bakery_id', $firstStore->id)
+            ->where('product_id', $product->id)
+            ->update(['kopecks' => 9900]);
 
-        $this->actingAs($storeUser)->get('/admin/xlsx?date='.$quote['date'])->assertForbidden();
-        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $response = $this->actingAs($admin)->get('/admin/xlsx?date='.$quote['date'])->assertOk()->assertDownload('nakladnye-'.$quote['date'].'.xlsx');
+        $this->actingAs($storeUser)
+            ->get('/admin/xlsx?date='.$quote['date'])
+            ->assertForbidden();
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Verify,
+        ]);
+        $response = $this->actingAs($admin)
+            ->get('/admin/xlsx?date='.$quote['date'])
+            ->assertOk()
+            ->assertDownload('nakladnye-'.$quote['date'].'.xlsx');
         $this->assertInstanceOf(BinaryFileResponse::class, $response->baseResponse);
         $path = $response->baseResponse->getFile()->getPathname();
         $archive = new PharData($path);
@@ -65,12 +93,14 @@ class OrderInvoiceExportTest extends OrderingFlowCase
         $this->assertStringContainsString('Итого, ₽', $summary);
         $this->assertStringContainsString('<v>165.00</v>', $summary);
         $this->assertStringNotContainsString('Восьмой', $summary);
-        $this->actingAs($admin)->get('/admin/orders/'.$cancelled->id.'/xlsx')->assertNotFound();
+        $this->actingAs($admin)
+            ->get('/admin/orders/'.$cancelled->id.'/xlsx')
+            ->assertNotFound();
         unset($archive);
         unlink($path);
     }
 
-    public function testExcelInvoiceSheetNamesSanitizeAndDistinguishSameCustomerAddress(): void
+    public function test_excel_invoice_sheet_names_sanitize_and_distinguish_same_customer_address(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-06 12:00:00', 'Europe/Moscow'));
         [$first, , $product] = $this->shop('Точка: [Центр]', 3150);
@@ -78,10 +108,18 @@ class OrderInvoiceExportTest extends OrderingFlowCase
         foreach ([$first, $second] as $store) {
             $store->update(['address' => 'ул. Мира/5']);
             $quote = app(OrderingService::class)->quote($store->id, [$product->id => 1]);
-            app(OrderingService::class)->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash']);
+            app(OrderingService::class)->place(
+                $store->id,
+                (string) Str::uuid(),
+                [$product->id => 1],
+                $quote['hash'],
+            );
         }
 
-        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Verify,
+        ]);
         $response = $this->actingAs($admin)->get('/admin/xlsx?date=2026-10-07')->assertOk();
         $this->assertInstanceOf(BinaryFileResponse::class, $response->baseResponse);
         $path = $response->baseResponse->getFile()->getPathname();

@@ -13,8 +13,5 @@ readonly class SeedReferenceCommand implements BaseCommand
      *   prices:array<int,array<int,int|null>>
      * } $data
      */
-    public function __construct(
-        public array $data,
-        public string $initialPassword,
-    ) {}
+    public function __construct(public array $data, public string $initialPassword) {}
 }

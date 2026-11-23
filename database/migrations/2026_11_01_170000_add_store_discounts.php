@@ -17,7 +17,8 @@ return new class extends Migration
         // Existing negotiated discount for the СНТ Надежда trading point only.
         DB::table('bakeries')
             ->where(function ($query): void {
-                $query->whereRaw('LOWER(name) LIKE ?', ['%снт надежда%'])
+                $query
+                    ->whereRaw('LOWER(name) LIKE ?', ['%снт надежда%'])
                     ->orWhereRaw('LOWER(name) LIKE ?', ['%надежда снт%'])
                     ->orWhereRaw('LOWER(address) LIKE ?', ['%снт надежда%']);
             })
@@ -26,6 +27,9 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('bakeries', fn (Blueprint $table) => $table->dropColumn(['discount_enabled', 'discount_percent']));
+        Schema::table(
+            'bakeries',
+            fn (Blueprint $table) => $table->dropColumn(['discount_enabled', 'discount_percent']),
+        );
     }
 };

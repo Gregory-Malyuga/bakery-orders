@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 
 interface CatalogReadRepositoryInterface
 {
-    /** @return array<int|string, mixed> */
+    /** @return array<int, int> */
     public function storeOwners(): array;
 
     /** @return array<int, bool> */

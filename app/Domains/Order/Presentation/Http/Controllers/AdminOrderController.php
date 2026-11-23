@@ -2,6 +2,8 @@
 
 namespace Domains\Order\Presentation\Http\Controllers;
 
+use Domains\Order\Application\Data\AdminOrderDetailData;
+use Domains\Order\Application\Data\AdminOrderEditData;
 use Domains\Order\Application\Queries\Detail\AdminOrderDetailHandler;
 use Domains\Order\Application\Queries\Detail\AdminOrderDetailQuery;
 use Domains\Order\Application\Queries\Edit\AdminOrderEditHandler;
@@ -19,11 +21,13 @@ use Illuminate\View\View;
 
 class AdminOrderController
 {
-    public function __construct(private readonly AdminOrderDetailHandler $detail,
+    public function __construct(
+        private readonly AdminOrderDetailHandler $detail,
         private readonly AdminOrderEditHandler $edit,
         private readonly AdjustOrderHandler $adjust,
         private readonly RecordOrderReturnHandler $recordHandler,
-        private readonly CancelOrderReturnHandler $cancelHandler) {}
+        private readonly CancelOrderReturnHandler $cancelHandler,
+    ) {}
 
     private function adminId(Request $request): int
     {
@@ -35,28 +39,65 @@ class AdminOrderController
 
     public function order(int $order): View
     {
-        return view('bakery.admin-order', $this->detail->handle(new AdminOrderDetailQuery($order))->view);
+        return $this->renderDetail($this->detail->handle(new AdminOrderDetailQuery($order)));
     }
 
     public function editOrder(int $order): View
     {
-        return view('bakery.edit-order', $this->edit->handle(new AdminOrderEditQuery($order))->view);
+        return $this->renderEdit($this->edit->handle(new AdminOrderEditQuery($order)));
+    }
+
+    private function renderDetail(AdminOrderDetailData $data): View
+    {
+        return view('bakery.admin-order', $data->viewData());
+    }
+
+    private function renderEdit(AdminOrderEditData $data): View
+    {
+        return view('bakery.edit-order', $data->viewData());
     }
 
     public function updateOrder(Request $request, int $order): RedirectResponse
     {
         /** @var array{quantities:array<int|string,int|string>,reason:string,admin_note?:string} $data */
-        $data = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'reason' => ['required', 'string', 'max:500'], 'admin_note' => ['nullable', 'string', 'max:1000']]);
-        $this->adjust->handle(new AdjustOrderCommand($order, $this->adminId($request), $data['quantities'], trim($data['reason']), isset($data['admin_note']) ? trim($data['admin_note']) : null));
+        $data = $request->validate([
+            'quantities' => ['required', 'array'],
+            'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'],
+            'reason' => ['required', 'string', 'max:500'],
+            'admin_note' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $this->adjust->handle(
+            new AdjustOrderCommand(
+                $order,
+                $this->adminId($request),
+                $data['quantities'],
+                trim($data['reason']),
+                isset($data['admin_note']) ? trim($data['admin_note']) : null,
+            ),
+        );
 
-        return redirect()->route('bakery.admin-order', $order)->with('success', 'Заявка скорректирована.');
+        return redirect()
+            ->route('bakery.admin-order', $order)
+            ->with('success', 'Заявка скорректирована.');
     }
 
     public function recordReturn(Request $request, int $order): RedirectResponse
     {
         /** @var array{product:int|string,quantity:int|string,reason?:string} $data */
-        $data = $request->validate(['product' => ['required', 'integer', 'exists:bakery_products,id'], 'quantity' => ['required', 'integer', 'min:1', 'max:100000'], 'reason' => ['nullable', 'string', 'max:500']]);
-        $this->recordHandler->handle(new RecordOrderReturnCommand($order, $this->adminId($request), (int) $data['product'], (int) $data['quantity'], isset($data['reason']) ? trim($data['reason']) : null));
+        $data = $request->validate([
+            'product' => ['required', 'integer', 'exists:bakery_products,id'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:100000'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        $this->recordHandler->handle(
+            new RecordOrderReturnCommand(
+                $order,
+                $this->adminId($request),
+                (int) $data['product'],
+                (int) $data['quantity'],
+                isset($data['reason']) ? trim($data['reason']) : null,
+            ),
+        );
 
         return back()->with('success', 'Возврат зафиксирован.');
     }
@@ -64,8 +105,17 @@ class AdminOrderController
     public function cancelReturn(Request $request, int $order, int $return): RedirectResponse
     {
         /** @var array{reason:string} $data */
-        $data = $request->validate(['reason' => ['required', 'string', 'max:500', 'not_regex:/^\s*$/u']]);
-        $this->cancelHandler->handle(new CancelOrderReturnCommand($order, $return, $this->adminId($request), trim($data['reason'])));
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500', 'not_regex:/^\s*$/u'],
+        ]);
+        $this->cancelHandler->handle(
+            new CancelOrderReturnCommand(
+                $order,
+                $return,
+                $this->adminId($request),
+                trim($data['reason']),
+            ),
+        );
 
         return redirect()->route('bakery.admin-order', $order)->with('success', 'Возврат отменён.');
     }

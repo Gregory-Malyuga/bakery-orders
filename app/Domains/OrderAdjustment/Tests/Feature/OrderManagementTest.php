@@ -2,10 +2,10 @@
 
 namespace Domains\OrderAdjustment\Tests\Feature;
 
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
+use Domains\Order\Application\OrderingService;
+use Domains\Store\Domain\Models\Store;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -29,7 +29,7 @@ class OrderManagementTest extends TestCase
     public function testAdminAdjustsOrderRecordsReturnAndExportsPeriodReport(): void
     {
         Carbon::setTestNow(Carbon::parse('2026-10-10 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
+        $store = Store::query()->create(['name' => 'Точка', 'address' => 'Адрес', 'is_active' => true]);
         $pizza = Product::query()->create(['name' => 'Пицца', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $ham = Product::query()->create(['name' => 'Ветчина', 'sort_order' => 2, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
         $unavailable = Product::query()->create(['name' => 'Недоступный товар', 'sort_order' => 3, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);

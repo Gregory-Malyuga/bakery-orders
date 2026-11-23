@@ -16,9 +16,8 @@ class StoreUserRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        return array_merge(
-            CreateUserData::rules(),
-            ['email' => ['required', 'email', 'max:255', Rule::unique('users')]],
-        );
+        return array_merge(CreateUserData::rules(), [
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')],
+        ]);
     }
 }

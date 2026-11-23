@@ -16,8 +16,11 @@ final class StockDiscrepancyPriceReadRepository implements StockDiscrepancyPrice
     {
         /** @var Collection<int, object{stock_item_id:int,price_date:string}> $discrepancyPriceRecords */
         $discrepancyPriceRecords = DB::table('bakery_stock_daily_prices')
-            ->whereIn('price_date', $discrepancies->pluck('movement_date')->unique())->get();
-        $discrepancyPrices = $discrepancyPriceRecords->keyBy(fn (object $price): string => $price->stock_item_id.'|'.$price->price_date);
+            ->whereIn('price_date', $discrepancies->pluck('movement_date')->unique())
+            ->get();
+        $discrepancyPrices = $discrepancyPriceRecords->keyBy(
+            fn (object $price): string => $price->stock_item_id.'|'.$price->price_date,
+        );
 
         return $discrepancyPrices;
     }

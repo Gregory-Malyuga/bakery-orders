@@ -12,7 +12,13 @@ class StockPriceChangeServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StockPriceChangeDashboardRepositoryInterface::class, StockPriceChangeDashboardRepository::class);
-        $this->app->bind(StockPriceChangeRepositoryInterface::class, StockPriceChangeRepository::class);
+        $this->app->bind(
+            StockPriceChangeDashboardRepositoryInterface::class,
+            StockPriceChangeDashboardRepository::class,
+        );
+        $this->app->bind(
+            StockPriceChangeRepositoryInterface::class,
+            StockPriceChangeRepository::class,
+        );
     }
 }

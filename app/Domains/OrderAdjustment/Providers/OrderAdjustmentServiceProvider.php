@@ -12,7 +12,13 @@ class OrderAdjustmentServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(OrderAdjustmentRepositoryInterface::class, OrderAdjustmentRepository::class);
-        $this->app->bind(OrderAdjustmentReadRepositoryInterface::class, OrderAdjustmentReadRepository::class);
+        $this->app->bind(
+            OrderAdjustmentRepositoryInterface::class,
+            OrderAdjustmentRepository::class,
+        );
+        $this->app->bind(
+            OrderAdjustmentReadRepositoryInterface::class,
+            OrderAdjustmentReadRepository::class,
+        );
     }
 }

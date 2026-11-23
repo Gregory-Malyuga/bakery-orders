@@ -36,6 +36,10 @@ class DeleteHandlerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Commands/Delete/Delete{$ctx->name}Handler.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Commands/Delete/Delete{$ctx->name}Handler.php",
+            $content,
+        );
     }
 }

@@ -20,48 +20,48 @@ class UserRequestValidationTest extends TestCase
 
     // ── ListUsersRequest ──────────────────────────────────────────────────
 
-    public function testIndexRejectsInvalidSortField(): void
+    public function test_index_rejects_invalid_sort_field(): void
     {
         $this->getJson('/api/v1/users?sort=password')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['sort']);
     }
 
-    public function testIndexRejectsInvalidSortDirection(): void
+    public function test_index_rejects_invalid_sort_direction(): void
     {
         $this->getJson('/api/v1/users?direction=random')
             ->assertStatus(422)
             ->assertJsonValidationErrors(['direction']);
     }
 
-    public function testIndexAcceptsValidSortFields(): void
+    public function test_index_accepts_valid_sort_fields(): void
     {
         foreach (['id', 'name', 'email', 'created_at'] as $field) {
-            $this->getJson("/api/v1/users?sort={$field}&direction=asc")
-                ->assertStatus(200);
+            $this->getJson("/api/v1/users?sort={$field}&direction=asc")->assertStatus(200);
         }
     }
 
     // ── StoreUserRequest ──────────────────────────────────────────────────
 
-    public function testStoreRejectsMissingRequiredFields(): void
+    public function test_store_rejects_missing_required_fields(): void
     {
         $this->postJson('/api/v1/users', [])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'email', 'password']);
     }
 
-    public function testStoreRejectsInvalidEmail(): void
+    public function test_store_rejects_invalid_email(): void
     {
         $this->postJson('/api/v1/users', [
             'name' => 'Test',
             'email' => 'not-an-email',
             'password' => 'secret1234',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function testStoreRejectsDuplicateEmail(): void
+    public function test_store_rejects_duplicate_email(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
 
@@ -69,13 +69,14 @@ class UserRequestValidationTest extends TestCase
             'name' => 'Test',
             'email' => 'taken@example.com',
             'password' => 'secret1234',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 
     // ── UpdateUserRequest ─────────────────────────────────────────────────
 
-    public function testUpdateRejectsDuplicateEmail(): void
+    public function test_update_rejects_duplicate_email(): void
     {
         User::factory()->create(['email' => 'taken@example.com']);
         $user = User::factory()->create(['email' => 'mine@example.com', 'role' => UserRole::User]);
@@ -84,11 +85,12 @@ class UserRequestValidationTest extends TestCase
             'name' => $user->name,
             'email' => 'taken@example.com',
             'role' => 'user',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 
-    public function testUpdateAllowsKeepingOwnEmail(): void
+    public function test_update_allows_keeping_own_email(): void
     {
         $user = User::factory()->create(['email' => 'own@example.com', 'role' => UserRole::User]);
 
@@ -99,7 +101,7 @@ class UserRequestValidationTest extends TestCase
         ])->assertStatus(200);
     }
 
-    public function testUpdateRejectsMissingRequiredFields(): void
+    public function test_update_rejects_missing_required_fields(): void
     {
         $user = User::factory()->create();
 

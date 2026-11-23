@@ -20,8 +20,10 @@ readonly class LaravelCommandBus implements CommandBusInterface
 
         $handler = $this->container->make($handlerClass);
 
-        if (! $handler instanceof CommandHandlerInterface) {
-            throw new RuntimeException("Handler {$handlerClass} must implement ".CommandHandlerInterface::class);
+        if (! ($handler instanceof CommandHandlerInterface)) {
+            throw new RuntimeException(
+                "Handler {$handlerClass} must implement ".CommandHandlerInterface::class,
+            );
         }
 
         return $handler->handle($command);

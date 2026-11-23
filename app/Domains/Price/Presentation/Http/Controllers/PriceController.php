@@ -30,14 +30,18 @@ readonly class PriceController
             'rubles' => ['required', 'regex:/^\d{1,8}(?:[.,]\d{1,2})?$/'],
         ]);
 
-        $this->setPrice->handle(new SetPriceCommand(
-            (int) $data['product'],
-            (int) $data['store'],
-            Kopecks::fromRubles($data['rubles']),
-            $this->actorId($request),
-        ));
+        $this->setPrice->handle(
+            new SetPriceCommand(
+                (int) $data['product'],
+                (int) $data['store'],
+                Kopecks::fromRubles($data['rubles']),
+                $this->actorId($request),
+            ),
+        );
 
-        return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Цена сохранена.');
+        return redirect()
+            ->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])
+            ->with('success', 'Цена сохранена.');
     }
 
     public function bulk(Request $request, int $product): RedirectResponse
@@ -51,14 +55,16 @@ readonly class PriceController
             'request_key' => ['required', 'uuid'],
         ]);
 
-        $this->bulkPrice->handle(new BulkPriceCommand(
-            $product,
-            array_map('intval', $data['stores']),
-            Kopecks::fromRubles($data['rubles']),
-            $data['direction'],
-            $data['request_key'],
-            $this->actorId($request),
-        ));
+        $this->bulkPrice->handle(
+            new BulkPriceCommand(
+                $product,
+                array_map('intval', $data['stores']),
+                Kopecks::fromRubles($data['rubles']),
+                $data['direction'],
+                $data['request_key'],
+                $this->actorId($request),
+            ),
+        );
 
         return redirect()->route('bakery.product', $product)->with('success', 'Цены изменены.');
     }
@@ -67,9 +73,18 @@ readonly class PriceController
     {
         /** @var array{reason:string} $data */
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-        $this->reversePrice->handle(new ReversePriceCommand($product, $operation, $data['reason'], $this->actorId($request)));
+        $this->reversePrice->handle(
+            new ReversePriceCommand(
+                $product,
+                $operation,
+                $data['reason'],
+                $this->actorId($request),
+            ),
+        );
 
-        return redirect()->route('bakery.product', $product)->with('success', 'Изменение отменено.');
+        return redirect()
+            ->route('bakery.product', $product)
+            ->with('success', 'Изменение отменено.');
     }
 
     private function actorId(Request $request): int

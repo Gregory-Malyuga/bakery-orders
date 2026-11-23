@@ -11,8 +11,11 @@ final class AvailabilityCatalogReadRepository implements AvailabilityCatalogRead
     public function unavailableProducts(int $storeId): array
     {
         /** @var array<int, bool> $result */
-        $result = DB::table('bakery_store_product_exclusions')->where('bakery_id', $storeId)
-            ->pluck('product_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all();
+        $result = DB::table('bakery_store_product_exclusions')
+            ->where('bakery_id', $storeId)
+            ->pluck('product_id')
+            ->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])
+            ->all();
 
         return $result;
     }
@@ -21,8 +24,11 @@ final class AvailabilityCatalogReadRepository implements AvailabilityCatalogRead
     public function unavailableStores(int $productId): array
     {
         /** @var array<int, bool> $result */
-        $result = DB::table('bakery_store_product_exclusions')->where('product_id', $productId)
-            ->pluck('bakery_id')->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])->all();
+        $result = DB::table('bakery_store_product_exclusions')
+            ->where('product_id', $productId)
+            ->pluck('bakery_id')
+            ->mapWithKeys(fn ($id): array => is_numeric($id) ? [(int) $id => true] : [])
+            ->all();
 
         return $result;
     }

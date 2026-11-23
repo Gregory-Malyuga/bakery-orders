@@ -29,9 +29,15 @@ readonly class StockMovementController
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
-        $this->record->handle(new RecordStockMovementCommand(
-            $data['item'], $data['kind'], $data['quantity'], $data['reason'], (int) $actor->id,
-        ));
+        $this->record->handle(
+            new RecordStockMovementCommand(
+                $data['item'],
+                $data['kind'],
+                $data['quantity'],
+                $data['reason'],
+                (int) $actor->id,
+            ),
+        );
 
         return redirect()->route('bakery.stock')->with('success', 'Движение записано.');
     }
@@ -43,8 +49,12 @@ readonly class StockMovementController
         /** @var array{reason:string} $data */
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
 
-        $this->reverse->handle(new ReverseStockMovementCommand($movement, $data['reason'], (int) $actor->id));
+        $this->reverse->handle(
+            new ReverseStockMovementCommand($movement, $data['reason'], (int) $actor->id),
+        );
 
-        return redirect()->route('bakery.stock')->with('success', 'Исправление записано отдельным движением.');
+        return redirect()
+            ->route('bakery.stock')
+            ->with('success', 'Исправление записано отдельным движением.');
     }
 }

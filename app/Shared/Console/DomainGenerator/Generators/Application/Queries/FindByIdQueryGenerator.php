@@ -23,6 +23,10 @@ class FindByIdQueryGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Queries/FindById/Find{$ctx->name}ByIdQuery.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Queries/FindById/Find{$ctx->name}ByIdQuery.php",
+            $content,
+        );
     }
 }

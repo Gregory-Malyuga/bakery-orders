@@ -23,8 +23,11 @@ trait InteractsWithPagination
     /**
      * @param  LengthAwarePaginator<int, mixed>  $paginator
      */
-    protected function assertPaginatorHas(int $total, int $perPage, LengthAwarePaginator $paginator): void
-    {
+    protected function assertPaginatorHas(
+        int $total,
+        int $perPage,
+        LengthAwarePaginator $paginator,
+    ): void {
         $this->assertSame($total, $paginator->total());
         $this->assertSame($perPage, $paginator->perPage());
     }

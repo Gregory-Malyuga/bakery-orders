@@ -12,12 +12,25 @@ return new class extends Migration
         Schema::table('bakery_products', function (Blueprint $table): void {
             $table->string('packaging_mode')->default('mixed');
         });
-        DB::table('bakery_products')->whereIn(DB::raw('lower(trim(name))'), ['пицца', 'ватрушка', 'хачапури', 'лепешка', 'лепёшка'])->update(['packaging_mode' => 'single']);
-        DB::table('bakery_products')->whereIn(DB::raw('lower(trim(name))'), ['мак', 'изюм', 'косичка с маком'])->update(['packaging_mode' => 'pair']);
+        DB::table('bakery_products')
+            ->whereIn(DB::raw('lower(trim(name))'), [
+                'пицца',
+                'ватрушка',
+                'хачапури',
+                'лепешка',
+                'лепёшка',
+            ])
+            ->update(['packaging_mode' => 'single']);
+        DB::table('bakery_products')
+            ->whereIn(DB::raw('lower(trim(name))'), ['мак', 'изюм', 'косичка с маком'])
+            ->update(['packaging_mode' => 'pair']);
     }
 
     public function down(): void
     {
-        Schema::table('bakery_products', fn (Blueprint $table) => $table->dropColumn('packaging_mode'));
+        Schema::table(
+            'bakery_products',
+            fn (Blueprint $table) => $table->dropColumn('packaging_mode'),
+        );
     }
 };

@@ -12,8 +12,14 @@ final class StoreProductMinimumReadRepository implements StoreProductMinimumRead
     {
         /** @var array<int, int> $minimums */
         $minimums = DB::table('bakery_store_product_minimums')
-            ->where('bakery_id', $storeId)->pluck('minimum_quantity', 'product_id')
-            ->mapWithKeys(fn ($quantity, $id): array => is_numeric($quantity) ? [(int) $id => (int) $quantity] : [])->all();
+            ->where('bakery_id', $storeId)
+            ->pluck('minimum_quantity', 'product_id')
+            ->mapWithKeys(
+                fn ($quantity, $id): array => is_numeric($quantity)
+                    ? [(int) $id => (int) $quantity]
+                    : [],
+            )
+            ->all();
 
         return $minimums;
     }

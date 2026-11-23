@@ -2,15 +2,15 @@
 
 namespace Domains\Store\Application\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 interface StoreReferenceImportRepositoryInterface
 {
-    /** @return Collection<int, Bakery> */
+    /** @return Collection<int, Store> */
     public function all(): Collection;
 
-    public function activateOrCreate(string $name, string $address): Bakery;
+    public function activateOrCreate(string $name, string $address): Store;
 
     public function activate(int $storeId): void;
 }

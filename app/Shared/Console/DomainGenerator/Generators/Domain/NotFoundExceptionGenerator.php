@@ -26,6 +26,10 @@ class NotFoundExceptionGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Domain/Exceptions/{$ctx->name}NotFoundException.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Domain/Exceptions/{$ctx->name}NotFoundException.php",
+            $content,
+        );
     }
 }

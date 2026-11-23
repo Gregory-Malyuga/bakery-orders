@@ -18,9 +18,8 @@ class UpdateUserRequest extends FormRequest
     {
         $id = (int) $this->route('user');
 
-        return array_merge(
-            UpdateUserData::rules(),
-            ['email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($id)]],
-        );
+        return array_merge(UpdateUserData::rules(), [
+            'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($id)],
+        ]);
     }
 }

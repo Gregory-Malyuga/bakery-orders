@@ -12,7 +12,9 @@ class ProductionServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(ProductionCalculator::class, function (Container $app): ProductionCalculator {
+        $this->app->bind(ProductionCalculator::class, function (
+            Container $app,
+        ): ProductionCalculator {
             return new ProductionCalculator(
                 $app->make(ProductionRecipeStore::class),
                 $app->make(IngredientCatalog::class),

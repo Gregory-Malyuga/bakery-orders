@@ -2,12 +2,12 @@
 
 namespace Domains\Invoice\Tests\Feature;
 
-use Domains\Bakery\Application\OrderReturnSummary;
-use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\OrderReturn\Application\OrderReturnSummary;
+use Domains\Invoice\Infrastructure\Exports\MatrixInvoiceWorkbook;
 use Illuminate\Foundation\Testing\TestCase;
 use PharData;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class GroupWorkbookLayoutTest extends TestCase
 {
     /**
@@ -37,7 +37,7 @@ class GroupWorkbookLayoutTest extends TestCase
 
     private function sheet(bool $showReturns): string
     {
-        $workbook = new MatrixInvoiceWorkbook(new OrderReturnSummary);
+        $workbook = new MatrixInvoiceWorkbook(app(OrderReturnSummary::class));
         $path = $workbook->create([], [], [$this->group($showReturns)], '2026-11-02', '02.11.2026 12:00');
 
         try {

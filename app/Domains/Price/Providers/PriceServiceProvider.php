@@ -22,12 +22,30 @@ class PriceServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(PriceAccountMembershipRepositoryInterface::class, PriceAccountMembershipRepository::class);
-        $this->app->bind(PriceOperationsRepositoryInterface::class, PriceOperationsRepository::class);
-        $this->app->bind(PriceAvailabilityReadRepositoryInterface::class, PriceAvailabilityReadRepository::class);
-        $this->app->bind(PriceCatalogImportRepositoryInterface::class, PriceCatalogImportRepository::class);
-        $this->app->bind(PriceReferenceImportRepositoryInterface::class, PriceReferenceImportRepository::class);
+        $this->app->bind(
+            PriceAccountMembershipRepositoryInterface::class,
+            PriceAccountMembershipRepository::class,
+        );
+        $this->app->bind(
+            PriceOperationsRepositoryInterface::class,
+            PriceOperationsRepository::class,
+        );
+        $this->app->bind(
+            PriceAvailabilityReadRepositoryInterface::class,
+            PriceAvailabilityReadRepository::class,
+        );
+        $this->app->bind(
+            PriceCatalogImportRepositoryInterface::class,
+            PriceCatalogImportRepository::class,
+        );
+        $this->app->bind(
+            PriceReferenceImportRepositoryInterface::class,
+            PriceReferenceImportRepository::class,
+        );
         $this->app->bind(PriceOrderReadRepositoryInterface::class, PriceOrderReadRepository::class);
-        $this->app->bind(PriceHistoryCatalogReadRepositoryInterface::class, PriceHistoryCatalogReadRepository::class);
+        $this->app->bind(
+            PriceHistoryCatalogReadRepositoryInterface::class,
+            PriceHistoryCatalogReadRepository::class,
+        );
     }
 }

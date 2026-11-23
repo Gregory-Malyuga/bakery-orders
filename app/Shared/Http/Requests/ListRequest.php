@@ -20,11 +20,9 @@ abstract class ListRequest extends FormRequest
     /** @return array<string, list<mixed>> */
     public function rules(): array
     {
-        return array_merge(
-            SortData::rules(),
-            PaginationData::rules(),
-            ['sort' => ['sometimes', 'string', Rule::in(static::SORTABLE)]],
-        );
+        return array_merge(SortData::rules(), PaginationData::rules(), [
+            'sort' => ['sometimes', 'string', Rule::in(static::SORTABLE)],
+        ]);
     }
 
     public function toSort(): SortData

@@ -46,6 +46,10 @@ class UpdateHandlerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Commands/Update/Update{$ctx->name}Handler.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Commands/Update/Update{$ctx->name}Handler.php",
+            $content,
+        );
     }
 }

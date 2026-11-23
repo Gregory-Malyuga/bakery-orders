@@ -63,7 +63,13 @@ return new class extends Migration
         Schema::dropIfExists('bakery_orders');
         Schema::dropIfExists('bakery_prices');
         Schema::dropIfExists('bakery_products');
-        Schema::table('users', fn (Blueprint $table) => $table->dropConstrainedForeignId('bakery_id'));
-        Schema::table('bakeries', fn (Blueprint $table) => $table->dropColumn(['address', 'is_active']));
+        Schema::table(
+            'users',
+            fn (Blueprint $table) => $table->dropConstrainedForeignId('bakery_id'),
+        );
+        Schema::table(
+            'bakeries',
+            fn (Blueprint $table) => $table->dropColumn(['address', 'is_active']),
+        );
     }
 };

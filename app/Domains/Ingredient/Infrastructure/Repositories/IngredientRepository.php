@@ -38,22 +38,31 @@ final class IngredientRepository implements IngredientRepositoryInterface
     public function create(string $name, string $unit): void
     {
         DB::table('bakery_ingredients')->insert([
-            'name' => $name, 'unit' => $unit, 'is_active' => true,
-            'created_at' => now(), 'updated_at' => now(),
+            'name' => $name,
+            'unit' => $unit,
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
     }
 
     public function rename(int $id, string $name): void
     {
-        DB::table('bakery_ingredients')->where('id', $id)->update([
-            'name' => $name, 'updated_at' => now(),
-        ]);
+        DB::table('bakery_ingredients')
+            ->where('id', $id)
+            ->update([
+                'name' => $name,
+                'updated_at' => now(),
+            ]);
     }
 
     public function setActive(int $id, bool $isActive): void
     {
-        DB::table('bakery_ingredients')->where('id', $id)->update([
-            'is_active' => $isActive, 'updated_at' => now(),
-        ]);
+        DB::table('bakery_ingredients')
+            ->where('id', $id)
+            ->update([
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
     }
 }

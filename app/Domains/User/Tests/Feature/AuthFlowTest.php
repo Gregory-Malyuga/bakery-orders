@@ -21,9 +21,13 @@ class AuthFlowTest extends TestCase
 
     // ── Login ──────────────────────────────────────────────────────────
 
-    public function testLoginReturns401ForWrongPassword(): void
+    public function test_login_returns_401_for_wrong_password(): void
     {
-        User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('correct'), 'role' => UserRole::User]);
+        User::factory()->create([
+            'email' => 'user@test.com',
+            'password' => Hash::make('correct'),
+            'role' => UserRole::User,
+        ]);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'user@test.com',
@@ -33,9 +37,13 @@ class AuthFlowTest extends TestCase
         $response->assertStatus(401);
     }
 
-    public function testLoginReturns200WithTokenForUserRole(): void
+    public function test_login_returns_200_with_token_for_user_role(): void
     {
-        User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('secret123'), 'role' => UserRole::User]);
+        User::factory()->create([
+            'email' => 'user@test.com',
+            'password' => Hash::make('secret123'),
+            'role' => UserRole::User,
+        ]);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'user@test.com',
@@ -47,26 +55,22 @@ class AuthFlowTest extends TestCase
 
     // ── Logout ────────────────────────────────────────────────────────────
 
-    public function testLogoutInvalidatesToken(): void
+    public function test_logout_invalidates_token(): void
     {
         $user = User::factory()->create(['role' => UserRole::Admin]);
         $token = $user->createToken('api')->plainTextToken;
 
-        $this->withToken($token)
-            ->postJson('/api/auth/logout')
-            ->assertStatus(200);
+        $this->withToken($token)->postJson('/api/auth/logout')->assertStatus(200);
 
         // Reset auth guard cache so the next request does a fresh token DB lookup
         $this->app['auth']->forgetGuards();
 
-        $this->withToken($token)
-            ->getJson('/api/v1/users')
-            ->assertStatus(401);
+        $this->withToken($token)->getJson('/api/v1/users')->assertStatus(401);
     }
 
     // ── Register ──────────────────────────────────────────────────────────
 
-    public function testRegistrationEndpointIsUnavailable(): void
+    public function test_registration_endpoint_is_unavailable(): void
     {
         $response = $this->postJson('/api/auth/register', [
             'name' => 'Test User',

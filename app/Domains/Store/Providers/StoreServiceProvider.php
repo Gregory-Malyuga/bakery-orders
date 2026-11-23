@@ -22,12 +22,27 @@ class StoreServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StoreAccountPriceSourceRepositoryInterface::class, StoreAccountPriceSourceRepository::class);
-        $this->app->bind(StorePriceSourceRepositoryInterface::class, StorePriceSourceRepository::class);
+        $this->app->bind(
+            StoreAccountPriceSourceRepositoryInterface::class,
+            StoreAccountPriceSourceRepository::class,
+        );
+        $this->app->bind(
+            StorePriceSourceRepositoryInterface::class,
+            StorePriceSourceRepository::class,
+        );
         $this->app->bind(StoreRepositoryInterface::class, StoreRepository::class);
-        $this->app->bind(StoreAnalyticsReadRepositoryInterface::class, StoreAnalyticsReadRepository::class);
-        $this->app->bind(StoreCatalogImportRepositoryInterface::class, StoreCatalogImportRepository::class);
-        $this->app->bind(StoreReferenceImportRepositoryInterface::class, StoreReferenceImportRepository::class);
+        $this->app->bind(
+            StoreAnalyticsReadRepositoryInterface::class,
+            StoreAnalyticsReadRepository::class,
+        );
+        $this->app->bind(
+            StoreCatalogImportRepositoryInterface::class,
+            StoreCatalogImportRepository::class,
+        );
+        $this->app->bind(
+            StoreReferenceImportRepositoryInterface::class,
+            StoreReferenceImportRepository::class,
+        );
         $this->app->bind(StoreOrderReadRepositoryInterface::class, StoreOrderReadRepository::class);
     }
 }

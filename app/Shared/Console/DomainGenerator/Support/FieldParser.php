@@ -8,7 +8,8 @@ class FieldParser
 
     /**
      * @param  list<string>  $rawFields
-     * @return array<string, array{phpType: string, nullable: bool, migration: string, decimal: bool, faker: string, rules: list<string>}>
+     * @return array<string, array{phpType: string, nullable: bool, migration: string,
+     *     decimal: bool, faker: string, rules: list<string>}>
      */
     public function parse(array $rawFields): array
     {
@@ -46,23 +47,94 @@ class FieldParser
     }
 
     /**
-     * @return array{phpType: string, nullable: bool, migration: string, decimal: bool, faker: string, rules: list<string>}
+     * @return array{phpType: string, nullable: bool, migration: string, decimal: bool,
+     *     faker: string, rules: list<string>}
      */
     private function typeDefinition(string $fieldName, string $type): array
     {
         $faker = $this->fakerForField($fieldName, $type);
 
         return match ($type) {
-            'integer', 'int' => ['phpType' => 'int', 'nullable' => false, 'migration' => 'integer', 'decimal' => false, 'faker' => $faker, 'rules' => ['integer']],
-            'float', 'decimal', 'numeric' => ['phpType' => 'float', 'nullable' => false, 'migration' => 'decimal', 'decimal' => true, 'faker' => $faker, 'rules' => ['numeric']],
-            'boolean', 'bool' => ['phpType' => 'bool', 'nullable' => false, 'migration' => 'boolean', 'decimal' => false, 'faker' => $faker, 'rules' => ['boolean']],
-            'text' => ['phpType' => 'string', 'nullable' => false, 'migration' => 'text', 'decimal' => false, 'faker' => $faker, 'rules' => ['string']],
-            'email' => ['phpType' => 'string', 'nullable' => false, 'migration' => 'string', 'decimal' => false, 'faker' => $faker, 'rules' => ['string', 'email', 'max:255']],
-            'phone' => ['phpType' => 'string', 'nullable' => false, 'migration' => 'string', 'decimal' => false, 'faker' => $faker, 'rules' => ['string', 'max:30']],
-            'date' => ['phpType' => 'string', 'nullable' => false, 'migration' => 'date', 'decimal' => false, 'faker' => $faker, 'rules' => ['date']],
-            'timestamp', 'datetime' => ['phpType' => 'string', 'nullable' => true, 'migration' => 'timestamp', 'decimal' => false, 'faker' => $faker, 'rules' => ['nullable', 'date']],
-            'json', 'array' => ['phpType' => 'array', 'nullable' => true, 'migration' => 'json', 'decimal' => false, 'faker' => $faker, 'rules' => ['nullable', 'array']],
-            default => ['phpType' => 'string', 'nullable' => false, 'migration' => 'string', 'decimal' => false, 'faker' => $faker, 'rules' => ['string', 'max:255']],
+            'integer', 'int' => [
+                'phpType' => 'int',
+                'nullable' => false,
+                'migration' => 'integer',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['integer'],
+            ],
+            'float', 'decimal', 'numeric' => [
+                'phpType' => 'float',
+                'nullable' => false,
+                'migration' => 'decimal',
+                'decimal' => true,
+                'faker' => $faker,
+                'rules' => ['numeric'],
+            ],
+            'boolean', 'bool' => [
+                'phpType' => 'bool',
+                'nullable' => false,
+                'migration' => 'boolean',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['boolean'],
+            ],
+            'text' => [
+                'phpType' => 'string',
+                'nullable' => false,
+                'migration' => 'text',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['string'],
+            ],
+            'email' => [
+                'phpType' => 'string',
+                'nullable' => false,
+                'migration' => 'string',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['string', 'email', 'max:255'],
+            ],
+            'phone' => [
+                'phpType' => 'string',
+                'nullable' => false,
+                'migration' => 'string',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['string', 'max:30'],
+            ],
+            'date' => [
+                'phpType' => 'string',
+                'nullable' => false,
+                'migration' => 'date',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['date'],
+            ],
+            'timestamp', 'datetime' => [
+                'phpType' => 'string',
+                'nullable' => true,
+                'migration' => 'timestamp',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['nullable', 'date'],
+            ],
+            'json', 'array' => [
+                'phpType' => 'array',
+                'nullable' => true,
+                'migration' => 'json',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['nullable', 'array'],
+            ],
+            default => [
+                'phpType' => 'string',
+                'nullable' => false,
+                'migration' => 'string',
+                'decimal' => false,
+                'faker' => $faker,
+                'rules' => ['string', 'max:255'],
+            ],
         };
     }
 
@@ -77,9 +149,13 @@ class FieldParser
             str_contains($fieldName, 'address') => 'fake()->address()',
             str_contains($fieldName, 'city') => 'fake()->city()',
             str_contains($fieldName, 'country') => 'fake()->country()',
-            str_contains($fieldName, 'description') || str_contains($fieldName, 'note') || str_contains($fieldName, 'comment') => 'fake()->paragraph()',
+            str_contains($fieldName, 'description') ||
+                str_contains($fieldName, 'note') ||
+                str_contains($fieldName, 'comment') => 'fake()->paragraph()',
             str_contains($fieldName, 'title') => 'fake()->sentence(4)',
-            str_contains($fieldName, 'url') || str_contains($fieldName, 'website') || str_contains($fieldName, 'link') => 'fake()->url()',
+            str_contains($fieldName, 'url') ||
+                str_contains($fieldName, 'website') ||
+                str_contains($fieldName, 'link') => 'fake()->url()',
             $type === 'integer' || $type === 'int' => 'fake()->randomNumber()',
             $type === 'float' || $type === 'decimal' => 'fake()->randomFloat(2, 0, 1000)',
             $type === 'boolean' || $type === 'bool' => 'fake()->boolean()',

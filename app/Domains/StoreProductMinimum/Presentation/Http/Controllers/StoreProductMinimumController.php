@@ -20,12 +20,16 @@ readonly class StoreProductMinimumController
             'minimum_quantity' => ['nullable', 'integer', 'min:1', 'max:100000'],
         ]);
 
-        $this->handler->handle(new SaveMinimumCommand(
-            (int) $data['store'],
-            (int) $data['product'],
-            isset($data['minimum_quantity']) ? (int) $data['minimum_quantity'] : null,
-        ));
+        $this->handler->handle(
+            new SaveMinimumCommand(
+                (int) $data['store'],
+                (int) $data['product'],
+                isset($data['minimum_quantity']) ? (int) $data['minimum_quantity'] : null,
+            ),
+        );
 
-        return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])->with('success', 'Минимум для магазина сохранён.');
+        return redirect()
+            ->route('bakery.catalog', ['tab' => 'prices', 'store' => $data['store']])
+            ->with('success', 'Минимум для магазина сохранён.');
     }
 }

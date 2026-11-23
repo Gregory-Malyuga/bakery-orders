@@ -14,8 +14,17 @@ class StoreProductAvailabilityServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StoreProductAvailabilityRepositoryInterface::class, StoreProductAvailabilityRepository::class);
-        $this->app->bind(StoreProductAvailabilityReadRepositoryInterface::class, StoreProductAvailabilityReadRepository::class);
-        $this->app->bind(AvailabilityCatalogReadRepositoryInterface::class, AvailabilityCatalogReadRepository::class);
+        $this->app->bind(
+            StoreProductAvailabilityRepositoryInterface::class,
+            StoreProductAvailabilityRepository::class,
+        );
+        $this->app->bind(
+            StoreProductAvailabilityReadRepositoryInterface::class,
+            StoreProductAvailabilityReadRepository::class,
+        );
+        $this->app->bind(
+            AvailabilityCatalogReadRepositoryInterface::class,
+            AvailabilityCatalogReadRepository::class,
+        );
     }
 }

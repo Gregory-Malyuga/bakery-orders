@@ -24,19 +24,24 @@ readonly class AnalyticsDashboardHandler implements QueryHandlerInterface
     {
         assert($message instanceof AnalyticsDashboardQuery);
 
-        return new AnalyticsDashboardData([
-            'filters' => [
+        return new AnalyticsDashboardData(
+            [
                 'from' => $message->from,
                 'to' => $message->to,
                 'store' => $message->storeId,
                 'product' => $message->productId,
             ],
-            'data' => $this->analytics->build($message->from, $message->to, $message->storeId, $message->productId),
-            'stockRows' => $this->stockPrices->dailyRows($message->from, $message->to),
-            'ingredients' => $this->stockItems->ingredients(),
-            'ingredientPrices' => $this->stockPrices->forDate($message->to),
-            'stores' => $this->stores->storeOptions(),
-            'products' => $this->products->productOptions(),
-        ]);
+            $this->analytics->build(
+                $message->from,
+                $message->to,
+                $message->storeId,
+                $message->productId,
+            ),
+            $this->stockPrices->dailyRows($message->from, $message->to),
+            $this->stockItems->ingredients(),
+            $this->stockPrices->forDate($message->to),
+            $this->stores->storeOptions(),
+            $this->products->productOptions(),
+        );
     }
 }

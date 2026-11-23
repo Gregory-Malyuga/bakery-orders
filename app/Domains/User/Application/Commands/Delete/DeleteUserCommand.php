@@ -7,8 +7,5 @@ use Shared\Bus\BaseCommand;
 
 readonly class DeleteUserCommand implements BaseCommand
 {
-    public function __construct(
-        public int $id,
-        public ?User $actor = null,
-    ) {}
+    public function __construct(public int $id, public ?User $actor = null) {}
 }

@@ -2,9 +2,9 @@
 
 namespace Domains\OrderAdjustment\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\Order\Domain\Models\Order;
 use Domains\OrderAdjustment\Application\Repositories\OrderAdjustmentRepositoryInterface;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -32,8 +32,15 @@ final class OrderAdjustmentRepository implements OrderAdjustmentRepositoryInterf
      * @param  list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>  $before
      * @param  list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}>  $after
      */
-    public function save(int $orderId, int $adminId, array $before, array $after, int $total, ?string $adminNote, string $reason): void
-    {
+    public function save(
+        int $orderId,
+        int $adminId,
+        array $before,
+        array $after,
+        int $total,
+        ?string $adminNote,
+        string $reason,
+    ): void {
         OrderItem::query()->where('order_id', $orderId)->delete();
         foreach ($after as $row) {
             OrderItem::query()->create(['order_id' => $orderId] + $row);

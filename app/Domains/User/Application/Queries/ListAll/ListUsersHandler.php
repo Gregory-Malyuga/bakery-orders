@@ -17,11 +17,7 @@ readonly class ListUsersHandler implements QueryHandlerInterface
         assert($message instanceof ListUsersQuery);
 
         /** @var LengthAwarePaginator<int, User> $result */
-        $result = $this->repository->list(
-            $message->filters,
-            $message->sort,
-            $message->pagination,
-        );
+        $result = $this->repository->list($message->filters, $message->sort, $message->pagination);
 
         return $result;
     }

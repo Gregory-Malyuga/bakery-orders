@@ -1,6 +1,6 @@
 <?php
 
-use Domains\Bakery\Application\ProductionCalculator;
+use Domains\Production\Application\ProductionCalculator;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -39,9 +39,13 @@ return new class extends Migration
             }
             $seen[$key] = true;
             DB::table('bakery_ingredients')->insert([
-                'name' => $variant['name'], 'unit' => $variant['unit'],
-                'source_name' => $variant['name'], 'source_unit' => $variant['unit'],
-                'is_active' => true, 'created_at' => now(), 'updated_at' => now(),
+                'name' => $variant['name'],
+                'unit' => $variant['unit'],
+                'source_name' => $variant['name'],
+                'source_unit' => $variant['unit'],
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
         }
     }

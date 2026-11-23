@@ -20,7 +20,7 @@ final class EnsureUserIsVerified
 
         $user = $request->user();
 
-        if (! $user instanceof User || $user->status !== UserStatus::Verify) {
+        if (! ($user instanceof User) || $user->status !== UserStatus::Verify) {
             throw new UserNotVerifiedException;
         }
 

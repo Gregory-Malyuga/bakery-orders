@@ -10,7 +10,8 @@ final class StoreCatalogImportRepository implements StoreCatalogImportRepository
     public function firstOrCreate(string $name, string $address): int
     {
         return (int) Store::query()->firstOrCreate(
-            ['name' => $name, 'address' => $address], ['is_active' => true],
+            ['name' => $name, 'address' => $address],
+            ['is_active' => true],
         )->id;
     }
 }

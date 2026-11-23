@@ -44,12 +44,14 @@ readonly class DeliverySheetController
             'copy' => ['nullable', 'integer', Rule::exists('bakery_delivery_sheets', 'id')],
         ]);
 
-        $data = $this->list->handle(new ListSheetsQuery(
-            $input['date'] ?? null,
-            isset($input['copy']) ? (int) $input['copy'] : null,
-        ));
+        $data = $this->list->handle(
+            new ListSheetsQuery(
+                $input['date'] ?? null,
+                isset($input['copy']) ? (int) $input['copy'] : null,
+            ),
+        );
 
-        return view('bakery.delivery-routes', $data->data);
+        return view('bakery.delivery.delivery-routes', $data->data);
     }
 
     public function createSheet(Request $request): RedirectResponse
@@ -63,13 +65,15 @@ readonly class DeliverySheetController
     public function printSheet(Request $request): View
     {
         /** @var array{sheet_id:int|string} $data */
-        $data = $request->validate(['sheet_id' => ['required', 'integer', Rule::exists('bakery_delivery_sheets', 'id')]]);
+        $data = $request->validate([
+            'sheet_id' => ['required', 'integer', Rule::exists('bakery_delivery_sheets', 'id')],
+        ]);
 
         $printId = $this->print->handle(new PrintSheetCommand((int) $data['sheet_id']));
         assert(is_int($printId));
         $printed = $this->printed->handle(new PrintedSheetQuery($printId));
 
-        return view('bakery.delivery-sheet', [
+        return view('bakery.delivery.delivery-sheet', [
             'sheet' => $printed->data['sheet'],
             'autoPrint' => true,
             'printId' => $printId,
@@ -78,12 +82,18 @@ readonly class DeliverySheetController
 
     public function printedSheet(int $print): View
     {
-        return view('bakery.delivery-sheet', $this->printed->handle(new PrintedSheetQuery($print))->data);
+        return view(
+            'bakery.delivery.delivery-sheet',
+            $this->printed->handle(new PrintedSheetQuery($print))->data,
+        );
     }
 
     public function editSheet(int $sheet): View
     {
-        return view('bakery.delivery-sheet-edit', $this->edit->handle(new EditSheetQuery($sheet))->data);
+        return view(
+            'bakery.delivery.delivery-sheet-edit',
+            $this->edit->handle(new EditSheetQuery($sheet))->data,
+        );
     }
 
     public function updateSheet(Request $request, int $sheet): RedirectResponse
@@ -91,25 +101,35 @@ readonly class DeliverySheetController
         $data = $this->validateSheet($request);
         $this->update->handle(new UpdateSheetCommand($sheet, $data));
 
-        return redirect()->route('bakery.delivery-sheet', $sheet)->with('success', 'Лист обновлён.');
+        return redirect()
+            ->route('bakery.delivery-sheet', $sheet)
+            ->with('success', 'Лист обновлён.');
     }
 
     public function sheet(int $sheet): View
     {
-        return view('bakery.delivery-sheet', $this->get->handle(new GetSheetQuery($sheet))->data);
+        return view(
+            'bakery.delivery.delivery-sheet',
+            $this->get->handle(new GetSheetQuery($sheet))->data,
+        );
     }
 
     public function deleteSheet(int $sheet): RedirectResponse
     {
         $this->delete->handle(new DeleteSheetCommand($sheet));
 
-        return redirect()->route('bakery.delivery-routes')->with('success', 'Маршрутный лист удалён.');
+        return redirect()
+            ->route('bakery.delivery-routes')
+            ->with('success', 'Маршрутный лист удалён.');
     }
 
     /** @return array{date:string,name:string,driver:string,salary?:string,bonus?:string,stores:list<int|string>} */
     private function validateSheet(Request $request): array
     {
-        /** @var array{date:string,name:string,driver:string,salary?:string,bonus?:string,stores:list<int|string>} $data */
+        /**
+         * @var array{date:string,name:string,driver:string,salary?:string,bonus?:string,
+         *     stores:list<int|string>} $data
+         */
         $data = $request->validate([
             'date' => ['required', 'date_format:Y-m-d'],
             'name' => ['required', 'string', 'max:255'],

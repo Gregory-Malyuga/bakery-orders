@@ -23,6 +23,10 @@ class DeleteCommandGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Commands/Delete/Delete{$ctx->name}Command.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Commands/Delete/Delete{$ctx->name}Command.php",
+            $content,
+        );
     }
 }

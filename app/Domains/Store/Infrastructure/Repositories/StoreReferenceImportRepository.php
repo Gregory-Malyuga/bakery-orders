@@ -2,24 +2,27 @@
 
 namespace Domains\Store\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
 use Domains\Store\Application\Repositories\StoreReferenceImportRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 final class StoreReferenceImportRepository implements StoreReferenceImportRepositoryInterface
 {
-    /** @return Collection<int, Bakery> */
+    /** @return Collection<int, Store> */
     public function all(): Collection
     {
-        return Bakery::query()->get();
+        return Store::query()->get();
     }
 
-    public function activateOrCreate(string $name, string $address): Bakery
+    public function activateOrCreate(string $name, string $address): Store
     {
-        $store = Bakery::query()->firstOrCreate(['name' => $name], [
-            'address' => $address,
-            'is_active' => true,
-        ]);
+        $store = Store::query()->firstOrCreate(
+            ['name' => $name],
+            [
+                'address' => $address,
+                'is_active' => true,
+            ],
+        );
         $store->update(['is_active' => true]);
 
         return $store;
@@ -27,6 +30,8 @@ final class StoreReferenceImportRepository implements StoreReferenceImportReposi
 
     public function activate(int $storeId): void
     {
-        Bakery::query()->whereKey($storeId)->update(['is_active' => true]);
+        Store::query()
+            ->whereKey($storeId)
+            ->update(['is_active' => true]);
     }
 }

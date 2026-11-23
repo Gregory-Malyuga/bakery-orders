@@ -2,13 +2,13 @@
 
 namespace Domains\Invoice\Tests\Feature;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\OrderingService;
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Order;
-use Domains\Bakery\Domain\Models\Price;
-use Domains\Bakery\Domain\Models\Product;
-use Domains\Bakery\Infrastructure\Exports\MatrixInvoiceWorkbook;
+use Domains\StoreGroup\Application\GroupInvoiceService;
+use Domains\Order\Application\OrderingService;
+use Domains\Store\Domain\Models\Store;
+use Domains\Order\Domain\Models\Order;
+use Domains\Price\Domain\Models\Price;
+use Domains\Product\Domain\Models\Product;
+use Domains\Invoice\Infrastructure\Exports\MatrixInvoiceWorkbook;
 use Domains\User\Domain\Enums\UserRole;
 use Domains\User\Domain\Enums\UserStatus;
 use Domains\User\Domain\Models\User;
@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PharData;
 
-/** @phpstan-import-type GroupInvoice from \Domains\Bakery\Application\GroupInvoiceService */
+/** @phpstan-import-type GroupInvoice from \Domains\StoreGroup\Application\GroupInvoiceService */
 class GroupInvoiceRegressionTest extends TestCase
 {
     use DatabaseTransactions;
@@ -34,7 +34,7 @@ class GroupInvoiceRegressionTest extends TestCase
     private function orderWithGroup(string $groupName): array
     {
         Carbon::setTestNow(Carbon::parse('2026-11-01 12:00:00', 'Europe/Moscow'));
-        $store = Bakery::query()->create([
+        $store = Store::query()->create([
             'name' => 'Точка '.$groupName, 'address' => 'Тестовый адрес', 'is_active' => true,
         ]);
         $product = Product::query()->create([

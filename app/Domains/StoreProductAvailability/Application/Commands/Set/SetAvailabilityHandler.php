@@ -18,7 +18,11 @@ readonly class SetAvailabilityHandler implements CommandHandlerInterface
         assert($message instanceof SetAvailabilityCommand);
 
         if ($message->isAvailable) {
-            abort_unless($this->prices->hasPrice($message->storeId, $message->productId), 422, 'Сначала назначьте цену товара.');
+            abort_unless(
+                $this->prices->hasPrice($message->storeId, $message->productId),
+                422,
+                'Сначала назначьте цену товара.',
+            );
             $this->repository->include($message->storeId, $message->productId);
         } else {
             $this->repository->exclude($message->storeId, $message->productId);

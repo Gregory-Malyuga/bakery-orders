@@ -2,10 +2,10 @@
 
 namespace Domains\Price\Infrastructure\Repositories;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Price;
 use Domains\Price\Application\Repositories\PriceOrderReadRepositoryInterface;
+use Domains\Price\Domain\Models\Price;
 use Domains\Store\Application\Repositories\StoreOrderReadRepositoryInterface;
+use Domains\Store\Domain\Models\Store;
 use Domains\StoreProductAvailability\Application\Repositories\StoreProductAvailabilityReadRepositoryInterface;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -21,7 +21,7 @@ final class PriceOrderReadRepository implements PriceOrderReadRepositoryInterfac
     {
         $store = $this->stores->find($storeId);
         if ($store === null) {
-            throw (new ModelNotFoundException)->setModel(Bakery::class, [$storeId]);
+            throw (new ModelNotFoundException)->setModel(Store::class, [$storeId]);
         }
 
         $priceSourceId = (int) ($store->price_source_id ?: $storeId);

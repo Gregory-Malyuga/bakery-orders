@@ -18,7 +18,9 @@ readonly class CreateBakeryAdminHandler implements CommandHandlerInterface
         assert($message instanceof CreateBakeryAdminCommand);
 
         if ($this->users->findByEmail($message->email) !== null) {
-            throw ValidationException::withMessages(['email' => 'Аккаунт с такой почтой уже существует.']);
+            throw ValidationException::withMessages([
+                'email' => 'Аккаунт с такой почтой уже существует.',
+            ]);
         }
 
         $user = $this->users->create([

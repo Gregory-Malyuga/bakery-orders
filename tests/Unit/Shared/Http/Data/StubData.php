@@ -9,8 +9,7 @@ use Spatie\LaravelData\Attributes\Validation\Required;
 class StubData extends BaseData
 {
     public function __construct(
-        #[Required, Max(255)]
-        public readonly string $name,
+        #[Required, Max(255)] public readonly string $name,
         public readonly int $value,
     ) {}
 }

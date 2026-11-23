@@ -9,6 +9,9 @@ final class StoreAccountMembershipRepository implements StoreAccountMembershipRe
 {
     public function ensureMember(int $userId, int $storeId): void
     {
-        DB::table('bakery_account_stores')->updateOrInsert(['user_id' => $userId, 'bakery_id' => $storeId]);
+        DB::table('bakery_account_stores')->updateOrInsert([
+            'user_id' => $userId,
+            'bakery_id' => $storeId,
+        ]);
     }
 }

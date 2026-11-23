@@ -13,6 +13,9 @@ class OrderReturnServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(OrderReturnRepositoryInterface::class, OrderReturnRepository::class);
-        $this->app->bind(OrderReturnReadRepositoryInterface::class, OrderReturnReadRepository::class);
+        $this->app->bind(
+            OrderReturnReadRepositoryInterface::class,
+            OrderReturnReadRepository::class,
+        );
     }
 }

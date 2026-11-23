@@ -14,12 +14,21 @@ return new class extends Migration
             $table->foreignId('bakery_id')->constrained('bakeries')->cascadeOnDelete();
             $table->primary(['user_id', 'bakery_id']);
         });
-        DB::table('users')->whereNotNull('bakery_id')->orderBy('id')->chunk(500, function ($users): void {
-            DB::table('bakery_account_stores')->insert($users->map(fn ($user): array => [
-                'user_id' => $user->id,
-                'bakery_id' => $user->bakery_id,
-            ])->all());
-        });
+        DB::table('users')
+            ->whereNotNull('bakery_id')
+            ->orderBy('id')
+            ->chunk(500, function ($users): void {
+                DB::table('bakery_account_stores')->insert(
+                    $users
+                        ->map(
+                            fn ($user): array => [
+                                'user_id' => $user->id,
+                                'bakery_id' => $user->bakery_id,
+                            ],
+                        )
+                        ->all(),
+                );
+            });
         Schema::table('bakery_orders', function (Blueprint $table): void {
             $table->text('comment')->nullable();
         });

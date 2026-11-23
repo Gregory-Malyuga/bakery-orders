@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 class CacheWarmCommandTest extends TestCase
 {
-    public function testRunsAllRegisteredWarmers(): void
+    public function test_runs_all_registered_warmers(): void
     {
         $warmerA = new SpyWarmer(priority: 10);
         $warmerB = new SpyWarmer(priority: 20);
@@ -22,13 +22,22 @@ class CacheWarmCommandTest extends TestCase
         $this->assertTrue($warmerB->warmed);
     }
 
-    public function testRunsWarmersInDescendingPriorityOrder(): void
+    public function test_runs_warmers_in_descending_priority_order(): void
     {
         $log = new WarmLog;
 
-        $this->app->bind('warmer-low', fn () => new OrderTrackingWarmer(priority: 1, name: 'low', log: $log));
-        $this->app->bind('warmer-high', fn () => new OrderTrackingWarmer(priority: 100, name: 'high', log: $log));
-        $this->app->bind('warmer-mid', fn () => new OrderTrackingWarmer(priority: 50, name: 'mid', log: $log));
+        $this->app->bind(
+            'warmer-low',
+            fn () => new OrderTrackingWarmer(priority: 1, name: 'low', log: $log),
+        );
+        $this->app->bind(
+            'warmer-high',
+            fn () => new OrderTrackingWarmer(priority: 100, name: 'high', log: $log),
+        );
+        $this->app->bind(
+            'warmer-mid',
+            fn () => new OrderTrackingWarmer(priority: 50, name: 'mid', log: $log),
+        );
         $this->app->tag(['warmer-low', 'warmer-high', 'warmer-mid'], 'cache-warmers');
 
         $this->artisan('cache:warm')->assertSuccessful();
@@ -36,7 +45,7 @@ class CacheWarmCommandTest extends TestCase
         $this->assertSame(['high', 'mid', 'low'], $log->order);
     }
 
-    public function testSucceedsWithNoWarmersRegistered(): void
+    public function test_succeeds_with_no_warmers_registered(): void
     {
         $this->artisan('cache:warm')->assertSuccessful();
     }

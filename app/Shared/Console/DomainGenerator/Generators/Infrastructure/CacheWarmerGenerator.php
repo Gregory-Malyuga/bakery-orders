@@ -32,6 +32,10 @@ class CacheWarmerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Infrastructure/Cache/{$ctx->name}CacheWarmer.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Infrastructure/Cache/{$ctx->name}CacheWarmer.php",
+            $content,
+        );
     }
 }

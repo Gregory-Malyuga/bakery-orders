@@ -10,7 +10,10 @@ return new class extends Migration
     {
         Schema::create('bakery_stock_price_changes', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('stock_item_id')->constrained('bakery_stock_items')->restrictOnDelete();
+            $table
+                ->foreignId('stock_item_id')
+                ->constrained('bakery_stock_items')
+                ->restrictOnDelete();
             $table->date('effective_date');
             $table->unsignedBigInteger('price_kopecks');
             $table->unsignedBigInteger('measure_milli');

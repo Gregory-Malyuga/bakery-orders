@@ -6,8 +6,5 @@ use Shared\Bus\BaseQuery;
 
 readonly class FindUserByCredentialsQuery implements BaseQuery
 {
-    public function __construct(
-        public string $email,
-        public string $password,
-    ) {}
+    public function __construct(public string $email, public string $password) {}
 }

@@ -2,6 +2,8 @@
 
 namespace Domains\Store\Domain\Models;
 
+use Domains\Store\Domain\Database\Factories\StoreFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -12,11 +14,12 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property string $address
  * @property bool $is_active
- * @property bool $is_cashless
  * @property int|null $price_source_id
  * @property bool $discount_enabled
  * @property int $discount_percent
+ * @property bool $is_cashless
  *
+ * @method static \Domains\Store\Domain\Database\Factories\StoreFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store query()
@@ -26,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereDiscountPercent($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereIsActive($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereIsCashless($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store wherePriceSourceId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Store whereUpdatedAt($value)
@@ -34,13 +38,33 @@ use Illuminate\Support\Carbon;
  */
 class Store extends Model
 {
+    /** @use HasFactory<StoreFactory> */
+    use HasFactory;
+
     protected $table = 'bakeries';
 
     /** @var list<string> */
-    protected $fillable = ['name', 'address', 'is_active', 'is_cashless', 'discount_enabled', 'discount_percent'];
+    protected $fillable = [
+        'name',
+        'address',
+        'is_active',
+        'is_cashless',
+        'discount_enabled',
+        'discount_percent',
+    ];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'is_cashless' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
+        return [
+            'is_active' => 'boolean',
+            'is_cashless' => 'boolean',
+            'discount_enabled' => 'boolean',
+            'discount_percent' => 'integer',
+        ];
+    }
+
+    protected static function newFactory(): StoreFactory
+    {
+        return StoreFactory::new();
     }
 }

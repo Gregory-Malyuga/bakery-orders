@@ -22,10 +22,10 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         }
     }
 
-    public function testReturnsPaginator(): void
+    public function test_returns_paginator(): void
     {
-        $query = (new BaseQueryBuilder(User::class))->getQuery();
-        $result = (new BaseQueryBuilderPostprocessor)->process(
+        $query = new BaseQueryBuilder(User::class)->getQuery();
+        $result = new BaseQueryBuilderPostprocessor()->process(
             $query,
             new SortData,
             new PaginationData,
@@ -34,12 +34,12 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         $this->assertInstanceOf(LengthAwarePaginator::class, $result);
     }
 
-    public function testRespectsPerPage(): void
+    public function test_respects_per_page(): void
     {
         $this->createUsers(5);
 
-        $query = (new BaseQueryBuilder(User::class))->getQuery();
-        $result = (new BaseQueryBuilderPostprocessor)->process(
+        $query = new BaseQueryBuilder(User::class)->getQuery();
+        $result = new BaseQueryBuilderPostprocessor()->process(
             $query,
             new SortData,
             new PaginationData(1, 2),
@@ -50,12 +50,12 @@ class BaseQueryBuilderPostprocessorTest extends TestCase
         $this->assertCount(2, $result->items());
     }
 
-    public function testRespectsPage(): void
+    public function test_respects_page(): void
     {
         $this->createUsers(5);
 
-        $query = (new BaseQueryBuilder(User::class))->getQuery();
-        $result = (new BaseQueryBuilderPostprocessor)->process(
+        $query = new BaseQueryBuilder(User::class)->getQuery();
+        $result = new BaseQueryBuilderPostprocessor()->process(
             $query,
             new SortData,
             new PaginationData(2, 2),

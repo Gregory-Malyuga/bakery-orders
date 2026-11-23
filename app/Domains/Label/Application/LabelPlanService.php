@@ -2,10 +2,10 @@
 
 namespace Domains\Label\Application;
 
-use Domains\Bakery\Domain\Models\Bakery;
-use Domains\Bakery\Domain\Models\Product;
 use Domains\Label\Application\Repositories\LabelGroupRepositoryInterface;
 use Domains\Product\Application\PackagingPlanner;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
 use Illuminate\Database\Eloquent\Collection;
 
 class LabelPlanService
@@ -18,11 +18,17 @@ class LabelPlanService
     /**
      * @param  array<int, array<int, int>>  $quantities  Product ID => store ID => quantity.
      * @param  Collection<int, Product>  $products
-     * @param  Collection<int, Bakery>  $stores
-     * @return array{packaging:array<int,array{one:int,two:int,three:int,five:int,loose:int}>,labelPackaging:array<int,array{one:int,two:int,three:int,five:int,loose:int}>,labels:array<int,int>,labelTotal:int,packageTotal:int,excludedStores:list<array{name:string,groups:list<string>,packages:int}>}
+     * @param  Collection<int, Store>  $stores
+     * @return array{packaging:array<int,array{one:int,two:int,three:int,five:int,loose:int}>,
+     *     labelPackaging:array<int,array{one:int,two:int,three:int,five:int,loose:int}>,labels:array<int,
+     *     int>,labelTotal:int,packageTotal:int,excludedStores:list<array{name:string,groups:list<string>,
+     *     packages:int}>}
      */
-    public function forQuantities(array $quantities, Collection $products, Collection $stores): array
-    {
+    public function forQuantities(
+        array $quantities,
+        Collection $products,
+        Collection $stores,
+    ): array {
         $exclusions = $this->groups->excludedStores();
 
         $productsById = $products->keyBy('id');
@@ -49,8 +55,12 @@ class LabelPlanService
                     }
                 }
                 if (isset($exclusions[$storeId])) {
-                    $excludedPackages[$storeId] = ($excludedPackages[$storeId] ?? 0)
-                        + $plan['one'] + $plan['two'] + $plan['three'] + $plan['five'];
+                    $excludedPackages[$storeId] =
+                        ($excludedPackages[$storeId] ?? 0) +
+                        $plan['one'] +
+                        $plan['two'] +
+                        $plan['three'] +
+                        $plan['five'];
                 }
             }
         }
@@ -60,13 +70,18 @@ class LabelPlanService
         foreach ($packaging as $productId => $plan) {
             $packageTotal += $plan['one'] + $plan['two'] + $plan['three'] + $plan['five'];
             $labelPlan = $labelPackaging[$productId];
-            $labels[$productId] = $labelPlan['one'] + $labelPlan['two'] + $labelPlan['three'] + $labelPlan['five'];
+            $labels[$productId] =
+                $labelPlan['one'] + $labelPlan['two'] + $labelPlan['three'] + $labelPlan['five'];
         }
         $excludedStores = [];
         foreach ($excludedPackages as $storeId => $count) {
             $store = $storesById->get($storeId);
             if ($store !== null) {
-                $excludedStores[] = ['name' => $store->name, 'groups' => $exclusions[$storeId], 'packages' => $count];
+                $excludedStores[] = [
+                    'name' => $store->name,
+                    'groups' => $exclusions[$storeId],
+                    'packages' => $count,
+                ];
             }
         }
 

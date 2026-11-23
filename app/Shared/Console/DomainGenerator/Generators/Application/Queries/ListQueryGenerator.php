@@ -24,6 +24,10 @@ class ListQueryGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Queries/ListAll/List{$ctx->name}sQuery.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Queries/ListAll/List{$ctx->name}sQuery.php",
+            $content,
+        );
     }
 }

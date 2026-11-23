@@ -15,13 +15,19 @@ class CreateDataGenerator extends AbstractGenerator
         $rules = '';
 
         foreach ($ctx->fields as $fieldName => $def) {
-            $docPrefix = $def['phpType'] === 'array'
-                ? '        /** @var array<string, mixed>'.($def['nullable'] ? '|null' : '')." */\n"
-                : '';
+            $docPrefix =
+                $def['phpType'] === 'array'
+                    ? '        /** @var array<string, mixed>'.
+                        ($def['nullable'] ? '|null' : '').
+                        " */\n"
+                    : '';
             if ($def['nullable']) {
-                $optional .= $docPrefix."        public readonly ?{$def['phpType']} \${$fieldName} = null,\n";
+                $optional .=
+                    $docPrefix.
+                    "        public readonly ?{$def['phpType']} \${$fieldName} = null,\n";
             } else {
-                $required .= $docPrefix."        public readonly {$def['phpType']} \${$fieldName},\n";
+                $required .=
+                    $docPrefix."        public readonly {$def['phpType']} \${$fieldName},\n";
             }
 
             $ruleList = implode("', '", $def['rules']);
@@ -51,6 +57,10 @@ class CreateDataGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Data/Create{$ctx->name}Data.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Data/Create{$ctx->name}Data.php",
+            $content,
+        );
     }
 }

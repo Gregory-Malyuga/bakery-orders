@@ -2,22 +2,28 @@
 
 namespace Domains\Invoice\Presentation\Http\Controllers;
 
-use Domains\Bakery\Application\GroupInvoiceService;
-use Domains\Bakery\Application\Repositories\OrderingRepositoryInterface;
+use Domains\Invoice\Application\Data\BatchInvoiceData;
+use Domains\Invoice\Application\Data\SingleInvoiceData;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceHandler;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceQuery;
 use Domains\Invoice\Application\Queries\Single\SingleInvoiceHandler;
 use Domains\Invoice\Application\Queries\Single\SingleInvoiceQuery;
+use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\StoreGroup\Application\GroupInvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class InvoiceController
 {
-    public function __construct(private readonly OrderingRepositoryInterface $orders, private readonly InvoiceWorkbookInterface $workbook, private readonly GroupInvoiceService $groupInvoices,
+    public function __construct(
+        private readonly OrderRepositoryInterface $orders,
+        private readonly InvoiceWorkbookInterface $workbook,
+        private readonly GroupInvoiceService $groupInvoices,
         private readonly SingleInvoiceHandler $single,
-        private readonly BatchInvoiceHandler $batch) {}
+        private readonly BatchInvoiceHandler $batch,
+    ) {}
 
     private function date(Request $request): string
     {
@@ -31,7 +37,7 @@ class InvoiceController
     {
         $data = $this->single->handle(new SingleInvoiceQuery($order));
 
-        return view('bakery.print', $data->view + ['downloadUrl' => route('bakery.xlsx-one', $order)]);
+        return $this->renderSingle($data, route('bakery.xlsx-one', $order));
     }
 
     public function printBatch(Request $request): View
@@ -39,7 +45,17 @@ class InvoiceController
         $date = $this->date($request);
         $data = $this->batch->handle(new BatchInvoiceQuery($date));
 
-        return view('bakery.print', $data->view + ['downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
+        return $this->renderBatch($data, route('bakery.xlsx-batch', ['date' => $date]));
+    }
+
+    private function renderSingle(SingleInvoiceData $data, string $downloadUrl): View
+    {
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => $downloadUrl]);
+    }
+
+    private function renderBatch(BatchInvoiceData $data, string $downloadUrl): View
+    {
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => $downloadUrl]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse
@@ -47,9 +63,15 @@ class InvoiceController
         $record = $this->orders->order($order);
         abort_unless($record !== null && $record->status === 'accepted', 404);
 
-        return response()->download($this->workbook->create([$record], $this->orders->products()), "nakladnaya-{$record->id}.xlsx", [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->workbook->create([$record], $this->orders->products()),
+                "nakladnaya-{$record->id}.xlsx",
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 
     public function downloadBatch(Request $request): BinaryFileResponse
@@ -58,8 +80,20 @@ class InvoiceController
 
         $orders = $this->orders->orders($date);
 
-        return response()->download($this->workbook->create($orders, $this->orders->products(), $this->groupInvoices->forOrders($orders), $date, now('Europe/Moscow')->format('d.m.Y H:i')), "nakladnye-{$date}.xlsx", [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->workbook->create(
+                    $orders,
+                    $this->orders->products(),
+                    $this->groupInvoices->forOrders($orders),
+                    $date,
+                    now('Europe/Moscow')->format('d.m.Y H:i'),
+                ),
+                "nakladnye-{$date}.xlsx",
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 }

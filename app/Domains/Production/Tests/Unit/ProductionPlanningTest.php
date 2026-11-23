@@ -2,8 +2,8 @@
 
 namespace Domains\Production\Tests\Unit;
 
-use Domains\Bakery\Application\PackagingPlanner;
-use Domains\Bakery\Application\ProductionCalculator;
+use Domains\Product\Application\PackagingPlanner;
+use Domains\Production\Application\ProductionCalculator;
 use PHPUnit\Framework\TestCase;
 
 class ProductionPlanningTest extends TestCase

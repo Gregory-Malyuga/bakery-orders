@@ -51,7 +51,11 @@ abstract class StubGenTestCase extends TestCase
 
         $routesPath = base_path('routes/api.php');
         $content = $files->get($routesPath);
-        $cleaned = preg_replace('/\n\nRoute::prefix\(\'v1\/stub[^\']*\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s', '', $content);
+        $cleaned = preg_replace(
+            '/\n\nRoute::prefix\(\'v1\/stub[^\']*\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s',
+            '',
+            $content,
+        );
         if ($cleaned !== null && $cleaned !== $content) {
             $files->put($routesPath, $cleaned);
         }

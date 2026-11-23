@@ -32,5 +32,12 @@ class OrderItem extends Model
 
     protected $table = 'bakery_order_items';
 
-    protected $fillable = ['order_id', 'product_id', 'product_name', 'quantity', 'unit_kopecks', 'total_kopecks'];
+    protected $fillable = [
+        'order_id',
+        'product_id',
+        'product_name',
+        'quantity',
+        'unit_kopecks',
+        'total_kopecks',
+    ];
 }

@@ -2,7 +2,7 @@
 
 namespace Domains\Order\Domain\Models;
 
-use Domains\Bakery\Domain\Models\OrderItem;
+use Domains\OrderItem\Domain\Models\OrderItem;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -50,7 +50,19 @@ class Order extends Model
 {
     protected $table = 'bakery_orders';
 
-    protected $fillable = ['bakery_id', 'delivery_date', 'status', 'active_slot', 'request_key', 'store_name', 'store_address', 'total_kopecks', 'comment', 'admin_note', 'cancelled_at'];
+    protected $fillable = [
+        'bakery_id',
+        'delivery_date',
+        'status',
+        'active_slot',
+        'request_key',
+        'store_name',
+        'store_address',
+        'total_kopecks',
+        'comment',
+        'admin_note',
+        'cancelled_at',
+    ];
 
     /** @return HasMany<OrderItem, $this> */
     public function items(): HasMany
