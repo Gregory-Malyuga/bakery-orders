@@ -8,7 +8,7 @@
         "framework"
     ],
     "require": {
-        "php": "^8.5",
+        "php": "^8.6",
         "darkaonline/l5-swagger": "^11.0",
         "laravel/framework": "^13.8",
         "laravel/octane": "^2.17",
