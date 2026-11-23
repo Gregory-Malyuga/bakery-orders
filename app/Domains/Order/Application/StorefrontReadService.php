@@ -4,6 +4,10 @@ namespace Domains\Order\Application;
 
 use Domains\DeliverySchedule\Application\DeliveryCalendar;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
+use Domains\Order\Domain\Models\Order;
+use Domains\Product\Domain\Models\Product;
+use Domains\Store\Domain\Models\Store;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 readonly class StorefrontReadService
@@ -17,7 +21,7 @@ readonly class StorefrontReadService
 
     /**
      * @param  list<int>  $accessible
-     * @return array<string, mixed>
+     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,repeatQuantities:array<int,int>}
      */
     public function home(int $storeId, array $accessible): array
     {
@@ -45,7 +49,7 @@ readonly class StorefrontReadService
 
     /**
      * @param  list<int>  $accessible
-     * @return array<string, mixed>
+     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,repeatQuantities:array<int,int>}
      */
     public function repeat(int $orderId, array $accessible): array
     {
@@ -74,7 +78,7 @@ readonly class StorefrontReadService
 
     /**
      * @param  list<int>  $accessible
-     * @return array<string, mixed>
+     * @return array{order:Order,canCancel:bool,canRepeat:bool}
      */
     public function show(int $orderId, array $accessible): array
     {

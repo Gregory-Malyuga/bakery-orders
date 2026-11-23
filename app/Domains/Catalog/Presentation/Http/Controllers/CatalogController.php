@@ -2,6 +2,8 @@
 
 namespace Domains\Catalog\Presentation\Http\Controllers;
 
+use Domains\Catalog\Application\Data\CatalogPageData;
+use Domains\Catalog\Application\Data\CatalogProductData;
 use Domains\Catalog\Application\Queries\Catalog\GetCatalogHandler;
 use Domains\Catalog\Application\Queries\Catalog\GetCatalogQuery;
 use Domains\Catalog\Application\Queries\Product\GetCatalogProductHandler;
@@ -26,16 +28,26 @@ readonly class CatalogController
             'search' => ['nullable', 'string', 'max:255'],
         ]);
 
-        return view('bakery.catalog', $this->catalog->handle(new GetCatalogQuery(
+        return $this->renderCatalog($this->catalog->handle(new GetCatalogQuery(
             isset($input['store']) ? (int) $input['store'] : null,
             $input['tab'] ?? 'stores',
             isset($input['page']) ? (int) $input['page'] : 1,
             $input['search'] ?? '',
-        ))->view);
+        )));
     }
 
     public function product(int $product): View
     {
-        return view('bakery.product', $this->product->handle(new GetCatalogProductQuery($product))->view);
+        return $this->renderProduct($this->product->handle(new GetCatalogProductQuery($product)));
+    }
+
+    private function renderCatalog(CatalogPageData $data): View
+    {
+        return view('bakery.catalog', $data->viewData());
+    }
+
+    private function renderProduct(CatalogProductData $data): View
+    {
+        return view('bakery.product', $data->viewData());
     }
 }

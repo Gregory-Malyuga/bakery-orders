@@ -3,6 +3,7 @@
 namespace Domains\Analytics\Presentation\Http\Controllers;
 
 use Domains\Analytics\Application\AnalyticsService;
+use Domains\Analytics\Application\Data\AnalyticsDashboardData;
 use Domains\Analytics\Application\Queries\Dashboard\AnalyticsDashboardHandler;
 use Domains\Analytics\Application\Queries\Dashboard\AnalyticsDashboardQuery;
 use Domains\StockPrice\Application\StockPrices;
@@ -24,7 +25,12 @@ class AnalyticsController
             $filters['product'],
         ));
 
-        return view('bakery.analytics', $view->view);
+        return $this->renderDashboard($view);
+    }
+
+    private function renderDashboard(AnalyticsDashboardData $data): View
+    {
+        return view('bakery.analytics', $data->viewData());
     }
 
     public function download(Request $request): StreamedResponse

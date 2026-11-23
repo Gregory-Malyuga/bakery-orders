@@ -2,6 +2,8 @@
 
 namespace Domains\Invoice\Presentation\Http\Controllers;
 
+use Domains\Invoice\Application\Data\BatchInvoiceData;
+use Domains\Invoice\Application\Data\SingleInvoiceData;
 use Domains\Invoice\Application\Exports\InvoiceWorkbookInterface;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceHandler;
 use Domains\Invoice\Application\Queries\Batch\BatchInvoiceQuery;
@@ -31,7 +33,7 @@ class InvoiceController
     {
         $data = $this->single->handle(new SingleInvoiceQuery($order));
 
-        return view('bakery.print', $data->viewData() + ['downloadUrl' => route('bakery.xlsx-one', $order)]);
+        return $this->renderSingle($data, route('bakery.xlsx-one', $order));
     }
 
     public function printBatch(Request $request): View
@@ -39,7 +41,17 @@ class InvoiceController
         $date = $this->date($request);
         $data = $this->batch->handle(new BatchInvoiceQuery($date));
 
-        return view('bakery.print', $data->viewData() + ['downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
+        return $this->renderBatch($data, route('bakery.xlsx-batch', ['date' => $date]));
+    }
+
+    private function renderSingle(SingleInvoiceData $data, string $downloadUrl): View
+    {
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => $downloadUrl]);
+    }
+
+    private function renderBatch(BatchInvoiceData $data, string $downloadUrl): View
+    {
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => $downloadUrl]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse

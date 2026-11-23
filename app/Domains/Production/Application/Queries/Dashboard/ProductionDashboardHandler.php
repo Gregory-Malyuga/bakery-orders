@@ -59,7 +59,10 @@ readonly class ProductionDashboardHandler implements QueryHandlerInterface
         }
         $production = $this->production->calculate($productionQuantities, $productionProductIds);
         $productionTotal = array_sum($totals);
-        $orderedStoreIds = $orders->pluck('bakery_id')->all();
+        $orderedStoreIds = [];
+        foreach ($orders as $order) {
+            $orderedStoreIds[] = (int) $order->bakery_id;
+        }
         $activeStores = $stores->where('is_active', true);
         $matrixStores = $stores->filter(fn ($store): bool => $store->is_active || in_array($store->id, $orderedStoreIds, true));
         $pageCount = max(1, (int) ceil($orders->count() / 20));
@@ -68,6 +71,6 @@ readonly class ProductionDashboardHandler implements QueryHandlerInterface
         $orderReturns = $this->returnSummary->forOrders($visibleOrders);
         $groups = $tab === 'orders' ? $this->groupInvoices->forOrders($orders) : [];
 
-        return new ProductionDashboardData(compact('date', 'tab', 'orders', 'visibleOrders', 'orderReturns', 'groups', 'page', 'pageCount', 'activeStores', 'matrixStores', 'products', 'quantities', 'totals', 'packaging', 'labelPackaging', 'labels', 'labelTotal', 'packageTotal', 'excludedStores', 'productionTotal', 'production', 'orderedStoreIds'));
+        return new ProductionDashboardData($date, $tab, $orders, $visibleOrders, $orderReturns, $groups, $page, $pageCount, $activeStores, $matrixStores, $products, $quantities, $totals, $packaging, $labelPackaging, $labels, $labelTotal, $packageTotal, $excludedStores, $productionTotal, $production, $orderedStoreIds);
     }
 }

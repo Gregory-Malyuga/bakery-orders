@@ -2,7 +2,7 @@
 
 namespace Domains\Catalog\Application\Queries\Product;
 
-use Domains\Catalog\Application\Data\CatalogViewData;
+use Domains\Catalog\Application\Data\CatalogProductData;
 use Domains\Catalog\Application\Repositories\CatalogReadRepositoryInterface;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Shared\Bus\QueryHandlerInterface;
@@ -14,7 +14,7 @@ readonly class GetCatalogProductHandler implements QueryHandlerInterface
         private CatalogReadRepositoryInterface $repository,
     ) {}
 
-    public function handle(object $message): CatalogViewData
+    public function handle(object $message): CatalogProductData
     {
         assert($message instanceof GetCatalogProductQuery);
         $product = $message->productId;
@@ -30,6 +30,6 @@ readonly class GetCatalogProductHandler implements QueryHandlerInterface
         $historyItems = $this->repository->priceOperationItems($history);
         $reversed = $this->repository->reversedOperationIds($history);
 
-        return new CatalogViewData(compact('item', 'stores', 'prices', 'unavailable', 'history', 'historyItems', 'reversed'));
+        return new CatalogProductData($item, $stores, $prices, $unavailable, $history, $historyItems, $reversed);
     }
 }

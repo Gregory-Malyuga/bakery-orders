@@ -2,6 +2,8 @@
 
 namespace Domains\Order\Presentation\Http\Controllers;
 
+use Domains\Order\Application\Data\StoreOrderHomeData;
+use Domains\Order\Application\Data\StoreOrderShowData;
 use Domains\Order\Application\OrderingService;
 use Domains\Order\Application\Queries\Home\StoreOrderHomeHandler;
 use Domains\Order\Application\Queries\Home\StoreOrderHomeQuery;
@@ -50,12 +52,12 @@ class StoreOrderController
             return view('bakery.no-stores');
         }
 
-        return view('bakery.store', $this->home->handle(new StoreOrderHomeQuery($this->storeId($request), $accessible))->view);
+        return $this->renderHome($this->home->handle(new StoreOrderHomeQuery($this->storeId($request), $accessible)));
     }
 
     public function repeat(Request $request, int $order): View
     {
-        return view('bakery.store', $this->repeat->handle(new StoreOrderRepeatQuery($order, $this->user($request)->accessibleStoreIds()))->view);
+        return $this->renderHome($this->repeat->handle(new StoreOrderRepeatQuery($order, $this->user($request)->accessibleStoreIds())));
     }
 
     public function preview(Request $request): View
@@ -101,7 +103,17 @@ class StoreOrderController
 
     public function show(Request $request, int $order): View
     {
-        return view('bakery.order', $this->show->handle(new StoreOrderShowQuery($order, $this->user($request)->accessibleStoreIds()))->view);
+        return $this->renderShow($this->show->handle(new StoreOrderShowQuery($order, $this->user($request)->accessibleStoreIds())));
+    }
+
+    private function renderHome(StoreOrderHomeData $data): View
+    {
+        return view('bakery.store', $data->viewData());
+    }
+
+    private function renderShow(StoreOrderShowData $data): View
+    {
+        return view('bakery.order', $data->viewData());
     }
 
     public function cancel(Request $request, int $order): RedirectResponse

@@ -2,6 +2,8 @@
 
 namespace Domains\Order\Presentation\Http\Controllers;
 
+use Domains\Order\Application\Data\AdminOrderDetailData;
+use Domains\Order\Application\Data\AdminOrderEditData;
 use Domains\Order\Application\Queries\Detail\AdminOrderDetailHandler;
 use Domains\Order\Application\Queries\Detail\AdminOrderDetailQuery;
 use Domains\Order\Application\Queries\Edit\AdminOrderEditHandler;
@@ -35,12 +37,22 @@ class AdminOrderController
 
     public function order(int $order): View
     {
-        return view('bakery.admin-order', $this->detail->handle(new AdminOrderDetailQuery($order))->viewData());
+        return $this->renderDetail($this->detail->handle(new AdminOrderDetailQuery($order)));
     }
 
     public function editOrder(int $order): View
     {
-        return view('bakery.edit-order', $this->edit->handle(new AdminOrderEditQuery($order))->viewData());
+        return $this->renderEdit($this->edit->handle(new AdminOrderEditQuery($order)));
+    }
+
+    private function renderDetail(AdminOrderDetailData $data): View
+    {
+        return view('bakery.admin-order', $data->viewData());
+    }
+
+    private function renderEdit(AdminOrderEditData $data): View
+    {
+        return view('bakery.edit-order', $data->viewData());
     }
 
     public function updateOrder(Request $request, int $order): RedirectResponse

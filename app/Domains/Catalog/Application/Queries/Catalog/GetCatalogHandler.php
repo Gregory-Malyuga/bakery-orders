@@ -2,7 +2,7 @@
 
 namespace Domains\Catalog\Application\Queries\Catalog;
 
-use Domains\Catalog\Application\Data\CatalogViewData;
+use Domains\Catalog\Application\Data\CatalogPageData;
 use Domains\Catalog\Application\Repositories\CatalogReadRepositoryInterface;
 use Domains\Order\Application\OrderCutoff;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
@@ -19,7 +19,7 @@ readonly class GetCatalogHandler implements QueryHandlerInterface
         private CatalogReadRepositoryInterface $repository,
     ) {}
 
-    public function handle(object $message): CatalogViewData
+    public function handle(object $message): CatalogPageData
     {
         assert($message instanceof GetCatalogQuery);
 
@@ -47,10 +47,12 @@ readonly class GetCatalogHandler implements QueryHandlerInterface
             ? $this->repository->unavailableProducts($selectedStore)
             : [];
 
-        return new CatalogViewData(compact('stores', 'visibleStores', 'products', 'selectedStore', 'accounts', 'visibleAccounts', 'storeOwners', 'unavailableProducts', 'tab', 'page', 'pageCount', 'search') + [
-            'prices' => $selectedStore ? $this->orders->prices($selectedStore, true, false) : [],
-            'minimums' => $selectedStore ? $this->orders->minimums($selectedStore) : [],
-            'orderCutoff' => $this->cutoff->time(),
-        ]);
+        return new CatalogPageData(
+            $stores, $visibleStores, $products, $selectedStore, $accounts, $visibleAccounts,
+            $storeOwners, $unavailableProducts, $tab, $page, $pageCount, $search,
+            $selectedStore ? $this->orders->prices($selectedStore, true, false) : [],
+            $selectedStore ? $this->orders->minimums($selectedStore) : [],
+            $this->cutoff->time(),
+        );
     }
 }
