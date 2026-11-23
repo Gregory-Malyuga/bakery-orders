@@ -37,7 +37,7 @@ class GroupWorkbookLayoutTest extends TestCase
 
     private function sheet(bool $showReturns): string
     {
-        $workbook = new MatrixInvoiceWorkbook(new OrderReturnSummary);
+        $workbook = new MatrixInvoiceWorkbook(app(OrderReturnSummary::class));
         $path = $workbook->create([], [], [$this->group($showReturns)], '2026-11-02', '02.11.2026 12:00');
 
         try {

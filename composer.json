@@ -101,8 +101,8 @@
         ],
         "lint:container": "@php artisan route:list --ansi",
         "lint:container:prod": "@php artisan optimize --ansi",
-        "lint:php": "find app routes tests database -name '*.php' -print0 | xargs -0 -n1 php -l",
         "lint:line-length": "php bin/check-line-length.php",
+        "lint:php": "find app routes tests database -name '*.php' -print0 | xargs -0 -n1 php -l",
         "lint:yaml": "@php -r \"echo 'No YAML config in Laravel — skipped.' . PHP_EOL;\"",
         "phpstan": "./vendor/bin/phpstan analyse --memory-limit=512M",
         "pre-commit": [
