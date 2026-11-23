@@ -35,12 +35,12 @@ class AdminOrderController
 
     public function order(int $order): View
     {
-        return view('bakery.admin-order', $this->detail->handle(new AdminOrderDetailQuery($order))->view);
+        return view('bakery.admin-order', $this->detail->handle(new AdminOrderDetailQuery($order))->viewData());
     }
 
     public function editOrder(int $order): View
     {
-        return view('bakery.edit-order', $this->edit->handle(new AdminOrderEditQuery($order))->view);
+        return view('bakery.edit-order', $this->edit->handle(new AdminOrderEditQuery($order))->viewData());
     }
 
     public function updateOrder(Request $request, int $order): RedirectResponse

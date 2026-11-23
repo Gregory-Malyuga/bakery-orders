@@ -31,7 +31,7 @@ class InvoiceController
     {
         $data = $this->single->handle(new SingleInvoiceQuery($order));
 
-        return view('bakery.print', $data->view + ['downloadUrl' => route('bakery.xlsx-one', $order)]);
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => route('bakery.xlsx-one', $order)]);
     }
 
     public function printBatch(Request $request): View
@@ -39,7 +39,7 @@ class InvoiceController
         $date = $this->date($request);
         $data = $this->batch->handle(new BatchInvoiceQuery($date));
 
-        return view('bakery.print', $data->view + ['downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
+        return view('bakery.print', $data->viewData() + ['downloadUrl' => route('bakery.xlsx-batch', ['date' => $date])]);
     }
 
     public function downloadOne(int $order): BinaryFileResponse

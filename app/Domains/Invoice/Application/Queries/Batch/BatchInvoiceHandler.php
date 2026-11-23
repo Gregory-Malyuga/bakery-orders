@@ -2,7 +2,7 @@
 
 namespace Domains\Invoice\Application\Queries\Batch;
 
-use Domains\Invoice\Application\Data\InvoiceOrdersData;
+use Domains\Invoice\Application\Data\BatchInvoiceData;
 use Domains\Order\Application\Repositories\OrderRepositoryInterface;
 use Domains\OrderReturn\Application\OrderReturnSummary;
 use Domains\StoreGroup\Application\GroupInvoiceService;
@@ -16,18 +16,12 @@ readonly class BatchInvoiceHandler implements QueryHandlerInterface
         private GroupInvoiceService $groups,
     ) {}
 
-    public function handle(object $message): InvoiceOrdersData
+    public function handle(object $message): BatchInvoiceData
     {
         assert($message instanceof BatchInvoiceQuery);
 
         $orders = $this->orders->orders($message->date);
 
-        return new InvoiceOrdersData([
-            'orders' => $orders,
-            'returns' => $this->returns->forOrders($orders),
-            'groups' => $this->groups->forOrders($orders),
-            'date' => $message->date,
-            'generatedAt' => now('Europe/Moscow'),
-        ]);
+        return new BatchInvoiceData($orders, $this->returns->forOrders($orders), $this->groups->forOrders($orders), $message->date, now('Europe/Moscow'));
     }
 }
