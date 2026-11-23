@@ -11,6 +11,8 @@ final class ProductOptionsReadRepository implements ProductOptionsReadRepository
     /** @return Collection<int, \stdClass> */
     public function productOptions(): Collection
     {
-        return DB::table('bakery_products')->orderBy('name')->get(['id', 'name']);
+        return DB::table('bakery_products')
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 }

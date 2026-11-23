@@ -32,11 +32,13 @@ class UserController extends Controller
     public function index(ListUsersRequest $request): JsonResponse
     {
         /** @var LengthAwarePaginator<int, User> $paginator */
-        $paginator = $this->queries->ask(new ListUsersQuery(
-            filters: $request->toFilters(),
-            sort: $request->toSort(),
-            pagination: $request->toPagination(),
-        ));
+        $paginator = $this->queries->ask(
+            new ListUsersQuery(
+                filters: $request->toFilters(),
+                sort: $request->toSort(),
+                pagination: $request->toPagination(),
+            ),
+        );
 
         return response()->json(UserResource::collect($paginator, PaginatedDataCollection::class));
     }
@@ -56,13 +58,15 @@ class UserController extends Controller
         /** @var User|null $actor */
         $actor = $request->user();
 
-        $id = $this->commands->dispatch(new CreateUserCommand(
-            name: $dto->name,
-            email: $dto->email,
-            password: $dto->password,
-            role: $dto->role,
-            actor: $actor,
-        ));
+        $id = $this->commands->dispatch(
+            new CreateUserCommand(
+                name: $dto->name,
+                email: $dto->email,
+                password: $dto->password,
+                role: $dto->role,
+                actor: $actor,
+            ),
+        );
         assert($id !== null);
 
         /** @var User $record */
@@ -78,14 +82,16 @@ class UserController extends Controller
         /** @var User|null $actor */
         $actor = $request->user();
 
-        $this->commands->dispatch(new UpdateUserCommand(
-            id: $id,
-            name: $dto->name,
-            email: $dto->email,
-            password: $dto->password,
-            role: $dto->role,
-            actor: $actor,
-        ));
+        $this->commands->dispatch(
+            new UpdateUserCommand(
+                id: $id,
+                name: $dto->name,
+                email: $dto->email,
+                password: $dto->password,
+                role: $dto->role,
+                actor: $actor,
+            ),
+        );
 
         /** @var User $record */
         $record = $this->queries->ask(new FindUserByIdQuery($id));

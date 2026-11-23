@@ -94,20 +94,36 @@ class GenerateOpenApiDocsCommand extends Command
         $controllerSrc = $this->files->get($controllerPath);
         $controllerNs = $this->extractNamespace($controllerSrc);
         $controllerFqcn = $controllerNs.'\\'.$domainName.'Controller';
-        $baseNs = (string) preg_replace('/\\\\Presentation\\\\Http\\\\Controllers$/', '', $controllerNs);
+        $baseNs = (string) preg_replace(
+            '/\\\\Presentation\\\\Http\\\\Controllers$/',
+            '',
+            $controllerNs,
+        );
 
         $dataBase = $baseNs.'\\Application\\Data\\';
-        $legacyFqcn = $this->resolveImport($controllerSrc, $domainName.'Data')
-            ?? ($this->safeClassExists($dataBase.$domainName.'Data') ? $dataBase.$domainName.'Data' : null);
+        $legacyFqcn =
+            $this->resolveImport($controllerSrc, $domainName.'Data') ??
+            ($this->safeClassExists($dataBase.$domainName.'Data')
+                ? $dataBase.$domainName.'Data'
+                : null);
 
-        $resourceFqcn = $this->resolveImport($controllerSrc, $domainName.'Resource')
-            ?? ($this->safeClassExists($dataBase.$domainName.'Resource') ? $dataBase.$domainName.'Resource' : $legacyFqcn);
+        $resourceFqcn =
+            $this->resolveImport($controllerSrc, $domainName.'Resource') ??
+            ($this->safeClassExists($dataBase.$domainName.'Resource')
+                ? $dataBase.$domainName.'Resource'
+                : $legacyFqcn);
 
-        $createFqcn = $this->resolveImport($controllerSrc, 'Create'.$domainName.'Data')
-            ?? ($this->safeClassExists($dataBase.'Create'.$domainName.'Data') ? $dataBase.'Create'.$domainName.'Data' : $legacyFqcn);
+        $createFqcn =
+            $this->resolveImport($controllerSrc, 'Create'.$domainName.'Data') ??
+            ($this->safeClassExists($dataBase.'Create'.$domainName.'Data')
+                ? $dataBase.'Create'.$domainName.'Data'
+                : $legacyFqcn);
 
-        $updateFqcn = $this->resolveImport($controllerSrc, 'Update'.$domainName.'Data')
-            ?? ($this->safeClassExists($dataBase.'Update'.$domainName.'Data') ? $dataBase.'Update'.$domainName.'Data' : $legacyFqcn);
+        $updateFqcn =
+            $this->resolveImport($controllerSrc, 'Update'.$domainName.'Data') ??
+            ($this->safeClassExists($dataBase.'Update'.$domainName.'Data')
+                ? $dataBase.'Update'.$domainName.'Data'
+                : $legacyFqcn);
 
         if ($resourceFqcn === null || ! $this->safeClassExists($resourceFqcn)) {
             $this->warn("  Resource/Data class not found for {$domainName}");
@@ -117,9 +133,17 @@ class GenerateOpenApiDocsCommand extends Command
 
         $filterFqcn = $dataBase.$domainName.'FilterData';
         $resourceProps = $this->reflectConstructorParams($resourceFqcn);
-        $createProps = $createFqcn && $this->safeClassExists($createFqcn) ? $this->reflectConstructorParams($createFqcn) : $resourceProps;
-        $updateProps = $updateFqcn && $this->safeClassExists($updateFqcn) ? $this->reflectConstructorParams($updateFqcn) : $resourceProps;
-        $filterProps = $this->safeClassExists($filterFqcn) ? $this->reflectConstructorParams($filterFqcn) : [];
+        $createProps =
+            $createFqcn && $this->safeClassExists($createFqcn)
+                ? $this->reflectConstructorParams($createFqcn)
+                : $resourceProps;
+        $updateProps =
+            $updateFqcn && $this->safeClassExists($updateFqcn)
+                ? $this->reflectConstructorParams($updateFqcn)
+                : $resourceProps;
+        $filterProps = $this->safeClassExists($filterFqcn)
+            ? $this->reflectConstructorParams($filterFqcn)
+            : [];
 
         $prefix = $this->resolveRoutePrefix($controllerFqcn);
         $resource = Str::kebab(Str::plural($domainName));
@@ -131,7 +155,15 @@ class GenerateOpenApiDocsCommand extends Command
         }
 
         $openApiNs = $baseNs.'\\Presentation\\Http\\OpenApi';
-        $content = $this->buildOpenApiFile($domainName, $openApiNs, $routePrefix, $resourceProps, $createProps, $updateProps, $filterProps);
+        $content = $this->buildOpenApiFile(
+            $domainName,
+            $openApiNs,
+            $routePrefix,
+            $resourceProps,
+            $createProps,
+            $updateProps,
+            $filterProps,
+        );
         $outputPath = "{$domainPath}/Presentation/Http/OpenApi/{$domainName}OpenApi.php";
 
         if ($this->option('dry-run')) {
@@ -174,7 +206,10 @@ class GenerateOpenApiDocsCommand extends Command
                 $nullable = $type->allowsNull();
                 // Pick first concrete (non-null, non-Optional) type
                 foreach ($type->getTypes() as $t) {
-                    if ($t instanceof ReflectionNamedType && ! in_array($t->getName(), ['null', Optional::class], true)) {
+                    if (
+                        $t instanceof ReflectionNamedType &&
+                        ! in_array($t->getName(), ['null', Optional::class], true)
+                    ) {
                         $phpType = $t->getName();
                         break;
                     }
@@ -256,96 +291,97 @@ class GenerateOpenApiDocsCommand extends Command
         $listPath = '/api/'.$routePrefix;
         $itemPath = $listPath.'/{id}';
 
-        $out = "<?php\n\nnamespace {$ns};\n\nuse OpenApi\\Attributes as OA;\n\n"
-            ."#[OA\\Tag(name: '{$tag}', description: '{$name} management')]\n"
-            ."#[OA\\Schema(\n"
-            ."    schema: '{$name}',\n"
-            ."    properties: [\n"
-            ."{$schemaProps}"
-            ."    ],\n"
-            .")]\n"
-            ."#[OA\\Get(\n"
-            ."    path: '{$listPath}',\n"
-            ."    tags: ['{$tag}'],\n"
-            ."    summary: 'List {$tag}',\n"
-            ."{$security}"
-            ."    parameters: [\n"
-            ."{$filterParams}"
-            ."    ],\n"
-            ."    responses: [\n"
-            ."        new OA\\Response(\n"
-            ."            response: 200,\n"
-            ."            description: 'Paginated list',\n"
-            ."            content: new OA\\JsonContent(\n"
-            ."                properties: [\n"
-            ."                    new OA\\Property(property: 'data', type: 'array', items: new OA\\Items(ref: '#/components/schemas/{$name}')),\n"
-            ."                    new OA\\Property(property: 'meta', type: 'object'),\n"
-            ."                    new OA\\Property(property: 'links', type: 'object'),\n"
-            ."                ]\n"
-            ."            )\n"
-            ."        ),\n"
-            ."        new OA\\Response(response: 401, description: 'Unauthenticated'),\n"
-            ."    ],\n"
-            .")]\n"
-            ."#[OA\\Get(\n"
-            ."    path: '{$itemPath}',\n"
-            ."    tags: ['{$tag}'],\n"
-            ."    summary: 'Get {$name} by ID',\n"
-            ."{$security}"
-            ."    parameters: [\n"
-            ."        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n"
-            ."    ],\n"
-            ."    responses: [\n"
-            ."        new OA\\Response(response: 200, description: 'Success', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n"
-            ."        new OA\\Response(response: 401, description: 'Unauthenticated'),\n"
-            ."        new OA\\Response(response: 404, description: 'Not found'),\n"
-            ."    ],\n"
-            .")]\n"
-            ."#[OA\\Post(\n"
-            ."    path: '{$listPath}',\n"
-            ."    tags: ['{$tag}'],\n"
-            ."    summary: 'Create {$name}',\n"
-            ."{$security}"
-            ."{$postBody}"
-            ."    responses: [\n"
-            ."        new OA\\Response(response: 201, description: 'Created', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n"
-            ."        new OA\\Response(response: 401, description: 'Unauthenticated'),\n"
-            ."        new OA\\Response(response: 403, description: 'Forbidden'),\n"
-            ."        new OA\\Response(response: 422, description: 'Validation error'),\n"
-            ."    ],\n"
-            .")]\n"
-            ."#[OA\\Put(\n"
-            ."    path: '{$itemPath}',\n"
-            ."    tags: ['{$tag}'],\n"
-            ."    summary: 'Update {$name}',\n"
-            ."{$security}"
-            ."    parameters: [\n"
-            ."        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n"
-            ."    ],\n"
-            ."{$putBody}"
-            ."    responses: [\n"
-            ."        new OA\\Response(response: 200, description: 'Updated', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n"
-            ."        new OA\\Response(response: 401, description: 'Unauthenticated'),\n"
-            ."        new OA\\Response(response: 403, description: 'Forbidden'),\n"
-            ."        new OA\\Response(response: 404, description: 'Not found'),\n"
-            ."        new OA\\Response(response: 422, description: 'Validation error'),\n"
-            ."    ],\n"
-            .")]\n"
-            ."#[OA\\Delete(\n"
-            ."    path: '{$itemPath}',\n"
-            ."    tags: ['{$tag}'],\n"
-            ."    summary: 'Delete {$name}',\n"
-            ."{$security}"
-            ."    parameters: [\n"
-            ."        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n"
-            ."    ],\n"
-            ."    responses: [\n"
-            ."        new OA\\Response(response: 204, description: 'Deleted'),\n"
-            ."        new OA\\Response(response: 401, description: 'Unauthenticated'),\n"
-            ."        new OA\\Response(response: 403, description: 'Forbidden'),\n"
-            ."        new OA\\Response(response: 404, description: 'Not found'),\n"
-            ."    ],\n"
-            .")]\n";
+        $out =
+            "<?php\n\nnamespace {$ns};\n\nuse OpenApi\\Attributes as OA;\n\n".
+            "#[OA\\Tag(name: '{$tag}', description: '{$name} management')]\n".
+            "#[OA\\Schema(\n".
+            "    schema: '{$name}',\n".
+            "    properties: [\n".
+            "{$schemaProps}".
+            "    ],\n".
+            ")]\n".
+            "#[OA\\Get(\n".
+            "    path: '{$listPath}',\n".
+            "    tags: ['{$tag}'],\n".
+            "    summary: 'List {$tag}',\n".
+            "{$security}".
+            "    parameters: [\n".
+            "{$filterParams}".
+            "    ],\n".
+            "    responses: [\n".
+            "        new OA\\Response(\n".
+            "            response: 200,\n".
+            "            description: 'Paginated list',\n".
+            "            content: new OA\\JsonContent(\n".
+            "                properties: [\n".
+            "                    new OA\\Property(property: 'data', type: 'array', items: new OA\\Items(ref: '#/components/schemas/{$name}')),\n".
+            "                    new OA\\Property(property: 'meta', type: 'object'),\n".
+            "                    new OA\\Property(property: 'links', type: 'object'),\n".
+            "                ]\n".
+            "            )\n".
+            "        ),\n".
+            "        new OA\\Response(response: 401, description: 'Unauthenticated'),\n".
+            "    ],\n".
+            ")]\n".
+            "#[OA\\Get(\n".
+            "    path: '{$itemPath}',\n".
+            "    tags: ['{$tag}'],\n".
+            "    summary: 'Get {$name} by ID',\n".
+            "{$security}".
+            "    parameters: [\n".
+            "        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n".
+            "    ],\n".
+            "    responses: [\n".
+            "        new OA\\Response(response: 200, description: 'Success', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n".
+            "        new OA\\Response(response: 401, description: 'Unauthenticated'),\n".
+            "        new OA\\Response(response: 404, description: 'Not found'),\n".
+            "    ],\n".
+            ")]\n".
+            "#[OA\\Post(\n".
+            "    path: '{$listPath}',\n".
+            "    tags: ['{$tag}'],\n".
+            "    summary: 'Create {$name}',\n".
+            "{$security}".
+            "{$postBody}".
+            "    responses: [\n".
+            "        new OA\\Response(response: 201, description: 'Created', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n".
+            "        new OA\\Response(response: 401, description: 'Unauthenticated'),\n".
+            "        new OA\\Response(response: 403, description: 'Forbidden'),\n".
+            "        new OA\\Response(response: 422, description: 'Validation error'),\n".
+            "    ],\n".
+            ")]\n".
+            "#[OA\\Put(\n".
+            "    path: '{$itemPath}',\n".
+            "    tags: ['{$tag}'],\n".
+            "    summary: 'Update {$name}',\n".
+            "{$security}".
+            "    parameters: [\n".
+            "        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n".
+            "    ],\n".
+            "{$putBody}".
+            "    responses: [\n".
+            "        new OA\\Response(response: 200, description: 'Updated', content: new OA\\JsonContent(ref: '#/components/schemas/{$name}')),\n".
+            "        new OA\\Response(response: 401, description: 'Unauthenticated'),\n".
+            "        new OA\\Response(response: 403, description: 'Forbidden'),\n".
+            "        new OA\\Response(response: 404, description: 'Not found'),\n".
+            "        new OA\\Response(response: 422, description: 'Validation error'),\n".
+            "    ],\n".
+            ")]\n".
+            "#[OA\\Delete(\n".
+            "    path: '{$itemPath}',\n".
+            "    tags: ['{$tag}'],\n".
+            "    summary: 'Delete {$name}',\n".
+            "{$security}".
+            "    parameters: [\n".
+            "        new OA\\Parameter(name: 'id', in: 'path', required: true, schema: new OA\\Schema(type: 'integer')),\n".
+            "    ],\n".
+            "    responses: [\n".
+            "        new OA\\Response(response: 204, description: 'Deleted'),\n".
+            "        new OA\\Response(response: 401, description: 'Unauthenticated'),\n".
+            "        new OA\\Response(response: 403, description: 'Forbidden'),\n".
+            "        new OA\\Response(response: 404, description: 'Not found'),\n".
+            "    ],\n".
+            ")]\n";
 
         $out .= "class {$name}OpenApi {}\n";
 
@@ -361,7 +397,11 @@ class GenerateOpenApiDocsCommand extends Command
 
         foreach ($props as $p) {
             if ($this->isDataClass($p['phpType'])) {
-                $lines .= $this->renderNestedObjectProperty($p['name'], $p['phpType'], $p['nullable']);
+                $lines .= $this->renderNestedObjectProperty(
+                    $p['name'],
+                    $p['phpType'],
+                    $p['nullable'],
+                );
 
                 continue;
             }
@@ -441,14 +481,22 @@ class GenerateOpenApiDocsCommand extends Command
         return $this->safeClassExists($phpType) && is_subclass_of($phpType, Data::class);
     }
 
-    private function renderNestedObjectProperty(string $name, string $phpType, bool $nullable): string
-    {
+    private function renderNestedObjectProperty(
+        string $name,
+        string $phpType,
+        bool $nullable,
+    ): string {
         $nestedProps = $this->reflectConstructorParams($phpType);
         $nullableStr = $nullable ? ', nullable: true' : '';
-        $subProps = implode(', ', array_map(
-            fn ($np) => "new OA\\Property(property: '{$np['name']}', type: '{$this->phpTypeToOa($np['phpType'])}')",
-            $nestedProps
-        ));
+        $subProps = implode(
+            ', ',
+            array_map(
+                fn ($np) => "new OA\\Property(property: '{$np['name']}', type: '{$this->phpTypeToOa(
+                    $np['phpType'],
+                )}')",
+                $nestedProps,
+            ),
+        );
 
         return "        new OA\\Property(property: '{$name}'{$nullableStr}, properties: [{$subProps}], type: 'object'),\n";
     }
@@ -462,38 +510,42 @@ class GenerateOpenApiDocsCommand extends Command
 
         foreach ($props as $p) {
             $oaType = $this->phpTypeToOa($p['phpType']);
-            $schema = $oaType === 'array'
-                ? "new OA\\Schema(type: 'array', items: new OA\\Items(type: 'string'))"
-                : "new OA\\Schema(type: '{$oaType}')";
+            $schema =
+                $oaType === 'array'
+                    ? "new OA\\Schema(type: 'array', items: new OA\\Items(type: 'string'))"
+                    : "new OA\\Schema(type: '{$oaType}')";
             $lines .= "        new OA\\Parameter(name: '{$p['name']}', in: 'query', required: false, schema: {$schema}),\n";
         }
 
-        $lines .= "        new OA\\Parameter(name: 'page', in: 'query', required: false, schema: new OA\\Schema(type: 'integer', default: 1)),\n";
-        $lines .= "        new OA\\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\\Schema(type: 'integer', default: 15)),\n";
+        $lines .=
+            "        new OA\\Parameter(name: 'page', in: 'query', required: false, schema: new OA\\Schema(type: 'integer', default: 1)),\n";
+        $lines .=
+            "        new OA\\Parameter(name: 'per_page', in: 'query', required: false, schema: new OA\\Schema(type: 'integer', default: 15)),\n";
 
         return $lines;
     }
 
-    private function renderRequestBody(string $bodyProps, string $requiredList, bool $required): string
-    {
+    private function renderRequestBody(
+        string $bodyProps,
+        string $requiredList,
+        bool $required,
+    ): string {
         if ($bodyProps === '') {
             return '';
         }
 
         $req = $required ? 'true' : 'false';
-        $requiredLine = $requiredList !== ''
-            ? "            required: [{$requiredList}],\n"
-            : '';
+        $requiredLine = $requiredList !== '' ? "            required: [{$requiredList}],\n" : '';
 
-        return "    requestBody: new OA\\RequestBody(\n"
-            ."        required: {$req},\n"
-            ."        content: new OA\\JsonContent(\n"
-            .$requiredLine
-            ."            properties: [\n"
-            .$bodyProps
-            ."            ],\n"
-            ."        ),\n"
-            ."    ),\n";
+        return "    requestBody: new OA\\RequestBody(\n".
+            "        required: {$req},\n".
+            "        content: new OA\\JsonContent(\n".
+            $requiredLine.
+            "            properties: [\n".
+            $bodyProps.
+            "            ],\n".
+            "        ),\n".
+            "    ),\n";
     }
 
     // ── Type helpers ───────────────────────────────────────────────────────────
@@ -519,7 +571,8 @@ class GenerateOpenApiDocsCommand extends Command
 
         $format = match (true) {
             str_ends_with($fieldName, 'email') => 'email',
-            in_array($fieldName, ['created_at', 'updated_at'], true), str_ends_with($fieldName, '_at') => 'date-time',
+            in_array($fieldName, ['created_at', 'updated_at'], true),
+            str_ends_with($fieldName, '_at') => 'date-time',
             str_ends_with($fieldName, '_date') => 'date',
             $phpType === 'float' => 'float',
             default => '',

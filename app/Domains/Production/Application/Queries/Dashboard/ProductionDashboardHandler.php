@@ -35,7 +35,8 @@ readonly class ProductionDashboardHandler implements QueryHandlerInterface
         $productsById = $products->keyBy('id');
         foreach ($orders as $order) {
             foreach ($order->items as $item) {
-                $quantities[$item->product_id][$order->bakery_id] = ($quantities[$item->product_id][$order->bakery_id] ?? 0) + $item->quantity;
+                $quantities[$item->product_id][$order->bakery_id] =
+                    ($quantities[$item->product_id][$order->bakery_id] ?? 0) + $item->quantity;
                 $totals[$item->product_id] = ($totals[$item->product_id] ?? 0) + $item->quantity;
             }
         }
@@ -64,13 +65,38 @@ readonly class ProductionDashboardHandler implements QueryHandlerInterface
             $orderedStoreIds[] = (int) $order->bakery_id;
         }
         $activeStores = $stores->where('is_active', true);
-        $matrixStores = $stores->filter(fn ($store): bool => $store->is_active || in_array($store->id, $orderedStoreIds, true));
+        $matrixStores = $stores->filter(
+            fn ($store): bool => $store->is_active || in_array($store->id, $orderedStoreIds, true),
+        );
         $pageCount = max(1, (int) ceil($orders->count() / 20));
         $page = min((int) $input['page'], $pageCount);
         $visibleOrders = $orders->forPage($page, 20);
         $orderReturns = $this->returnSummary->forOrders($visibleOrders);
         $groups = $tab === 'orders' ? $this->groupInvoices->forOrders($orders) : [];
 
-        return new ProductionDashboardData($date, $tab, $orders, $visibleOrders, $orderReturns, $groups, $page, $pageCount, $activeStores, $matrixStores, $products, $quantities, $totals, $packaging, $labelPackaging, $labels, $labelTotal, $packageTotal, $excludedStores, $productionTotal, $production, $orderedStoreIds);
+        return new ProductionDashboardData(
+            $date,
+            $tab,
+            $orders,
+            $visibleOrders,
+            $orderReturns,
+            $groups,
+            $page,
+            $pageCount,
+            $activeStores,
+            $matrixStores,
+            $products,
+            $quantities,
+            $totals,
+            $packaging,
+            $labelPackaging,
+            $labels,
+            $labelTotal,
+            $packageTotal,
+            $excludedStores,
+            $productionTotal,
+            $production,
+            $orderedStoreIds,
+        );
     }
 }

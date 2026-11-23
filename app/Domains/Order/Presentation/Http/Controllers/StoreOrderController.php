@@ -19,10 +19,13 @@ use Illuminate\View\View;
 
 class StoreOrderController
 {
-    public function __construct(private readonly OrderingService $service, private readonly OrderRepositoryInterface $repository,
+    public function __construct(
+        private readonly OrderingService $service,
+        private readonly OrderRepositoryInterface $repository,
         private readonly StoreOrderHomeHandler $home,
         private readonly StoreOrderRepeatHandler $repeat,
-        private readonly StoreOrderShowHandler $show) {}
+        private readonly StoreOrderShowHandler $show,
+    ) {}
 
     private function user(Request $request): User
     {
@@ -52,34 +55,61 @@ class StoreOrderController
             return view('bakery.no-stores');
         }
 
-        return $this->renderHome($this->home->handle(new StoreOrderHomeQuery($this->storeId($request), $accessible)));
+        return $this->renderHome(
+            $this->home->handle(new StoreOrderHomeQuery($this->storeId($request), $accessible)),
+        );
     }
 
     public function repeat(Request $request, int $order): View
     {
-        return $this->renderHome($this->repeat->handle(new StoreOrderRepeatQuery($order, $this->user($request)->accessibleStoreIds())));
+        return $this->renderHome(
+            $this->repeat->handle(
+                new StoreOrderRepeatQuery($order, $this->user($request)->accessibleStoreIds()),
+            ),
+        );
     }
 
     public function preview(Request $request): View
     {
         abort_unless($this->service->isOpen(), 422, 'Приём заказов закрыт.');
         /** @var array{quantities:array<int|string,int|string>,request_key:string,comment?:string} $input */
-        $input = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'request_key' => ['required', 'uuid'], 'comment' => ['nullable', 'string', 'max:1000']]);
+        $input = $request->validate([
+            'quantities' => ['required', 'array'],
+            'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'],
+            'request_key' => ['required', 'uuid'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
         $id = $this->storeId($request);
         abort_if($this->repository->activeOrder($id, $this->service->deliveryDate()) !== null, 409);
         $store = $this->repository->store($id);
         abort_unless($store !== null && $store->is_active, 403);
 
-        return view('bakery.confirm', ['store' => $store, 'quote' => $this->service->quote($id, $input['quantities']), 'quantities' => $input['quantities'], 'requestKey' => $input['request_key'], 'comment' => trim($input['comment'] ?? ''), 'changed' => false]);
+        return view('bakery.confirm', [
+            'store' => $store,
+            'quote' => $this->service->quote($id, $input['quantities']),
+            'quantities' => $input['quantities'],
+            'requestKey' => $input['request_key'],
+            'comment' => trim($input['comment'] ?? ''),
+            'changed' => false,
+        ]);
     }
 
     public function editPreview(Request $request): View
     {
         abort_unless($this->service->isOpen(), 422, 'Приём заказов закрыт.');
         /** @var array{quantities:array<int|string,int|string>,request_key:string,comment?:string} $input */
-        $input = $request->validate(['store' => ['required', 'integer'], 'quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'request_key' => ['required', 'uuid'], 'comment' => ['nullable', 'string', 'max:1000']]);
+        $input = $request->validate([
+            'store' => ['required', 'integer'],
+            'quantities' => ['required', 'array'],
+            'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'],
+            'request_key' => ['required', 'uuid'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
         $storeId = $this->storeId($request);
-        abort_if($this->repository->activeOrder($storeId, $this->service->deliveryDate()) !== null, 409);
+        abort_if(
+            $this->repository->activeOrder($storeId, $this->service->deliveryDate()) !== null,
+            409,
+        );
 
         return $this->index($request)->with([
             'repeatQuantities' => $input['quantities'],
@@ -90,20 +120,48 @@ class StoreOrderController
 
     public function place(Request $request): RedirectResponse|View
     {
-        /** @var array{quantities:array<int|string,int|string>,request_key:string,quote_hash:string,comment?:string} $input */
-        $input = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'], 'request_key' => ['required', 'uuid'], 'quote_hash' => ['required', 'string', 'size:64'], 'comment' => ['nullable', 'string', 'max:1000']]);
+        /**
+         * @var array{quantities:array<int|string,int|string>,request_key:string,quote_hash:string,
+         *     comment?:string} $input
+         */
+        $input = $request->validate([
+            'quantities' => ['required', 'array'],
+            'quantities.*' => ['required', 'integer', 'min:0', 'max:100000'],
+            'request_key' => ['required', 'uuid'],
+            'quote_hash' => ['required', 'string', 'size:64'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+        ]);
         $id = $this->storeId($request);
-        $result = $this->service->place($id, $input['request_key'], $input['quantities'], $input['quote_hash'], trim($input['comment'] ?? '') ?: null);
+        $result = $this->service->place(
+            $id,
+            $input['request_key'],
+            $input['quantities'],
+            $input['quote_hash'],
+            trim($input['comment'] ?? '') ?: null,
+        );
         if ($result['order'] !== null) {
-            return redirect()->route('bakery.order', $result['order']->id)->with('success', 'Заказ принят.');
+            return redirect()
+                ->route('bakery.order', $result['order']->id)
+                ->with('success', 'Заказ принят.');
         }
 
-        return view('bakery.confirm', ['store' => $this->repository->store($id), 'quote' => $result['quote'], 'quantities' => $input['quantities'], 'requestKey' => $input['request_key'], 'comment' => trim($input['comment'] ?? ''), 'changed' => true]);
+        return view('bakery.confirm', [
+            'store' => $this->repository->store($id),
+            'quote' => $result['quote'],
+            'quantities' => $input['quantities'],
+            'requestKey' => $input['request_key'],
+            'comment' => trim($input['comment'] ?? ''),
+            'changed' => true,
+        ]);
     }
 
     public function show(Request $request, int $order): View
     {
-        return $this->renderShow($this->show->handle(new StoreOrderShowQuery($order, $this->user($request)->accessibleStoreIds())));
+        return $this->renderShow(
+            $this->show->handle(
+                new StoreOrderShowQuery($order, $this->user($request)->accessibleStoreIds()),
+            ),
+        );
     }
 
     private function renderHome(StoreOrderHomeData $data): View
@@ -119,7 +177,11 @@ class StoreOrderController
     public function cancel(Request $request, int $order): RedirectResponse
     {
         $record = $this->repository->order($order);
-        abort_unless($record !== null && in_array($record->bakery_id, $this->user($request)->accessibleStoreIds(), true), 404);
+        abort_unless(
+            $record !== null &&
+                in_array($record->bakery_id, $this->user($request)->accessibleStoreIds(), true),
+            404,
+        );
         $this->service->cancel($record->bakery_id, $order);
 
         return redirect()->route('bakery.order', $order)->with('success', 'Заказ отменён.');

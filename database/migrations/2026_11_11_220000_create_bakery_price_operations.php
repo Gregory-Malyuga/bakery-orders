@@ -16,13 +16,20 @@ return new class extends Migration
             $table->string('kind');
             $table->string('direction')->nullable();
             $table->unsignedBigInteger('delta_kopecks')->nullable();
-            $table->foreignId('reverses_id')->nullable()->constrained('bakery_price_operations')->restrictOnDelete();
+            $table
+                ->foreignId('reverses_id')
+                ->nullable()
+                ->constrained('bakery_price_operations')
+                ->restrictOnDelete();
             $table->text('reason')->nullable();
             $table->timestamps();
         });
         Schema::create('bakery_price_operation_items', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('operation_id')->constrained('bakery_price_operations')->cascadeOnDelete();
+            $table
+                ->foreignId('operation_id')
+                ->constrained('bakery_price_operations')
+                ->cascadeOnDelete();
             $table->foreignId('bakery_id')->constrained('bakeries')->restrictOnDelete();
             $table->foreignId('price_source_id')->constrained('bakeries')->restrictOnDelete();
             $table->unsignedBigInteger('before_kopecks')->nullable();

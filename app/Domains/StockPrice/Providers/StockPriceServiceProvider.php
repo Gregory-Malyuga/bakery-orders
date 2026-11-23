@@ -12,7 +12,10 @@ class StockPriceServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StockDiscrepancyPriceReadRepositoryInterface::class, StockDiscrepancyPriceReadRepository::class);
+        $this->app->bind(
+            StockDiscrepancyPriceReadRepositoryInterface::class,
+            StockDiscrepancyPriceReadRepository::class,
+        );
         $this->app->bind(StockPriceReadRepositoryInterface::class, StockPriceReadRepository::class);
     }
 }

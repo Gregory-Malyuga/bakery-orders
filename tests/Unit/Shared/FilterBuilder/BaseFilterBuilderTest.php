@@ -18,13 +18,11 @@ class BaseFilterBuilderTest extends TestCase
     {
         $filters = new class(null) extends Data
         {
-            public function __construct(
-                public readonly ?string $name = null,
-            ) {}
+            public function __construct(public readonly ?string $name = null) {}
         };
 
         $query = User::query();
-        $result = (new BaseFilterBuilder)->apply($query, $filters);
+        $result = new BaseFilterBuilder()->apply($query, $filters);
 
         $this->assertStringNotContainsString('where', strtolower($result->toRawSql()));
     }
@@ -33,13 +31,11 @@ class BaseFilterBuilderTest extends TestCase
     {
         $filters = new class('test@example.com') extends Data
         {
-            public function __construct(
-                public readonly ?string $emailVerifiedAt = null,
-            ) {}
+            public function __construct(public readonly ?string $emailVerifiedAt = null) {}
         };
 
         $query = User::query();
-        $result = (new BaseFilterBuilder)->apply($query, $filters);
+        $result = new BaseFilterBuilder()->apply($query, $filters);
 
         $this->assertStringContainsString('email_verified_at', $result->toRawSql());
     }
@@ -48,9 +44,7 @@ class BaseFilterBuilderTest extends TestCase
     {
         $filters = new class('alice') extends Data
         {
-            public function __construct(
-                public readonly ?string $name = null,
-            ) {}
+            public function __construct(public readonly ?string $name = null) {}
         };
 
         $customFilter = new class implements FilterInterface
@@ -65,7 +59,7 @@ class BaseFilterBuilderTest extends TestCase
         $this->app->bind($customFilter::class, fn () => $customFilter);
 
         $query = User::query();
-        $result = (new BaseFilterBuilder)->apply($query, $filters, [
+        $result = new BaseFilterBuilder()->apply($query, $filters, [
             'name' => $customFilter::class,
         ]);
 
@@ -79,13 +73,11 @@ class BaseFilterBuilderTest extends TestCase
 
         $filters = new class('Alice') extends Data
         {
-            public function __construct(
-                public readonly ?string $name = null,
-            ) {}
+            public function __construct(public readonly ?string $name = null) {}
         };
 
         $query = User::query();
-        $result = (new BaseFilterBuilder)->apply($query, $filters)->get();
+        $result = new BaseFilterBuilder()->apply($query, $filters)->get();
 
         $this->assertCount(1, $result);
         $this->assertSame('Alice', $result->first()->name);

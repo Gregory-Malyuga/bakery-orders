@@ -26,9 +26,18 @@ class CacheWarmCommandTest extends TestCase
     {
         $log = new WarmLog;
 
-        $this->app->bind('warmer-low', fn () => new OrderTrackingWarmer(priority: 1, name: 'low', log: $log));
-        $this->app->bind('warmer-high', fn () => new OrderTrackingWarmer(priority: 100, name: 'high', log: $log));
-        $this->app->bind('warmer-mid', fn () => new OrderTrackingWarmer(priority: 50, name: 'mid', log: $log));
+        $this->app->bind(
+            'warmer-low',
+            fn () => new OrderTrackingWarmer(priority: 1, name: 'low', log: $log),
+        );
+        $this->app->bind(
+            'warmer-high',
+            fn () => new OrderTrackingWarmer(priority: 100, name: 'high', log: $log),
+        );
+        $this->app->bind(
+            'warmer-mid',
+            fn () => new OrderTrackingWarmer(priority: 50, name: 'mid', log: $log),
+        );
         $this->app->tag(['warmer-low', 'warmer-high', 'warmer-mid'], 'cache-warmers');
 
         $this->artisan('cache:warm')->assertSuccessful();

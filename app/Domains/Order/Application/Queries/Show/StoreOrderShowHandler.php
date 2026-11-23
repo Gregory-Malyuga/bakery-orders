@@ -14,6 +14,8 @@ readonly class StoreOrderShowHandler implements QueryHandlerInterface
     {
         assert($message instanceof StoreOrderShowQuery);
 
-        return new StoreOrderShowData(...$this->read->show($message->orderId, $message->accessible));
+        return new StoreOrderShowData(
+            ...$this->read->show($message->orderId, $message->accessible),
+        );
     }
 }

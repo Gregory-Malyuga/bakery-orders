@@ -68,7 +68,9 @@ class User extends Authenticatable
     public function accessibleStoreIds(): array
     {
         $ids = [];
-        foreach (DB::table('bakery_account_stores')->where('user_id', $this->id)->pluck('bakery_id') as $storeId) {
+        foreach (
+            DB::table('bakery_account_stores')->where('user_id', $this->id)->pluck('bakery_id') as $storeId
+        ) {
             if (is_int($storeId) || is_string($storeId)) {
                 $ids[] = (int) $storeId;
             }

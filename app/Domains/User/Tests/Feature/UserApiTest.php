@@ -89,7 +89,8 @@ class UserApiTest extends BaseApiTest
             'role' => 'manager',
         ]);
 
-        $response->assertStatus(200)
+        $response
+            ->assertStatus(200)
             ->assertJsonPath('name', 'Updated Name')
             ->assertJsonPath('email', 'changed@example.com')
             ->assertJsonPath('role', 'manager');

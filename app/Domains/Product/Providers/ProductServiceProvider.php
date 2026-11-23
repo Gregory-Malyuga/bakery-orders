@@ -19,9 +19,21 @@ class ProductServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(ProductRepositoryInterface::class, ProductRepository::class);
-        $this->app->bind(ProductOptionsReadRepositoryInterface::class, ProductOptionsReadRepository::class);
-        $this->app->bind(ProductCatalogImportRepositoryInterface::class, ProductCatalogImportRepository::class);
-        $this->app->bind(ProductReferenceImportRepositoryInterface::class, ProductReferenceImportRepository::class);
-        $this->app->bind(ProductOrderReadRepositoryInterface::class, ProductOrderReadRepository::class);
+        $this->app->bind(
+            ProductOptionsReadRepositoryInterface::class,
+            ProductOptionsReadRepository::class,
+        );
+        $this->app->bind(
+            ProductCatalogImportRepositoryInterface::class,
+            ProductCatalogImportRepository::class,
+        );
+        $this->app->bind(
+            ProductReferenceImportRepositoryInterface::class,
+            ProductReferenceImportRepository::class,
+        );
+        $this->app->bind(
+            ProductOrderReadRepositoryInterface::class,
+            ProductOrderReadRepository::class,
+        );
     }
 }

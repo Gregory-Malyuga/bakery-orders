@@ -15,8 +15,12 @@ class StockPriceReadRepository implements StockPriceReadRepositoryInterface
         $today = now('Europe/Moscow')->toDateString();
         $end = min($date, $today);
         /** @var Collection<int, object{stock_item_id:int,effective_date:string,id:int,price_kopecks:int,measure_milli:int,measure_unit:string}> $changes */
-        $changes = DB::table('bakery_stock_price_changes')->where('effective_date', '<=', $end)
-            ->orderBy('stock_item_id')->orderBy('effective_date')->orderBy('id')->get();
+        $changes = DB::table('bakery_stock_price_changes')
+            ->where('effective_date', '<=', $end)
+            ->orderBy('stock_item_id')
+            ->orderBy('effective_date')
+            ->orderBy('id')
+            ->get();
         foreach ($changes->groupBy('stock_item_id') as $itemChanges) {
             $first = $itemChanges->first();
             if ($first === null) {
@@ -53,22 +57,37 @@ class StockPriceReadRepository implements StockPriceReadRepositoryInterface
     {
         $this->ensureThrough($date);
 
-        return DB::table('bakery_stock_daily_prices')->where('price_date', $date)->get()->keyBy('stock_item_id');
+        return DB::table('bakery_stock_daily_prices')
+            ->where('price_date', $date)
+            ->get()
+            ->keyBy('stock_item_id');
     }
 
-    /** @return list<array{date:string,item:string,unit:string,balance_milli:int,price_kopecks:int|null,measure_milli:int|null,measure_unit:string|null,value_kopecks:int|null}> */
+    /**
+     * @return list<array{date:string,item:string,unit:string,balance_milli:int,
+     *     price_kopecks:int|null,measure_milli:int|null,measure_unit:string|null,value_kopecks:int|null}>
+     */
     public function dailyRows(string $from, string $to): array
     {
         $this->ensureThrough($to);
         /** @var Collection<int, object{id:int,name:string,unit:string}> $items */
         $items = DB::table('bakery_stock_items')->orderBy('kind')->orderBy('name')->get();
         /** @var Collection<int|string, Collection<int, object{movement_date:string,quantity_milli:int}>> $movements */
-        $movements = DB::table('bakery_stock_movements')->where('movement_date', '<=', $to)
-            ->select('stock_item_id', 'movement_date')->selectRaw('SUM(quantity_milli) AS quantity_milli')
-            ->groupBy('stock_item_id', 'movement_date')->orderBy('movement_date')->get()->groupBy('stock_item_id');
+        $movements = DB::table('bakery_stock_movements')
+            ->where('movement_date', '<=', $to)
+            ->select('stock_item_id', 'movement_date')
+            ->selectRaw('SUM(quantity_milli) AS quantity_milli')
+            ->groupBy('stock_item_id', 'movement_date')
+            ->orderBy('movement_date')
+            ->get()
+            ->groupBy('stock_item_id');
         /** @var Collection<int, object{stock_item_id:int,price_date:string,price_kopecks:int,measure_milli:int,measure_unit:string}> $priceRecords */
-        $priceRecords = DB::table('bakery_stock_daily_prices')->whereBetween('price_date', [$from, $to])->get();
-        $prices = $priceRecords->keyBy(fn (object $price): string => $price->stock_item_id.'|'.$price->price_date);
+        $priceRecords = DB::table('bakery_stock_daily_prices')
+            ->whereBetween('price_date', [$from, $to])
+            ->get();
+        $prices = $priceRecords->keyBy(
+            fn (object $price): string => $price->stock_item_id.'|'.$price->price_date,
+        );
         $rows = [];
         $day = CarbonImmutable::parse($from, 'Europe/Moscow');
         $last = CarbonImmutable::parse($to, 'Europe/Moscow');
@@ -84,11 +103,22 @@ class StockPriceReadRepository implements StockPriceReadRepositoryInterface
                 }
                 $price = $prices[$item->id.'|'.$date] ?? null;
                 $rows[] = [
-                    'date' => $date, 'item' => $item->name, 'unit' => $item->unit,
-                    'balance_milli' => $balance, 'price_kopecks' => $price === null ? null : (int) $price->price_kopecks,
+                    'date' => $date,
+                    'item' => $item->name,
+                    'unit' => $item->unit,
+                    'balance_milli' => $balance,
+                    'price_kopecks' => $price === null ? null : (int) $price->price_kopecks,
                     'measure_milli' => $price === null ? null : (int) $price->measure_milli,
                     'measure_unit' => $price?->measure_unit,
-                    'value_kopecks' => $price === null ? null : StockPrices::value($balance, (int) $price->price_kopecks, (int) $price->measure_milli, $item->unit, $price->measure_unit),
+                    'value_kopecks' => $price === null
+                            ? null
+                            : StockPrices::value(
+                                $balance,
+                                (int) $price->price_kopecks,
+                                (int) $price->measure_milli,
+                                $item->unit,
+                                $price->measure_unit,
+                            ),
                 ];
             }
             $day = $day->addDay();

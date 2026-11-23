@@ -38,7 +38,9 @@ class MakeDomainCommandTest extends StubGenTestCase
         if ($this->migrationRan) {
             $table = Str::snake(Str::plural(static::$domainName));
             Schema::dropIfExists($table);
-            DB::table('migrations')->where('migration', 'like', "%create_{$table}_table")->delete();
+            DB::table('migrations')
+                ->where('migration', 'like', "%create_{$table}_table")
+                ->delete();
             $this->migrationRan = false;
         }
     }
@@ -49,7 +51,9 @@ class MakeDomainCommandTest extends StubGenTestCase
         $content = $this->files->get($routesPath);
         $routePrefix = preg_quote('v1/'.Str::kebab(Str::plural(static::$domainName)), '/');
         $cleaned = preg_replace(
-            '/\n\nRoute::prefix\(\''.$routePrefix.'\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s',
+            '/\n\nRoute::prefix\(\''.
+                $routePrefix.
+                '\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s',
             '',
             $content,
         );
@@ -59,7 +63,11 @@ class MakeDomainCommandTest extends StubGenTestCase
 
         $providersPath = base_path('bootstrap/providers.php');
         $content = $this->files->get($providersPath);
-        $cleaned = preg_replace('/^[ \t]+Domains\\\\'.preg_quote(static::$domainName, '/').'\\\\[^:]+::class,\n/m', '', $content);
+        $cleaned = preg_replace(
+            '/^[ \t]+Domains\\\\'.preg_quote(static::$domainName, '/').'\\\\[^:]+::class,\n/m',
+            '',
+            $content,
+        );
         if ($cleaned !== null && $cleaned !== $content) {
             $this->files->put($providersPath, $cleaned);
         }
@@ -72,7 +80,9 @@ class MakeDomainCommandTest extends StubGenTestCase
     {
         $this->artisan('make:domain stubIso')->assertSuccessful();
 
-        $this->assertFileExists("{$this->domainBase}/Infrastructure/Repositories/StubIsoRepository.php");
+        $this->assertFileExists(
+            "{$this->domainBase}/Infrastructure/Repositories/StubIsoRepository.php",
+        );
     }
 
     public function test_creates_cache_warmer_with_flag(): void
@@ -103,7 +113,10 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->assertNotEmpty($migrations, 'Migration file should be created');
 
         // Scope to this specific file so a concurrent worker's pending migrations are not picked up.
-        $relPath = ltrim(str_replace([base_path().'/', base_path().'\\'], '', $migrations[0]), '/\\');
+        $relPath = ltrim(
+            str_replace([base_path().'/', base_path().'\\'], '', $migrations[0]),
+            '/\\',
+        );
         $this->artisan('migrate', ['--path' => $relPath])->assertSuccessful();
         $this->migrationRan = true;
         $this->assertTrue(Schema::hasTable($table), 'Table should exist after migrate');
@@ -119,7 +132,11 @@ class MakeDomainCommandTest extends StubGenTestCase
         $this->artisan('make:domain StubIso')->assertSuccessful();
         $after = $this->files->glob(database_path("migrations/*_create_{$table}_table.php"));
 
-        $this->assertCount(count($before), $after, 'No extra migration should be created on second run');
+        $this->assertCount(
+            count($before),
+            $after,
+            'No extra migration should be created on second run',
+        );
     }
 
     public function test_fields_appear_in_model_fillable(): void
@@ -160,18 +177,31 @@ class MakeDomainCommandTest extends StubGenTestCase
         try {
             $this->artisan('make:domain StubGroup/StubNested')->assertSuccessful();
 
-            $content = $files->get("{$nestedBase}/Infrastructure/Repositories/StubNestedRepository.php");
-            $this->assertStringContainsString('namespace Domains\StubGroup\StubNested\Infrastructure\Repositories;', $content);
+            $content = $files->get(
+                "{$nestedBase}/Infrastructure/Repositories/StubNestedRepository.php",
+            );
+            $this->assertStringContainsString(
+                'namespace Domains\StubGroup\StubNested\Infrastructure\Repositories;',
+                $content,
+            );
 
             $content = $files->get("{$nestedBase}/Domain/Models/StubNested.php");
-            $this->assertStringContainsString('namespace Domains\StubGroup\StubNested\Domain\Models;', $content);
+            $this->assertStringContainsString(
+                'namespace Domains\StubGroup\StubNested\Domain\Models;',
+                $content,
+            );
 
             $apiRoutes = $files->get(base_path('routes/api.php'));
-            $this->assertStringContainsString('Domains\StubGroup\StubNested\Presentation\Http\Controllers\StubNestedController', $apiRoutes);
+            $this->assertStringContainsString(
+                'Domains\StubGroup\StubNested\Presentation\Http\Controllers\StubNestedController',
+                $apiRoutes,
+            );
             $this->assertStringContainsString("prefix('v1/stub-group/stub-nesteds')", $apiRoutes);
         } finally {
             $files->deleteDirectory(base_path('app/Domains/StubGroup'));
-            foreach ($files->glob(database_path('migrations/*_create_stub_nesteds_table.php')) as $f) {
+            foreach (
+                $files->glob(database_path('migrations/*_create_stub_nesteds_table.php')) as $f
+            ) {
                 $files->delete($f);
             }
             Schema::dropIfExists('stub_nesteds');
@@ -179,14 +209,24 @@ class MakeDomainCommandTest extends StubGenTestCase
             $routePrefix = preg_quote('v1/stub-group/stub-nesteds', '/');
             $routesPath = base_path('routes/api.php');
             $content = $files->get($routesPath);
-            $cleaned = preg_replace('/\n\nRoute::prefix\(\''.$routePrefix.'\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s', '', $content);
+            $cleaned = preg_replace(
+                '/\n\nRoute::prefix\(\''.
+                    $routePrefix.
+                    '\'\)(?:->middleware\([^)]*\))?->group.*?\}\);/s',
+                '',
+                $content,
+            );
             if ($cleaned !== null && $cleaned !== $content) {
                 $files->put($routesPath, $cleaned);
             }
 
             $providersPath = base_path('bootstrap/providers.php');
             $content = $files->get($providersPath);
-            $cleaned = preg_replace('/^[ \t]+Domains\\\\StubGroup\\\\StubNested\\\\[^:]+::class,\n/m', '', $content);
+            $cleaned = preg_replace(
+                '/^[ \t]+Domains\\\\StubGroup\\\\StubNested\\\\[^:]+::class,\n/m',
+                '',
+                $content,
+            );
             if ($cleaned !== null && $cleaned !== $content) {
                 $files->put($providersPath, $cleaned);
             }

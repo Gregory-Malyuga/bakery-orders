@@ -70,7 +70,10 @@ trait HasApiTests
 
         /** @var int|string $key */
         $key = $model->getKey();
-        $response = $this->putJson($this->basePath().'/'.(string) $key, $this->makeUpdatePayload());
+        $response = $this->putJson(
+            $this->basePath().'/'.(string) $key,
+            $this->makeUpdatePayload(),
+        );
 
         $response->assertStatus(200);
     }

@@ -13,8 +13,9 @@ readonly class SaveProductHandler implements CommandHandlerInterface
     {
         assert($message instanceof SaveProductCommand);
 
-        $mode = $message->packagingMode ?? ($message->id !== null
-            ? $this->repository->packagingMode($message->id) : 'mixed');
+        $mode =
+            $message->packagingMode ??
+            ($message->id !== null ? $this->repository->packagingMode($message->id) : 'mixed');
 
         $packageMinimum = match ($mode) {
             'mixed' => 3,

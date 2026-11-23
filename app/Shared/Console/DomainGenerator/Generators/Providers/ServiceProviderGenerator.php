@@ -41,6 +41,10 @@ class ServiceProviderGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Providers/{$ctx->name}ServiceProvider.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Providers/{$ctx->name}ServiceProvider.php",
+            $content,
+        );
     }
 }

@@ -45,6 +45,10 @@ class RepositoryGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Infrastructure/Repositories/{$ctx->name}Repository.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Infrastructure/Repositories/{$ctx->name}Repository.php",
+            $content,
+        );
     }
 }

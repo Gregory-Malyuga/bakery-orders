@@ -11,7 +11,9 @@ final class StoreOwnerReadRepository implements StoreOwnerReadRepositoryInterfac
     public function storeOwners(): array
     {
         $owners = [];
-        foreach (DB::table('bakery_account_stores')->pluck('user_id', 'bakery_id') as $storeId => $userId) {
+        foreach (
+            DB::table('bakery_account_stores')->pluck('user_id', 'bakery_id') as $storeId => $userId
+        ) {
             if (! is_int($userId) && ! is_string($userId)) {
                 throw new \UnexpectedValueException('Invalid store owner ID');
             }

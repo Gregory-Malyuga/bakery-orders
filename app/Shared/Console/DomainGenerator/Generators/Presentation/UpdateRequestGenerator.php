@@ -33,6 +33,10 @@ class UpdateRequestGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Presentation/Http/Requests/Update{$ctx->name}Request.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Presentation/Http/Requests/Update{$ctx->name}Request.php",
+            $content,
+        );
     }
 }

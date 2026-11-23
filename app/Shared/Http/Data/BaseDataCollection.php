@@ -21,8 +21,10 @@ class BaseDataCollection extends DataCollection
      * @param  LengthAwarePaginator<int, mixed>  $paginator
      * @return PaginatedDataCollection<int, T>
      */
-    public static function fromPaginator(string $dataClass, LengthAwarePaginator $paginator): PaginatedDataCollection
-    {
+    public static function fromPaginator(
+        string $dataClass,
+        LengthAwarePaginator $paginator,
+    ): PaginatedDataCollection {
         return new PaginatedDataCollection($dataClass, $paginator);
     }
 }

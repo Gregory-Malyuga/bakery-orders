@@ -44,6 +44,10 @@ class CreateHandlerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Commands/Create/Create{$ctx->name}Handler.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Commands/Create/Create{$ctx->name}Handler.php",
+            $content,
+        );
     }
 }

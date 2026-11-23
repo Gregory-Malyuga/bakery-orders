@@ -15,7 +15,10 @@ class StoreAccountServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(StoreAccountRepositoryInterface::class, StoreAccountRepository::class);
-        $this->app->bind(StoreAccountMembershipRepositoryInterface::class, StoreAccountMembershipRepository::class);
+        $this->app->bind(
+            StoreAccountMembershipRepositoryInterface::class,
+            StoreAccountMembershipRepository::class,
+        );
         $this->app->bind(StoreOwnerReadRepositoryInterface::class, StoreOwnerReadRepository::class);
     }
 }

@@ -5,7 +5,8 @@ namespace Shared\Console\DomainGenerator\Context;
 readonly class DomainContext
 {
     /**
-     * @param  array<string, array{phpType: string, nullable: bool, migration: string, decimal: bool, faker: string, rules: list<string>}>  $fields
+     * @param  array<string, array{phpType: string, nullable: bool, migration: string,
+     *     decimal: bool, faker: string, rules: list<string>}>  $fields
      */
     public function __construct(
         public string $name,

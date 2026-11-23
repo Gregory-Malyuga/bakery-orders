@@ -13,10 +13,13 @@ class HealthController extends Controller
     {
         $db = $this->checkDb();
 
-        return response()->json([
-            'status' => $db ? 'ok' : 'degraded',
-            'db' => $db,
-        ], $db ? 200 : 503);
+        return response()->json(
+            [
+                'status' => $db ? 'ok' : 'degraded',
+                'db' => $db,
+            ],
+            $db ? 200 : 503,
+        );
     }
 
     private function checkDb(): bool

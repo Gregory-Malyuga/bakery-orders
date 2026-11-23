@@ -15,7 +15,13 @@ class StockItemServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(StockItemRepositoryInterface::class, StockItemRepository::class);
-        $this->app->bind(StockDashboardReadRepositoryInterface::class, StockDashboardReadRepository::class);
-        $this->app->bind(IngredientStockReadRepositoryInterface::class, IngredientStockReadRepository::class);
+        $this->app->bind(
+            StockDashboardReadRepositoryInterface::class,
+            StockDashboardReadRepository::class,
+        );
+        $this->app->bind(
+            IngredientStockReadRepositoryInterface::class,
+            IngredientStockReadRepository::class,
+        );
     }
 }

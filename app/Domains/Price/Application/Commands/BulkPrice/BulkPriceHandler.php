@@ -15,7 +15,9 @@ readonly class BulkPriceHandler implements CommandHandlerInterface
         assert($message instanceof BulkPriceCommand);
 
         if ($message->deltaKopecks <= 0) {
-            throw ValidationException::withMessages(['rubles' => 'Изменение должно быть больше нуля.']);
+            throw ValidationException::withMessages([
+                'rubles' => 'Изменение должно быть больше нуля.',
+            ]);
         }
 
         $this->repository->apply(

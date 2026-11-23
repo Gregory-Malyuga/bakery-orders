@@ -20,7 +20,10 @@ readonly class PrintSheetHandler implements CommandHandlerInterface
         $source = $this->repository->sheet($message->sheetId);
         abort_if($source === null, 404);
 
-        /** @var array{date:string,route:string,driver:string,salary_kopecks?:int|null,bonus_kopecks?:int|null,rows:list<array{store_id:int,due:int,cashless?:bool}>} $snapshot */
+        /**
+         * @var array{date:string,route:string,driver:string,salary_kopecks?:int|null,
+         *     bonus_kopecks?:int|null,rows:list<array{store_id:int,due:int,cashless?:bool}>} $snapshot
+         */
         $snapshot = json_decode((string) $source->snapshot, true, 512, JSON_THROW_ON_ERROR);
         $sheet = $this->service->sheetForPrint($snapshot);
 

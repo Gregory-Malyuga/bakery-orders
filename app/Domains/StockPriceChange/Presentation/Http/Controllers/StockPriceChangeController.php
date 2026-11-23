@@ -22,17 +22,23 @@ readonly class StockPriceChangeController
             'price' => ['required', 'string', 'max:20'],
             'measure' => ['required', 'in:1g,70g,100g,1kg,1ml,100ml,1l,1unit,custom'],
             'custom_quantity' => ['required_if:measure,custom', 'nullable', 'string', 'max:20'],
-            'custom_unit' => ['required_if:measure,custom', 'nullable', 'in:g,kg,ml,l,pcs,tbsp,m,roll'],
+            'custom_unit' => [
+                'required_if:measure,custom',
+                'nullable',
+                'in:g,kg,ml,l,pcs,tbsp,m,roll',
+            ],
         ]);
 
-        $this->handler->handle(new SaveStockPriceCommand(
-            $data['item'],
-            $data['price'],
-            $data['measure'],
-            $data['custom_quantity'] ?? null,
-            $data['custom_unit'] ?? null,
-            (int) $actor->id,
-        ));
+        $this->handler->handle(
+            new SaveStockPriceCommand(
+                $data['item'],
+                $data['price'],
+                $data['measure'],
+                $data['custom_quantity'] ?? null,
+                $data['custom_unit'] ?? null,
+                (int) $actor->id,
+            ),
+        );
 
         return redirect()->route('bakery.stock')->with('success', 'Цена на завтра сохранена.');
     }

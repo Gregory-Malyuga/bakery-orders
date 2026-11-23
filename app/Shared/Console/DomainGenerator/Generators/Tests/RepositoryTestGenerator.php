@@ -63,8 +63,11 @@ class RepositoryTestGenerator extends AbstractGenerator
         $this->writeFile($files, "{$ctx->unitTestPath}/{$ctx->name}RepositoryTest.php", $content);
     }
 
-    private function filterTestMethod(DomainContext $ctx, string $fieldName, string $phpType): string
-    {
+    private function filterTestMethod(
+        DomainContext $ctx,
+        string $fieldName,
+        string $phpType,
+    ): string {
         $val1 = $this->values->valueFor($fieldName, $phpType);
         $val2 = $this->values->valueFor($fieldName, $phpType, true);
         $methodName = 'test_list_filters_by_'.$fieldName;

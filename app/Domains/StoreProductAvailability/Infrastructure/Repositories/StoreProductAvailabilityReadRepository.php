@@ -11,7 +11,11 @@ final class StoreProductAvailabilityReadRepository implements StoreProductAvaila
     public function excludedProductIds(int $storeId): array
     {
         $ids = [];
-        foreach (DB::table('bakery_store_product_exclusions')->where('bakery_id', $storeId)->pluck('product_id') as $id) {
+        foreach (
+            DB::table('bakery_store_product_exclusions')
+                ->where('bakery_id', $storeId)
+                ->pluck('product_id') as $id
+        ) {
             if (is_numeric($id)) {
                 $ids[] = (int) $id;
             }

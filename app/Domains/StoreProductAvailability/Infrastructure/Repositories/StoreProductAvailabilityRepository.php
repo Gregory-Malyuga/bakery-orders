@@ -10,12 +10,15 @@ final class StoreProductAvailabilityRepository implements StoreProductAvailabili
     public function include(int $storeId, int $productId): void
     {
         DB::table('bakery_store_product_exclusions')
-            ->where(['bakery_id' => $storeId, 'product_id' => $productId])->delete();
+            ->where(['bakery_id' => $storeId, 'product_id' => $productId])
+            ->delete();
     }
 
     public function exclude(int $storeId, int $productId): void
     {
-        DB::table('bakery_store_product_exclusions')
-            ->updateOrInsert(['bakery_id' => $storeId, 'product_id' => $productId]);
+        DB::table('bakery_store_product_exclusions')->updateOrInsert([
+            'bakery_id' => $storeId,
+            'product_id' => $productId,
+        ]);
     }
 }

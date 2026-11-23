@@ -12,13 +12,20 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReportController
 {
-    public function __construct(private readonly BuildPeriodReportHandler $periods, private readonly PeriodReportWorkbookInterface $periodWorkbook, private readonly StockPrices $stockPrices) {}
+    public function __construct(
+        private readonly BuildPeriodReportHandler $periods,
+        private readonly PeriodReportWorkbookInterface $periodWorkbook,
+        private readonly StockPrices $stockPrices,
+    ) {}
 
     /** @return array{from:string,to:string} */
     private function period(Request $request): array
     {
         /** @var array{from?:string,to?:string} $input */
-        $input = $request->validate(['from' => ['nullable', 'date_format:Y-m-d'], 'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from']]);
+        $input = $request->validate([
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+        ]);
         $today = now('Europe/Moscow');
         $from = $input['from'] ?? $today->copy()->startOfMonth()->toDateString();
         $to = $input['to'] ?? $today->toDateString();
@@ -30,18 +37,34 @@ class ReportController
     public function report(Request $request): View
     {
         $period = $this->period($request);
-        $report = $this->periods->handle(new BuildPeriodReportQuery($period['from'], $period['to']))->report;
+        $report = $this->periods->handle(new BuildPeriodReportQuery($period['from'], $period['to']))
+            ->report;
 
-        return view('bakery.period-report', ['from' => $period['from'], 'to' => $period['to'], 'report' => $report, 'stockRows' => $this->stockPrices->dailyRows($period['from'], $period['to'])]);
+        return view('bakery.period-report', [
+            'from' => $period['from'],
+            'to' => $period['to'],
+            'report' => $report,
+            'stockRows' => $this->stockPrices->dailyRows($period['from'], $period['to']),
+        ]);
     }
 
     public function downloadReport(Request $request): BinaryFileResponse
     {
         $period = $this->period($request);
-        $report = $this->periods->handle(new BuildPeriodReportQuery($period['from'], $period['to']))->report;
+        $report = $this->periods->handle(new BuildPeriodReportQuery($period['from'], $period['to']))
+            ->report;
 
-        return response()->download($this->periodWorkbook->create($report, $this->stockPrices->dailyRows($period['from'], $period['to'])), 'otchet-'.$period['from'].'-'.$period['to'].'.xlsx', [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->periodWorkbook->create(
+                    $report,
+                    $this->stockPrices->dailyRows($period['from'], $period['to']),
+                ),
+                'otchet-'.$period['from'].'-'.$period['to'].'.xlsx',
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 }

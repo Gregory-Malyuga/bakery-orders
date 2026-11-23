@@ -104,6 +104,10 @@ class ControllerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Presentation/Http/Controllers/{$ctx->name}Controller.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Presentation/Http/Controllers/{$ctx->name}Controller.php",
+            $content,
+        );
     }
 }

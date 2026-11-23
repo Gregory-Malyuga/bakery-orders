@@ -12,5 +12,11 @@ interface InvoiceWorkbookInterface
      * @param  iterable<Product>  $products
      * @param  list<GroupInvoice>  $groups
      */
-    public function create(iterable $orders, iterable $products, array $groups = [], ?string $date = null, ?string $generatedAt = null): string;
+    public function create(
+        iterable $orders,
+        iterable $products,
+        array $groups = [],
+        ?string $date = null,
+        ?string $generatedAt = null,
+    ): string;
 }

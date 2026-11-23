@@ -20,9 +20,20 @@ final class StoreGroupRepository implements StoreGroupRepositoryInterface
         return DB::table('bakery_store_group_members')->get()->groupBy('group_id');
     }
 
-    public function save(?int $id, string $name, bool $showInInvoice, bool $excludeFromLabels, array $storeIds): int
-    {
-        return DB::transaction(static function () use ($id, $name, $showInInvoice, $excludeFromLabels, $storeIds): int {
+    public function save(
+        ?int $id,
+        string $name,
+        bool $showInInvoice,
+        bool $excludeFromLabels,
+        array $storeIds,
+    ): int {
+        return DB::transaction(static function () use (
+            $id,
+            $name,
+            $showInInvoice,
+            $excludeFromLabels,
+            $storeIds,
+        ): int {
             $values = [
                 'name' => trim($name),
                 'show_in_invoice' => $showInInvoice,
@@ -33,14 +44,19 @@ final class StoreGroupRepository implements StoreGroupRepositoryInterface
             if ($id !== null) {
                 DB::table('bakery_store_groups')->where('id', $id)->update($values);
             } else {
-                $id = (int) DB::table('bakery_store_groups')->insertGetId($values + ['created_at' => now()]);
+                $id = (int) DB::table('bakery_store_groups')->insertGetId(
+                    $values + ['created_at' => now()],
+                );
             }
 
             DB::table('bakery_store_group_members')->where('group_id', $id)->delete();
-            $members = array_map(static fn (int $storeId): array => [
-                'group_id' => $id,
-                'bakery_id' => $storeId,
-            ], $storeIds);
+            $members = array_map(
+                static fn (int $storeId): array => [
+                    'group_id' => $id,
+                    'bakery_id' => $storeId,
+                ],
+                $storeIds,
+            );
 
             if ($members !== []) {
                 DB::table('bakery_store_group_members')->insert($members);

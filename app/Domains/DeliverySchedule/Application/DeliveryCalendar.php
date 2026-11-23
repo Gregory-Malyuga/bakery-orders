@@ -47,6 +47,9 @@ class DeliveryCalendar
             $delivery = $delivery->addDay();
         }
 
-        return ['order_date' => $delivery->subDay()->toDateString(), 'delivery_date' => $delivery->toDateString()];
+        return [
+            'order_date' => $delivery->subDay()->toDateString(),
+            'delivery_date' => $delivery->toDateString(),
+        ];
     }
 }

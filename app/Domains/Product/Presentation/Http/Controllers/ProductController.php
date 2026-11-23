@@ -13,7 +13,10 @@ readonly class ProductController
 
     public function save(Request $request): RedirectResponse
     {
-        /** @var array{id?:int|string,name:string,sort_order:int|string,minimum_quantity:int|string,packaging_mode?:string,is_active:bool|int|string} $data */
+        /**
+         * @var array{id?:int|string,name:string,sort_order:int|string,minimum_quantity:int|string,
+         *     packaging_mode?:string,is_active:bool|int|string} $data
+         */
         $data = $request->validate([
             'id' => ['nullable', 'integer', 'exists:bakery_products,id'],
             'name' => ['required', 'string', 'max:255'],
@@ -23,14 +26,16 @@ readonly class ProductController
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $this->save->handle(new SaveProductCommand(
-            isset($data['id']) ? (int) $data['id'] : null,
-            $data['name'],
-            (int) $data['sort_order'],
-            (int) $data['minimum_quantity'],
-            $data['packaging_mode'] ?? null,
-            (bool) $data['is_active'],
-        ));
+        $this->save->handle(
+            new SaveProductCommand(
+                isset($data['id']) ? (int) $data['id'] : null,
+                $data['name'],
+                (int) $data['sort_order'],
+                (int) $data['minimum_quantity'],
+                $data['packaging_mode'] ?? null,
+                (bool) $data['is_active'],
+            ),
+        );
 
         return back()->with('success', 'Товар сохранён.');
     }

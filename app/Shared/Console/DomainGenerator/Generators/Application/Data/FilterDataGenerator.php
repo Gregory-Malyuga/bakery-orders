@@ -12,8 +12,12 @@ class FilterDataGenerator extends AbstractGenerator
     {
         $props = '';
         foreach ($ctx->fields as $fieldName => $def) {
-            $docPrefix = $def['phpType'] === 'array' ? "        /** @var array<string, mixed>|null */\n" : '';
-            $props .= $docPrefix."        public readonly ?{$def['phpType']} \${$fieldName} = null,\n";
+            $docPrefix =
+                $def['phpType'] === 'array'
+                    ? "        /** @var array<string, mixed>|null */\n"
+                    : '';
+            $props .=
+                $docPrefix."        public readonly ?{$def['phpType']} \${$fieldName} = null,\n";
         }
 
         $content = <<<PHP
@@ -30,6 +34,10 @@ class FilterDataGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Data/{$ctx->name}FilterData.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Data/{$ctx->name}FilterData.php",
+            $content,
+        );
     }
 }

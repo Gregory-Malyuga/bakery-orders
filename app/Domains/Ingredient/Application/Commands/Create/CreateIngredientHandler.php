@@ -20,7 +20,9 @@ readonly class CreateIngredientHandler implements CommandHandlerInterface
         }
 
         if ($this->repository->existsWithName($name, $message->unit)) {
-            throw ValidationException::withMessages(['name' => 'Ингредиент с такой единицей уже есть в справочнике.']);
+            throw ValidationException::withMessages([
+                'name' => 'Ингредиент с такой единицей уже есть в справочнике.',
+            ]);
         }
 
         $this->repository->create($name, $message->unit);

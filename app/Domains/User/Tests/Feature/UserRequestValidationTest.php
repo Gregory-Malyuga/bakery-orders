@@ -37,8 +37,7 @@ class UserRequestValidationTest extends TestCase
     public function test_index_accepts_valid_sort_fields(): void
     {
         foreach (['id', 'name', 'email', 'created_at'] as $field) {
-            $this->getJson("/api/v1/users?sort={$field}&direction=asc")
-                ->assertStatus(200);
+            $this->getJson("/api/v1/users?sort={$field}&direction=asc")->assertStatus(200);
         }
     }
 
@@ -57,7 +56,8 @@ class UserRequestValidationTest extends TestCase
             'name' => 'Test',
             'email' => 'not-an-email',
             'password' => 'secret1234',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 
@@ -69,7 +69,8 @@ class UserRequestValidationTest extends TestCase
             'name' => 'Test',
             'email' => 'taken@example.com',
             'password' => 'secret1234',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 
@@ -84,7 +85,8 @@ class UserRequestValidationTest extends TestCase
             'name' => $user->name,
             'email' => 'taken@example.com',
             'role' => 'user',
-        ])->assertStatus(422)
+        ])
+            ->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
     }
 

@@ -14,6 +14,8 @@ readonly class StoreOrderHomeHandler implements QueryHandlerInterface
     {
         assert($message instanceof StoreOrderHomeQuery);
 
-        return new StoreOrderHomeData(...$this->read->home($message->storeId, $message->accessible));
+        return new StoreOrderHomeData(
+            ...$this->read->home($message->storeId, $message->accessible),
+        );
     }
 }

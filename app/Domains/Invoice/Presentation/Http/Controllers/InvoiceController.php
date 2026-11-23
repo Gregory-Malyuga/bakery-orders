@@ -17,9 +17,13 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class InvoiceController
 {
-    public function __construct(private readonly OrderRepositoryInterface $orders, private readonly InvoiceWorkbookInterface $workbook, private readonly GroupInvoiceService $groupInvoices,
+    public function __construct(
+        private readonly OrderRepositoryInterface $orders,
+        private readonly InvoiceWorkbookInterface $workbook,
+        private readonly GroupInvoiceService $groupInvoices,
         private readonly SingleInvoiceHandler $single,
-        private readonly BatchInvoiceHandler $batch) {}
+        private readonly BatchInvoiceHandler $batch,
+    ) {}
 
     private function date(Request $request): string
     {
@@ -59,9 +63,15 @@ class InvoiceController
         $record = $this->orders->order($order);
         abort_unless($record !== null && $record->status === 'accepted', 404);
 
-        return response()->download($this->workbook->create([$record], $this->orders->products()), "nakladnaya-{$record->id}.xlsx", [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->workbook->create([$record], $this->orders->products()),
+                "nakladnaya-{$record->id}.xlsx",
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 
     public function downloadBatch(Request $request): BinaryFileResponse
@@ -70,8 +80,20 @@ class InvoiceController
 
         $orders = $this->orders->orders($date);
 
-        return response()->download($this->workbook->create($orders, $this->orders->products(), $this->groupInvoices->forOrders($orders), $date, now('Europe/Moscow')->format('d.m.Y H:i')), "nakladnye-{$date}.xlsx", [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+        return response()
+            ->download(
+                $this->workbook->create(
+                    $orders,
+                    $this->orders->products(),
+                    $this->groupInvoices->forOrders($orders),
+                    $date,
+                    now('Europe/Moscow')->format('d.m.Y H:i'),
+                ),
+                "nakladnye-{$date}.xlsx",
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ],
+            )
+            ->deleteFileAfterSend(true);
     }
 }

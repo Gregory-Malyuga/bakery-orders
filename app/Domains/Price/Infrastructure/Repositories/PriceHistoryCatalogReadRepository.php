@@ -11,9 +11,13 @@ final class PriceHistoryCatalogReadRepository implements PriceHistoryCatalogRead
     /** @return Collection<int, \stdClass> */
     public function priceOperations(int $productId): Collection
     {
-        return DB::table('bakery_price_operations as o')->join('users as u', 'u.id', '=', 'o.user_id')
-            ->where('o.product_id', $productId)->orderByDesc('o.id')
-            ->select('o.*', 'u.name as author')->limit(100)->get();
+        return DB::table('bakery_price_operations as o')
+            ->join('users as u', 'u.id', '=', 'o.user_id')
+            ->where('o.product_id', $productId)
+            ->orderByDesc('o.id')
+            ->select('o.*', 'u.name as author')
+            ->limit(100)
+            ->get();
     }
 
     /** @param Collection<int, \stdClass> $history
@@ -22,9 +26,13 @@ final class PriceHistoryCatalogReadRepository implements PriceHistoryCatalogRead
     public function priceOperationItems(Collection $history): Collection
     {
         /** @var Collection<int|string, Collection<int, \stdClass>> $result */
-        $result = DB::table('bakery_price_operation_items as i')->join('bakeries as b', 'b.id', '=', 'i.bakery_id')
+        $result = DB::table('bakery_price_operation_items as i')
+            ->join('bakeries as b', 'b.id', '=', 'i.bakery_id')
             ->whereIn('i.operation_id', $history->pluck('id'))
-            ->select('i.*', 'b.name as store_name')->orderBy('i.bakery_id')->get()->groupBy('operation_id');
+            ->select('i.*', 'b.name as store_name')
+            ->orderBy('i.bakery_id')
+            ->get()
+            ->groupBy('operation_id');
 
         return $result;
     }
@@ -36,7 +44,9 @@ final class PriceHistoryCatalogReadRepository implements PriceHistoryCatalogRead
     {
         /** @var list<int|string> $result */
         $result = DB::table('bakery_price_operations')
-            ->whereIn('reverses_id', $history->pluck('id'))->pluck('reverses_id')->all();
+            ->whereIn('reverses_id', $history->pluck('id'))
+            ->pluck('reverses_id')
+            ->all();
 
         return $result;
     }

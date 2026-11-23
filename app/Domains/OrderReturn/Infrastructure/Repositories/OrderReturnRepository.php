@@ -23,21 +23,35 @@ final class OrderReturnRepository implements OrderReturnRepositoryInterface
 
     public function item(int $orderId, int $productId): ?OrderItem
     {
-        return OrderItem::query()->where('order_id', $orderId)->where('product_id', $productId)->first();
+        return OrderItem::query()
+            ->where('order_id', $orderId)
+            ->where('product_id', $productId)
+            ->first();
     }
 
     /** @return object{status:string}|null */
     public function lockedReturn(int $orderId, int $returnId): ?object
     {
         /** @var object{status:string}|null $record */
-        $record = DB::table('bakery_returns')->where('order_id', $orderId)
-            ->where('id', $returnId)->lockForUpdate()->first();
+        $record = DB::table('bakery_returns')
+            ->where('order_id', $orderId)
+            ->where('id', $returnId)
+            ->lockForUpdate()
+            ->first();
 
         return $record;
     }
 
-    public function record(int $orderId, int $adminId, int $productId, string $name, int $unit, int $quantity, bool $isOrderItem, ?string $reason): void
-    {
+    public function record(
+        int $orderId,
+        int $adminId,
+        int $productId,
+        string $name,
+        int $unit,
+        int $quantity,
+        bool $isOrderItem,
+        ?string $reason,
+    ): void {
         DB::table('bakery_returns')->insert([
             'order_id' => $orderId,
             'product_id' => $productId,
@@ -54,11 +68,13 @@ final class OrderReturnRepository implements OrderReturnRepositoryInterface
 
     public function cancel(int $returnId, int $adminId, string $reason): void
     {
-        DB::table('bakery_returns')->where('id', $returnId)->update([
-            'status' => 'cancelled',
-            'cancelled_by_user_id' => $adminId,
-            'cancelled_at' => now(),
-            'cancellation_reason' => $reason,
-        ]);
+        DB::table('bakery_returns')
+            ->where('id', $returnId)
+            ->update([
+                'status' => 'cancelled',
+                'cancelled_by_user_id' => $adminId,
+                'cancelled_at' => now(),
+                'cancellation_reason' => $reason,
+            ]);
     }
 }

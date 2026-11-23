@@ -11,9 +11,15 @@ use Illuminate\Database\Eloquent\Collection;
 /**
  * @phpstan-import-type GroupInvoice from GroupInvoiceService
  *
- * @phpstan-type ReturnEntry array{quantities:array<int,int>,extras:list<array{product_id:int,name:string,quantity:int,unit_kopecks:int}>,amount:int}
+ * @phpstan-type ReturnEntry array{quantities:array<int,int>,extras:list<array{product_id:int,
+ *     name:string,quantity:int,unit_kopecks:int}>,amount:int}
  * @phpstan-type PackagePlan array{one:int,two:int,three:int,five:int,loose:int}
- * @phpstan-type ProductionResult array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,recipes:array<string,array{quantity:int,ingredients:array<string,int|float>,other_ingredients:array<string,array{quantity:int|float,unit:string}>}>,without_recipe:list<string>}
+ * @phpstan-type ProductionResult array{dough_grams:int|float,main_dough:array<string,float>,
+ *     samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,
+ *     ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,
+ *     recipes:array<string,array{quantity:int,ingredients:array<string,int|float>,
+ *     other_ingredients:array<string,array{quantity:int|float,unit:string}>}>,
+ *     without_recipe:list<string>}
  */
 readonly class ProductionDashboardData
 {
@@ -59,9 +65,41 @@ readonly class ProductionDashboardData
         public array $orderedStoreIds,
     ) {}
 
-    /** @return array{date:string,tab:string,orders:Collection<int,Order>,visibleOrders:Collection<int,Order>,orderReturns:array<int,ReturnEntry>,groups:list<GroupInvoice>,page:int,pageCount:int,activeStores:Collection<int,Store>,matrixStores:Collection<int,Store>,products:Collection<int,Product>,quantities:array<int,array<int,int>>,totals:array<int,int>,packaging:array<int,PackagePlan>,labelPackaging:array<int,PackagePlan>,labels:array<int,int>,labelTotal:int,packageTotal:int,excludedStores:list<array{name:string,groups:list<string>,packages:int}>,productionTotal:int,production:ProductionResult,orderedStoreIds:list<int>} */
+    /**
+     * @return array{date:string,tab:string,orders:Collection<int,Order>,
+     *     visibleOrders:Collection<int,Order>,orderReturns:array<int,ReturnEntry>,
+     *     groups:list<GroupInvoice>,page:int,pageCount:int,activeStores:Collection<int,Store>,
+     *     matrixStores:Collection<int,Store>,products:Collection<int,Product>,quantities:array<int,
+     *     array<int,int>>,totals:array<int,int>,packaging:array<int,PackagePlan>,
+     *     labelPackaging:array<int,PackagePlan>,labels:array<int,int>,labelTotal:int,packageTotal:int,
+     *     excludedStores:list<array{name:string,groups:list<string>,packages:int}>,productionTotal:int,
+     *     production:ProductionResult,orderedStoreIds:list<int>}
+     */
     public function viewData(): array
     {
-        return ['date' => $this->date, 'tab' => $this->tab, 'orders' => $this->orders, 'visibleOrders' => $this->visibleOrders, 'orderReturns' => $this->orderReturns, 'groups' => $this->groups, 'page' => $this->page, 'pageCount' => $this->pageCount, 'activeStores' => $this->activeStores, 'matrixStores' => $this->matrixStores, 'products' => $this->products, 'quantities' => $this->quantities, 'totals' => $this->totals, 'packaging' => $this->packaging, 'labelPackaging' => $this->labelPackaging, 'labels' => $this->labels, 'labelTotal' => $this->labelTotal, 'packageTotal' => $this->packageTotal, 'excludedStores' => $this->excludedStores, 'productionTotal' => $this->productionTotal, 'production' => $this->production, 'orderedStoreIds' => $this->orderedStoreIds];
+        return [
+            'date' => $this->date,
+            'tab' => $this->tab,
+            'orders' => $this->orders,
+            'visibleOrders' => $this->visibleOrders,
+            'orderReturns' => $this->orderReturns,
+            'groups' => $this->groups,
+            'page' => $this->page,
+            'pageCount' => $this->pageCount,
+            'activeStores' => $this->activeStores,
+            'matrixStores' => $this->matrixStores,
+            'products' => $this->products,
+            'quantities' => $this->quantities,
+            'totals' => $this->totals,
+            'packaging' => $this->packaging,
+            'labelPackaging' => $this->labelPackaging,
+            'labels' => $this->labels,
+            'labelTotal' => $this->labelTotal,
+            'packageTotal' => $this->packageTotal,
+            'excludedStores' => $this->excludedStores,
+            'productionTotal' => $this->productionTotal,
+            'production' => $this->production,
+            'orderedStoreIds' => $this->orderedStoreIds,
+        ];
     }
 }

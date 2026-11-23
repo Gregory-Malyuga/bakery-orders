@@ -49,8 +49,18 @@ class UserRepositoryTest extends BaseRepositoryTest
 
     public function test_list_filters_by_name(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'user']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(name: 'Alice');
         $result = $this->repository()->list($filters);
@@ -60,8 +70,18 @@ class UserRepositoryTest extends BaseRepositoryTest
 
     public function test_list_filters_by_email(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'user']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(email: 'ALICE@EXAMPLE.COM');
         $result = $this->repository()->list($filters);
@@ -71,8 +91,18 @@ class UserRepositoryTest extends BaseRepositoryTest
 
     public function test_list_filters_by_role(): void
     {
-        $this->repository()->create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => 'pass1234', 'role' => 'admin']);
-        $this->repository()->create(['name' => 'Bob', 'email' => 'bob@example.com', 'password' => 'pass1234', 'role' => 'user']);
+        $this->repository()->create([
+            'name' => 'Alice',
+            'email' => 'alice@example.com',
+            'password' => 'pass1234',
+            'role' => 'admin',
+        ]);
+        $this->repository()->create([
+            'name' => 'Bob',
+            'email' => 'bob@example.com',
+            'password' => 'pass1234',
+            'role' => 'user',
+        ]);
 
         $filters = new UserFilterData(role: 'admin');
         $result = $this->repository()->list($filters);

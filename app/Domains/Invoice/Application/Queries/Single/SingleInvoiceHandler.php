@@ -22,6 +22,9 @@ readonly class SingleInvoiceHandler implements QueryHandlerInterface
         $record = $this->orders->order($message->orderId);
         abort_unless($record !== null && $record->status === 'accepted', 404);
 
-        return new SingleInvoiceData(new Collection([$record]), $this->returns->forOrders([$record]));
+        return new SingleInvoiceData(
+            new Collection([$record]),
+            $this->returns->forOrders([$record]),
+        );
     }
 }

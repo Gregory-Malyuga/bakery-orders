@@ -14,8 +14,12 @@ readonly class SaveStoreAccountHandler implements CommandHandlerInterface
         assert($message instanceof SaveStoreAccountCommand);
 
         $this->repository->saveAccount(
-            $message->id, $message->storeIds, $message->name,
-            $message->email, $message->password, $message->isActive,
+            $message->id,
+            $message->storeIds,
+            $message->name,
+            $message->email,
+            $message->password,
+            $message->isActive,
         );
 
         return null;

@@ -14,14 +14,21 @@ final class ProductReferenceImportRepository implements ProductReferenceImportRe
         return Product::query()->get();
     }
 
-    public function activateOrCreate(string $name, int $position, string $packagingMode, int $minimum): Product
-    {
-        $product = Product::query()->firstOrCreate(['name' => $name], [
-            'sort_order' => $position,
-            'minimum_quantity' => $minimum,
-            'packaging_mode' => $packagingMode,
-            'is_active' => true,
-        ]);
+    public function activateOrCreate(
+        string $name,
+        int $position,
+        string $packagingMode,
+        int $minimum,
+    ): Product {
+        $product = Product::query()->firstOrCreate(
+            ['name' => $name],
+            [
+                'sort_order' => $position,
+                'minimum_quantity' => $minimum,
+                'packaging_mode' => $packagingMode,
+                'is_active' => true,
+            ],
+        );
         $product->update(['sort_order' => $position, 'is_active' => true]);
 
         return $product;
@@ -29,6 +36,8 @@ final class ProductReferenceImportRepository implements ProductReferenceImportRe
 
     public function activate(int $productId, int $position): void
     {
-        Product::query()->whereKey($productId)->update(['sort_order' => $position, 'is_active' => true]);
+        Product::query()
+            ->whereKey($productId)
+            ->update(['sort_order' => $position, 'is_active' => true]);
     }
 }

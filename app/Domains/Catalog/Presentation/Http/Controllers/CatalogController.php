@@ -28,12 +28,16 @@ readonly class CatalogController
             'search' => ['nullable', 'string', 'max:255'],
         ]);
 
-        return $this->renderCatalog($this->catalog->handle(new GetCatalogQuery(
-            isset($input['store']) ? (int) $input['store'] : null,
-            $input['tab'] ?? 'stores',
-            isset($input['page']) ? (int) $input['page'] : 1,
-            $input['search'] ?? '',
-        )));
+        return $this->renderCatalog(
+            $this->catalog->handle(
+                new GetCatalogQuery(
+                    isset($input['store']) ? (int) $input['store'] : null,
+                    $input['tab'] ?? 'stores',
+                    isset($input['page']) ? (int) $input['page'] : 1,
+                    $input['search'] ?? '',
+                ),
+            ),
+        );
     }
 
     public function product(int $product): View

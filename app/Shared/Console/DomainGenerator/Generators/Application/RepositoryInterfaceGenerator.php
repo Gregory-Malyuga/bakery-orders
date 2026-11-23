@@ -38,6 +38,10 @@ class RepositoryInterfaceGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Repositories/{$ctx->name}RepositoryInterface.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Repositories/{$ctx->name}RepositoryInterface.php",
+            $content,
+        );
     }
 }

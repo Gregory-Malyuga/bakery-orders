@@ -31,7 +31,12 @@ readonly class AnalyticsDashboardHandler implements QueryHandlerInterface
                 'store' => $message->storeId,
                 'product' => $message->productId,
             ],
-            $this->analytics->build($message->from, $message->to, $message->storeId, $message->productId),
+            $this->analytics->build(
+                $message->from,
+                $message->to,
+                $message->storeId,
+                $message->productId,
+            ),
             $this->stockPrices->dailyRows($message->from, $message->to),
             $this->stockItems->ingredients(),
             $this->stockPrices->forDate($message->to),

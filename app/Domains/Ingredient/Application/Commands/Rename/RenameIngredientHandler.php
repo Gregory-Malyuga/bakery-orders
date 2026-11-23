@@ -22,7 +22,9 @@ readonly class RenameIngredientHandler implements CommandHandlerInterface
             throw ValidationException::withMessages(['name' => 'Укажите название ингредиента.']);
         }
         if ($this->repository->existsWithName($name, $item->unit, $message->id)) {
-            throw ValidationException::withMessages(['name' => 'Ингредиент с такой единицей уже есть в справочнике.']);
+            throw ValidationException::withMessages([
+                'name' => 'Ингредиент с такой единицей уже есть в справочнике.',
+            ]);
         }
 
         $this->repository->rename($message->id, $name);

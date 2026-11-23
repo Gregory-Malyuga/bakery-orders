@@ -26,27 +26,79 @@ class SharedAccountPricingTest extends TestCase
 
     public function test_shared_account_uses_first_stores_prices_for_both_stores(): void
     {
-        $first = Store::query()->create(['name' => 'Колпино 1', 'address' => '1', 'is_active' => true]);
-        $second = Store::query()->create(['name' => 'Колпино 2', 'address' => '2', 'is_active' => true]);
-        $product = Product::query()->create(['name' => 'Пирожок', 'sort_order' => 1, 'minimum_quantity' => 1, 'packaging_mode' => 'single', 'is_active' => true]);
-        Price::query()->create(['bakery_id' => $first->id, 'product_id' => $product->id, 'kopecks' => 3000]);
-        Price::query()->create(['bakery_id' => $second->id, 'product_id' => $product->id, 'kopecks' => 4000]);
-        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $this->actingAs($admin)->post('/admin/accounts', [
-            'stores' => [$first->id, $second->id], 'name' => 'Колпино', 'email' => 'kolpino@example.test', 'password' => 'StrongPassword123!', 'is_active' => 1,
-        ])->assertRedirect();
-        $this->assertDatabaseHas('bakeries', ['id' => $second->id, 'price_source_id' => $first->id]);
+        $first = Store::query()->create([
+            'name' => 'Колпино 1',
+            'address' => '1',
+            'is_active' => true,
+        ]);
+        $second = Store::query()->create([
+            'name' => 'Колпино 2',
+            'address' => '2',
+            'is_active' => true,
+        ]);
+        $product = Product::query()->create([
+            'name' => 'Пирожок',
+            'sort_order' => 1,
+            'minimum_quantity' => 1,
+            'packaging_mode' => 'single',
+            'is_active' => true,
+        ]);
+        Price::query()->create([
+            'bakery_id' => $first->id,
+            'product_id' => $product->id,
+            'kopecks' => 3000,
+        ]);
+        Price::query()->create([
+            'bakery_id' => $second->id,
+            'product_id' => $product->id,
+            'kopecks' => 4000,
+        ]);
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Verify,
+        ]);
+        $this->actingAs($admin)
+            ->post('/admin/accounts', [
+                'stores' => [$first->id, $second->id],
+                'name' => 'Колпино',
+                'email' => 'kolpino@example.test',
+                'password' => 'StrongPassword123!',
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
+        $this->assertDatabaseHas('bakeries', [
+            'id' => $second->id,
+            'price_source_id' => $first->id,
+        ]);
         $service = app(OrderingService::class);
         $this->assertSame(3000, $service->quote($second->id, [$product->id => 1])['total']);
 
-        $this->actingAs($admin)->post('/admin/prices', ['store' => $second->id, 'product' => $product->id, 'rubles' => '35,00'])->assertRedirect();
-        $this->assertEquals(3500, DB::table('bakery_prices')->where('bakery_id', $first->id)->where('product_id', $product->id)->value('kopecks'));
+        $this->actingAs($admin)
+            ->post('/admin/prices', [
+                'store' => $second->id,
+                'product' => $product->id,
+                'rubles' => '35,00',
+            ])
+            ->assertRedirect();
+        $this->assertEquals(
+            3500,
+            DB::table('bakery_prices')
+                ->where('bakery_id', $first->id)
+                ->where('product_id', $product->id)
+                ->value('kopecks'),
+        );
         $this->assertSame(3500, $service->quote($second->id, [$product->id => 1])['total']);
 
         $account = User::query()->where('email', 'kolpino@example.test')->firstOrFail();
-        $this->actingAs($admin)->post('/admin/accounts', [
-            'id' => $account->id, 'stores' => [$second->id], 'name' => 'Колпино', 'email' => 'kolpino@example.test', 'is_active' => 1,
-        ])->assertRedirect();
+        $this->actingAs($admin)
+            ->post('/admin/accounts', [
+                'id' => $account->id,
+                'stores' => [$second->id],
+                'name' => 'Колпино',
+                'email' => 'kolpino@example.test',
+                'is_active' => 1,
+            ])
+            ->assertRedirect();
         $this->assertDatabaseHas('bakeries', ['id' => $second->id, 'price_source_id' => null]);
         $this->assertSame(3500, $service->quote($second->id, [$product->id => 1])['total']);
     }

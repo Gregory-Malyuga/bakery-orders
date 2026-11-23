@@ -21,12 +21,16 @@ readonly class StoreProductAvailabilityController
         ]);
 
         $storeId = (int) $data['store'];
-        $this->handler->handle(new SetAvailabilityCommand(
-            $storeId,
-            (int) $data['product'],
-            (bool) $data['is_available'],
-        ));
+        $this->handler->handle(
+            new SetAvailabilityCommand(
+                $storeId,
+                (int) $data['product'],
+                (bool) $data['is_available'],
+            ),
+        );
 
-        return redirect()->route('bakery.catalog', ['tab' => 'prices', 'store' => $storeId])->with('success', 'Ассортимент магазина сохранён.');
+        return redirect()
+            ->route('bakery.catalog', ['tab' => 'prices', 'store' => $storeId])
+            ->with('success', 'Ассортимент магазина сохранён.');
     }
 }

@@ -19,7 +19,13 @@ class ReferenceWorkbookReader
             throw new RuntimeException('Исходный XLSX не найден.');
         }
         $archive = new PharData($path);
-        if (! isset($archive['xl/workbook.xml'], $archive['xl/sharedStrings.xml'], $archive['xl/worksheets/sheet8.xml'])) {
+        if (
+            ! isset(
+                $archive['xl/workbook.xml'],
+                $archive['xl/sharedStrings.xml'],
+                $archive['xl/worksheets/sheet8.xml'],
+            )
+        ) {
             throw new RuntimeException('В XLSX отсутствуют необходимые листы.');
         }
         if (! str_contains($archive['xl/workbook.xml']->getContent(), 'name="Лист1"')) {
@@ -49,7 +55,9 @@ class ReferenceWorkbookReader
             $name = trim($headers[$column] ?? '');
             $key = $this->key($name);
             if ($name === '' || mb_strlen($name) > 255 || isset($storeKeys[$key])) {
-                throw new RuntimeException("Пустое, слишком длинное или повторяющееся название магазина в колонке {$column}.");
+                throw new RuntimeException(
+                    "Пустое, слишком длинное или повторяющееся название магазина в колонке {$column}.",
+                );
             }
             $storeKeys[$key] = true;
             $stores[] = $name;
@@ -61,7 +69,9 @@ class ReferenceWorkbookReader
             $name = trim($rows[$row][1] ?? '');
             $key = $this->key($name);
             if ($name === '' || mb_strlen($name) > 255 || isset($productKeys[$key])) {
-                throw new RuntimeException("Пустое, слишком длинное или повторяющееся название товара в строке {$row}.");
+                throw new RuntimeException(
+                    "Пустое, слишком длинное или повторяющееся название товара в строке {$row}.",
+                );
             }
             $productKeys[$key] = true;
             $products[] = $name;
@@ -69,11 +79,16 @@ class ReferenceWorkbookReader
             for ($column = 2; $column <= 73; $column++) {
                 $raw = $rows[$row][$column] ?? '';
                 if (! preg_match('/^\d{1,8}(?:\.\d+)?$/', $raw)) {
-                    throw new RuntimeException("Нет цены или неверный формат в строке {$row}, колонке {$column}.");
+                    throw new RuntimeException(
+                        "Нет цены или неверный формат в строке {$row}, колонке {$column}.",
+                    );
                 }
                 [$rubles, $fraction] = array_pad(explode('.', $raw), 2, '');
                 $digits = str_pad(substr($fraction, 0, 3), 3, '0');
-                $price = (int) $rubles * 100 + (int) substr($digits, 0, 2) + ((int) $digits[2] >= 5 ? 1 : 0);
+                $price =
+                    (int) $rubles * 100 +
+                    (int) substr($digits, 0, 2) +
+                    ((int) $digits[2] >= 5 ? 1 : 0);
                 $priceRow[] = $price === 0 ? null : $price;
             }
             $prices[] = $priceRow;
@@ -92,7 +107,7 @@ class ReferenceWorkbookReader
         $xpath = new DOMXPath($document);
         $strings = [];
         foreach ($xpath->query('//*[local-name()="si"]') ?: [] as $item) {
-            if (! $item instanceof DOMNode) {
+            if (! ($item instanceof DOMNode)) {
                 continue;
             }
             $value = '';
@@ -114,7 +129,7 @@ class ReferenceWorkbookReader
     private function cells(string $fragment, array $shared): array
     {
         $row = simplexml_load_string($fragment);
-        if (! $row instanceof SimpleXMLElement) {
+        if (! ($row instanceof SimpleXMLElement)) {
             throw new RuntimeException('Некорректная строка листа цен.');
         }
         $values = [];
@@ -132,7 +147,7 @@ class ReferenceWorkbookReader
                 continue;
             }
             $raw = (string) $value[0];
-            $values[$column] = (string) $cell['t'] === 's' ? ($shared[(int) $raw] ?? '') : $raw;
+            $values[$column] = (string) $cell['t'] === 's' ? $shared[(int) $raw] ?? '' : $raw;
         }
 
         return $values;

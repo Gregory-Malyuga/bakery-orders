@@ -22,7 +22,9 @@ class RegisterController extends Controller
 
     public function __invoke(RegisterData $data): JsonResponse
     {
-        $id = $this->commands->dispatch(new RegisterCommand($data->name, $data->email, $data->password));
+        $id = $this->commands->dispatch(
+            new RegisterCommand($data->name, $data->email, $data->password),
+        );
         assert($id !== null);
 
         /** @var User $user */

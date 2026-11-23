@@ -41,6 +41,10 @@ class ListHandlerGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Queries/ListAll/List{$ctx->name}sHandler.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Queries/ListAll/List{$ctx->name}sHandler.php",
+            $content,
+        );
     }
 }

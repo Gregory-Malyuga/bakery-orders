@@ -10,7 +10,8 @@ final class PriceCatalogImportRepository implements PriceCatalogImportRepository
     public function put(int $storeId, int $productId, int $kopecks): void
     {
         Price::query()->updateOrCreate(
-            ['bakery_id' => $storeId, 'product_id' => $productId], ['kopecks' => $kopecks],
+            ['bakery_id' => $storeId, 'product_id' => $productId],
+            ['kopecks' => $kopecks],
         );
     }
 }

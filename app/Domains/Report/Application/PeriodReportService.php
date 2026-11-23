@@ -14,7 +14,14 @@ class PeriodReportService
         private readonly PeriodOrderRepositoryInterface $orders,
     ) {}
 
-    /** @return array{orders:list<array{date:string,store:string,product:string,quantity:int,returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int} */
+    /**
+     * @return array{orders:list<array{date:string,store:string,product:string,quantity:int,
+     *     returned:int,unit_kopecks:int,total_kopecks:int,return_kopecks:int,net_kopecks:int}>,
+     *     products:array<string,int>,production:array{dough_grams:int|float,main_dough:array<string,
+     *     float>,samsa_count:int,samsa_batch_size:int|float,samsa_dough:array<string,float>,
+     *     ingredients:array<string,int|float>,other_ingredients:array<string,array<string,int|float>>,
+     *     without_recipe:list<string>},total_kopecks:int,return_kopecks:int,net_kopecks:int}
+     */
     public function build(string $from, string $to): array
     {
         $orders = $this->orders->forPeriod($from, $to);
@@ -40,7 +47,8 @@ class PeriodReportService
                     'return_kopecks' => $returnKopecks,
                     'net_kopecks' => $item->total_kopecks - $returnKopecks,
                 ];
-                $products[$item->product_name] = ($products[$item->product_name] ?? 0) + $item->quantity;
+                $products[$item->product_name] =
+                    ($products[$item->product_name] ?? 0) + $item->quantity;
                 $productIds[$item->product_name] = (int) $item->product_id;
                 $total += $item->total_kopecks;
             }
@@ -62,6 +70,13 @@ class PeriodReportService
         }
         ksort($products);
 
-        return ['orders' => $lines, 'products' => $products, 'production' => $this->production->calculate($products, $productIds), 'total_kopecks' => $total, 'return_kopecks' => $returnTotal, 'net_kopecks' => $total - $returnTotal];
+        return [
+            'orders' => $lines,
+            'products' => $products,
+            'production' => $this->production->calculate($products, $productIds),
+            'total_kopecks' => $total,
+            'return_kopecks' => $returnTotal,
+            'net_kopecks' => $total - $returnTotal,
+        ];
     }
 }

@@ -24,9 +24,10 @@ readonly class ListSheetsHandler implements QueryHandlerInterface
         assert($message instanceof ListSheetsQuery);
 
         $copySheet = $message->copyId !== null ? $this->repository->sheet($message->copyId) : null;
-        $copySnapshot = $copySheet !== null
-            ? json_decode((string) $copySheet->snapshot, true, 512, JSON_THROW_ON_ERROR)
-            : null;
+        $copySnapshot =
+            $copySheet !== null
+                ? json_decode((string) $copySheet->snapshot, true, 512, JSON_THROW_ON_ERROR)
+                : null;
 
         $sheets = $this->repository->sheets();
         $prints = $this->repository->prints();
@@ -36,19 +37,46 @@ readonly class ListSheetsHandler implements QueryHandlerInterface
             /** @var array{route:string,driver:string} $snapshot */
             $snapshot = json_decode((string) $sheet->snapshot, true, 512, JSON_THROW_ON_ERROR);
 
-            return new SavedSheetOption($sheet->id, Carbon::parse($sheet->delivery_date)->format('d.m.Y').' · '.$snapshot['route'].' · '.$snapshot['driver']);
+            return new SavedSheetOption(
+                $sheet->id,
+                Carbon::parse($sheet->delivery_date)->format('d.m.Y').
+                    ' · '.
+                    $snapshot['route'].
+                    ' · '.
+                    $snapshot['driver'],
+            );
         });
         $printedSheets = $prints->map(function ($print): PrintedSheetHistoryItem {
             /** @var object{id:int,printed_at:string,snapshot:string} $print */
-            /** @var array{route:string,driver:string,date:string,rows:list<array{has_order?:bool}>,net_cash?:int,cash_due?:int,due:int,salary_kopecks?:int,bonus_kopecks?:int} $snapshot */
+            /**
+             * @var array{route:string,driver:string,date:string,rows:list<array{has_order?:bool}>,
+             *     net_cash?:int,cash_due?:int,due:int,salary_kopecks?:int,bonus_kopecks?:int} $snapshot
+             */
             $snapshot = json_decode((string) $print->snapshot, true, 512, JSON_THROW_ON_ERROR);
-            $filled = count(array_filter($snapshot['rows'], fn (array $row): bool => $row['has_order'] ?? false));
-            $netCash = $snapshot['net_cash'] ?? (($snapshot['cash_due'] ?? $snapshot['due']) - ($snapshot['salary_kopecks'] ?? 0) - ($snapshot['bonus_kopecks'] ?? 0));
+            $filled = count(
+                array_filter($snapshot['rows'], fn (array $row): bool => $row['has_order'] ?? false),
+            );
+            $netCash =
+                $snapshot['net_cash'] ??
+                ($snapshot['cash_due'] ?? $snapshot['due']) -
+                    ($snapshot['salary_kopecks'] ?? 0) -
+                    ($snapshot['bonus_kopecks'] ?? 0);
 
             return new PrintedSheetHistoryItem(
                 $print->id,
-                Carbon::parse($print->printed_at)->timezone('Europe/Moscow')->format('d.m.Y H:i').' · '.Carbon::parse($snapshot['date'])->format('d.m.Y').' · '.$snapshot['route'].' · '.$snapshot['driver'],
-                $filled.' из '.count($snapshot['rows']).' точек с заказом · наличными после оплаты водителя '.number_format($netCash / 100, 2, ',', ' ').' ₽',
+                Carbon::parse($print->printed_at)->timezone('Europe/Moscow')->format('d.m.Y H:i').
+                    ' · '.
+                    Carbon::parse($snapshot['date'])->format('d.m.Y').
+                    ' · '.
+                    $snapshot['route'].
+                    ' · '.
+                    $snapshot['driver'],
+                $filled.
+                    ' из '.
+                    count($snapshot['rows']).
+                    ' точек с заказом · наличными после оплаты водителя '.
+                    number_format($netCash / 100, 2, ',', ' ').
+                    ' ₽',
             );
         });
 

@@ -11,6 +11,9 @@ final class OrderAdjustmentReadRepository implements OrderAdjustmentReadReposito
     /** @return Collection<int, \stdClass> */
     public function history(int $orderId): Collection
     {
-        return DB::table('bakery_order_adjustments')->where('order_id', $orderId)->orderByDesc('id')->get();
+        return DB::table('bakery_order_adjustments')
+            ->where('order_id', $orderId)
+            ->orderByDesc('id')
+            ->get();
     }
 }

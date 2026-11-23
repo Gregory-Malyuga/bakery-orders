@@ -34,7 +34,12 @@ class ApiTestGenerator extends AbstractGenerator
         }
 
         if ($firstStringField !== '') {
-            $filterTests = $this->apiFilterTestMethod($ctx, $firstStringField, $firstStringValue, $firstStringValue2);
+            $filterTests = $this->apiFilterTestMethod(
+                $ctx,
+                $firstStringField,
+                $firstStringValue,
+                $firstStringValue2,
+            );
         }
 
         $plural = $ctx->plural;
@@ -114,8 +119,12 @@ class ApiTestGenerator extends AbstractGenerator
         $this->writeFile($files, "{$ctx->featureTestPath}/{$ctx->name}ApiTest.php", $content);
     }
 
-    private function apiFilterTestMethod(DomainContext $ctx, string $field, string $val1, string $val2): string
-    {
+    private function apiFilterTestMethod(
+        DomainContext $ctx,
+        string $field,
+        string $val1,
+        string $val2,
+    ): string {
         $plural = $ctx->plural;
 
         return <<<PHP

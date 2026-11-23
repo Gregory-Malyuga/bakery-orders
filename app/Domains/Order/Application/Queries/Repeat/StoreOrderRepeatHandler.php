@@ -14,6 +14,8 @@ readonly class StoreOrderRepeatHandler implements QueryHandlerInterface
     {
         assert($message instanceof StoreOrderRepeatQuery);
 
-        return new StoreOrderHomeData(...$this->read->repeat($message->orderId, $message->accessible));
+        return new StoreOrderHomeData(
+            ...$this->read->repeat($message->orderId, $message->accessible),
+        );
     }
 }

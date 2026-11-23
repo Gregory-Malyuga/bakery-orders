@@ -32,7 +32,9 @@ class IngredientCatalog
             /** @var object{id:int,name:string,unit:string,source_name:?string,source_unit:?string} $ingredient */
             $byId[$ingredient->id] = $ingredient;
             if ($ingredient->source_name !== null) {
-                $bySource[$this->key($ingredient->source_name, $ingredient->source_unit ?? '')] = $ingredient;
+                $bySource[
+                    $this->key($ingredient->source_name, $ingredient->source_unit ?? '')
+                ] = $ingredient;
             }
             $byName[$this->key($ingredient->name, $ingredient->unit)] = $ingredient;
         }
@@ -40,7 +42,7 @@ class IngredientCatalog
         foreach ($rows as &$row) {
             $id = $row['ingredient_id'] ?? null;
             $key = $this->key($row['name'], $row['unit']);
-            $ingredient = $id !== null ? ($byId[$id] ?? null) : null;
+            $ingredient = $id !== null ? $byId[$id] ?? null : null;
             $ingredient ??= $bySource[$key] ?? null;
             $ingredient ??= $byName[$key] ?? null;
             if ($ingredient !== null) {

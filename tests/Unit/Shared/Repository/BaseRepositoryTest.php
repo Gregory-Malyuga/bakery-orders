@@ -69,7 +69,11 @@ class BaseRepositoryTest extends TestCase
 
     public function test_create_persists_and_returns_model(): void
     {
-        $user = $this->repo->create(['name' => 'Charlie', 'email' => 'charlie@example.com', 'password' => 'secret123']);
+        $user = $this->repo->create([
+            'name' => 'Charlie',
+            'email' => 'charlie@example.com',
+            'password' => 'secret123',
+        ]);
 
         $this->assertInstanceOf(User::class, $user);
         $this->assertDatabaseHas('users', ['name' => 'Charlie']);
@@ -140,7 +144,11 @@ class BaseRepositoryTest extends TestCase
         User::factory()->create(['name' => 'Apple']);
 
         $emptyFilters = new class extends Data {};
-        $result = $this->repo->list($emptyFilters, new SortData('name', 'asc'), new PaginationData(1, 50));
+        $result = $this->repo->list(
+            $emptyFilters,
+            new SortData('name', 'asc'),
+            new PaginationData(1, 50),
+        );
 
         $this->assertSame('Apple', $result->items()[0]->name);
     }

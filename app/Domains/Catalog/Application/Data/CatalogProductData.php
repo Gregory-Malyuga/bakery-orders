@@ -27,9 +27,21 @@ readonly class CatalogProductData
         public array $reversed,
     ) {}
 
-    /** @return array{item:Product,stores:EloquentCollection<int, Store>,prices:array<int,int|null>,unavailable:array<int,bool>,history:Collection<int,\stdClass>,historyItems:Collection<int|string,Collection<int,\stdClass>>,reversed:list<int|string>} */
+    /**
+     * @return array{item:Product,stores:EloquentCollection<int, Store>,prices:array<int,int|null>,
+     *     unavailable:array<int,bool>,history:Collection<int,\stdClass>,
+     *     historyItems:Collection<int|string,Collection<int,\stdClass>>,reversed:list<int|string>}
+     */
     public function viewData(): array
     {
-        return ['item' => $this->item, 'stores' => $this->stores, 'prices' => $this->prices, 'unavailable' => $this->unavailable, 'history' => $this->history, 'historyItems' => $this->historyItems, 'reversed' => $this->reversed];
+        return [
+            'item' => $this->item,
+            'stores' => $this->stores,
+            'prices' => $this->prices,
+            'unavailable' => $this->unavailable,
+            'history' => $this->history,
+            'historyItems' => $this->historyItems,
+            'reversed' => $this->reversed,
+        ];
     }
 }

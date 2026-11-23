@@ -34,7 +34,9 @@ final class ClosedDateRepository implements ClosedDateRepositoryInterface
 
     public function reason(string $date): ?string
     {
-        $reason = DB::table('bakery_closed_delivery_dates')->where('delivery_date', $date)->value('reason');
+        $reason = DB::table('bakery_closed_delivery_dates')
+            ->where('delivery_date', $date)
+            ->value('reason');
 
         return is_string($reason) ? $reason : null;
     }
@@ -43,7 +45,11 @@ final class ClosedDateRepository implements ClosedDateRepositoryInterface
     public function closedDatesFrom(string $date): array
     {
         $dates = [];
-        foreach (DB::table('bakery_closed_delivery_dates')->where('delivery_date', '>=', $date)->pluck('delivery_date') as $value) {
+        foreach (
+            DB::table('bakery_closed_delivery_dates')
+                ->where('delivery_date', '>=', $date)
+                ->pluck('delivery_date') as $value
+        ) {
             if (is_string($value)) {
                 $dates[] = $value;
             }

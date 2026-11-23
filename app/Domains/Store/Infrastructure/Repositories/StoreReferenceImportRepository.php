@@ -16,10 +16,13 @@ final class StoreReferenceImportRepository implements StoreReferenceImportReposi
 
     public function activateOrCreate(string $name, string $address): Store
     {
-        $store = Store::query()->firstOrCreate(['name' => $name], [
-            'address' => $address,
-            'is_active' => true,
-        ]);
+        $store = Store::query()->firstOrCreate(
+            ['name' => $name],
+            [
+                'address' => $address,
+                'is_active' => true,
+            ],
+        );
         $store->update(['is_active' => true]);
 
         return $store;
@@ -27,6 +30,8 @@ final class StoreReferenceImportRepository implements StoreReferenceImportReposi
 
     public function activate(int $storeId): void
     {
-        Store::query()->whereKey($storeId)->update(['is_active' => true]);
+        Store::query()
+            ->whereKey($storeId)
+            ->update(['is_active' => true]);
     }
 }

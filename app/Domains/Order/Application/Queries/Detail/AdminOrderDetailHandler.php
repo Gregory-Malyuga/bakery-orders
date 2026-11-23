@@ -26,10 +26,12 @@ readonly class AdminOrderDetailHandler implements QueryHandlerInterface
         abort_if($record === null, 404);
 
         $prices = $this->orders->prices((int) $record->bakery_id);
-        $returnProducts = $this->orders->products()->filter(
-            fn ($product): bool => $record->items->contains('product_id', $product->id)
-                || ($product->is_active && isset($prices[$product->id])),
-        );
+        $returnProducts = $this->orders
+            ->products()
+            ->filter(
+                fn ($product): bool => $record->items->contains('product_id', $product->id) ||
+                    ($product->is_active && isset($prices[$product->id])),
+            );
         $returnAmount = $this->summary->forOrders([$record])[$message->orderId]['amount'] ?? 0;
 
         return new AdminOrderDetailData(

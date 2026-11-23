@@ -20,8 +20,10 @@ class LaravelQueryBus implements QueryBusInterface
 
         $handler = $this->container->make($handlerClass);
 
-        if (! $handler instanceof QueryHandlerInterface) {
-            throw new RuntimeException("Handler {$handlerClass} must implement ".QueryHandlerInterface::class);
+        if (! ($handler instanceof QueryHandlerInterface)) {
+            throw new RuntimeException(
+                "Handler {$handlerClass} must implement ".QueryHandlerInterface::class,
+            );
         }
 
         return $handler->handle($query);

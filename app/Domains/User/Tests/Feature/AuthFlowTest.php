@@ -23,7 +23,11 @@ class AuthFlowTest extends TestCase
 
     public function test_login_returns_401_for_wrong_password(): void
     {
-        User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('correct'), 'role' => UserRole::User]);
+        User::factory()->create([
+            'email' => 'user@test.com',
+            'password' => Hash::make('correct'),
+            'role' => UserRole::User,
+        ]);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'user@test.com',
@@ -35,7 +39,11 @@ class AuthFlowTest extends TestCase
 
     public function test_login_returns_200_with_token_for_user_role(): void
     {
-        User::factory()->create(['email' => 'user@test.com', 'password' => Hash::make('secret123'), 'role' => UserRole::User]);
+        User::factory()->create([
+            'email' => 'user@test.com',
+            'password' => Hash::make('secret123'),
+            'role' => UserRole::User,
+        ]);
 
         $response = $this->postJson('/api/auth/login', [
             'email' => 'user@test.com',
@@ -52,16 +60,12 @@ class AuthFlowTest extends TestCase
         $user = User::factory()->create(['role' => UserRole::Admin]);
         $token = $user->createToken('api')->plainTextToken;
 
-        $this->withToken($token)
-            ->postJson('/api/auth/logout')
-            ->assertStatus(200);
+        $this->withToken($token)->postJson('/api/auth/logout')->assertStatus(200);
 
         // Reset auth guard cache so the next request does a fresh token DB lookup
         $this->app['auth']->forgetGuards();
 
-        $this->withToken($token)
-            ->getJson('/api/v1/users')
-            ->assertStatus(401);
+        $this->withToken($token)->getJson('/api/v1/users')->assertStatus(401);
     }
 
     // ── Register ──────────────────────────────────────────────────────────

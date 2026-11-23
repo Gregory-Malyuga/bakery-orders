@@ -21,7 +21,11 @@ readonly class StorefrontReadService
 
     /**
      * @param  list<int>  $accessible
-     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,repeatQuantities:array<int,int>}
+     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,
+     *     closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},
+     *     orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,
+     *     int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,
+     *     repeatQuantities:array<int,int>}
      */
     public function home(int $storeId, array $accessible): array
     {
@@ -31,7 +35,10 @@ readonly class StorefrontReadService
 
         return [
             'store' => $store,
-            'accessibleStores' => $this->repository->stores()->whereIn('id', $accessible)->where('is_active', true),
+            'accessibleStores' => $this->repository
+                ->stores()
+                ->whereIn('id', $accessible)
+                ->where('is_active', true),
             'date' => $this->service->deliveryDate(),
             'open' => $this->service->isOpen(),
             'closedReason' => $this->calendar->reason($this->service->deliveryDate()),
@@ -40,7 +47,10 @@ readonly class StorefrontReadService
             'products' => $this->repository->products()->where('is_active', true),
             'prices' => $this->repository->prices($storeId),
             'minimums' => $this->repository->minimums($storeId),
-            'activeOrder' => $this->repository->activeOrder($storeId, $this->service->deliveryDate()),
+            'activeOrder' => $this->repository->activeOrder(
+                $storeId,
+                $this->service->deliveryDate(),
+            ),
             'history' => $this->repository->history($storeId),
             'requestKey' => (string) Str::uuid(),
             'repeatQuantities' => [],
@@ -49,15 +59,26 @@ readonly class StorefrontReadService
 
     /**
      * @param  list<int>  $accessible
-     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,repeatQuantities:array<int,int>}
+     * @return array{store:Store,accessibleStores:Collection<int,Store>,date:string,open:bool,
+     *     closedReason:string|null,nextWindow:array{order_date:string,delivery_date:string},
+     *     orderCutoff:string,products:Collection<int,Product>,prices:array<int,int>,minimums:array<int,
+     *     int>,activeOrder:Order|null,history:Collection<int,Order>,requestKey:string,
+     *     repeatQuantities:array<int,int>}
      */
     public function repeat(int $orderId, array $accessible): array
     {
         $source = $this->repository->order($orderId);
-        abort_unless($source !== null && in_array((int) $source->bakery_id, $accessible, true), 404);
+        abort_unless(
+            $source !== null && in_array((int) $source->bakery_id, $accessible, true),
+            404,
+        );
         abort_unless($this->service->isOpen(), 422, 'Приём заказов закрыт.');
         $storeId = (int) $source->bakery_id;
-        abort_if($this->repository->activeOrder($storeId, $this->service->deliveryDate()) !== null, 409, 'Заказ на завтра уже оформлен.');
+        abort_if(
+            $this->repository->activeOrder($storeId, $this->service->deliveryDate()) !== null,
+            409,
+            'Заказ на завтра уже оформлен.',
+        );
         $view = $this->home($storeId, $accessible);
         $products = $this->repository->products()->where('is_active', true);
         $prices = $this->repository->prices($storeId);
@@ -83,15 +104,22 @@ readonly class StorefrontReadService
     public function show(int $orderId, array $accessible): array
     {
         $record = $this->repository->order($orderId);
-        abort_unless($record !== null && in_array((int) $record->bakery_id, $accessible, true), 404);
+        abort_unless(
+            $record !== null && in_array((int) $record->bakery_id, $accessible, true),
+            404,
+        );
 
         return [
             'order' => $record,
-            'canCancel' => $record->status === 'accepted'
-                && $this->cutoff->isOpen()
-                && $record->created_at?->timezone('Europe/Moscow')->toDateString() === now('Europe/Moscow')->toDateString(),
-            'canRepeat' => $this->service->isOpen()
-                && $this->repository->activeOrder((int) $record->bakery_id, $this->service->deliveryDate()) === null,
+            'canCancel' => $record->status === 'accepted' &&
+                $this->cutoff->isOpen() &&
+                $record->created_at?->timezone('Europe/Moscow')->toDateString() ===
+                    now('Europe/Moscow')->toDateString(),
+            'canRepeat' => $this->service->isOpen() &&
+                $this->repository->activeOrder(
+                    (int) $record->bakery_id,
+                    $this->service->deliveryDate(),
+                ) === null,
         ];
     }
 }

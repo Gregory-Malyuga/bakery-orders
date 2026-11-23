@@ -11,7 +11,10 @@ final class StorePriceSourceRepository implements StorePriceSourceRepositoryInte
     /** @return Collection<int, \stdClass> */
     public function lockAllPriceSources(): Collection
     {
-        return DB::table('bakeries')->orderBy('id')->lockForUpdate()->get(['id', 'name', 'price_source_id']);
+        return DB::table('bakeries')
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id', 'name', 'price_source_id']);
     }
 
     public function lockStore(int $storeId): object
@@ -22,6 +25,9 @@ final class StorePriceSourceRepository implements StorePriceSourceRepositoryInte
     /** @return Collection<int, \stdClass> */
     public function linkedStoreIds(int $sourceId): Collection
     {
-        return DB::table('bakeries')->where('id', $sourceId)->orWhere('price_source_id', $sourceId)->get(['id']);
+        return DB::table('bakeries')
+            ->where('id', $sourceId)
+            ->orWhere('price_source_id', $sourceId)
+            ->get(['id']);
     }
 }

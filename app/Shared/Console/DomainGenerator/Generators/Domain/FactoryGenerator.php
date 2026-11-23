@@ -39,6 +39,10 @@ class FactoryGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Domain/Database/Factories/{$ctx->name}Factory.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Domain/Database/Factories/{$ctx->name}Factory.php",
+            $content,
+        );
     }
 }

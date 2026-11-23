@@ -52,11 +52,13 @@ final class DeliverySheetRepository implements DeliverySheetRepositoryInterface
     /** @param array<string, mixed> $snapshot */
     public function updateSheet(int $id, string $date, array $snapshot): void
     {
-        DB::table('bakery_delivery_sheets')->where('id', $id)->update([
-            'delivery_date' => $date,
-            'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
-            'updated_at' => now(),
-        ]);
+        DB::table('bakery_delivery_sheets')
+            ->where('id', $id)
+            ->update([
+                'delivery_date' => $date,
+                'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
+                'updated_at' => now(),
+            ]);
     }
 
     public function deleteSheet(int $id): int
@@ -68,7 +70,8 @@ final class DeliverySheetRepository implements DeliverySheetRepositoryInterface
     public function createPrint(string $date, int $sourceId, array $snapshot): int
     {
         return (int) DB::table('bakery_delivery_sheet_prints')->insertGetId([
-            'delivery_date' => $date, 'source_sheet_id' => $sourceId,
+            'delivery_date' => $date,
+            'source_sheet_id' => $sourceId,
             'snapshot' => json_encode($snapshot, JSON_THROW_ON_ERROR),
             'printed_at' => now(),
         ]);

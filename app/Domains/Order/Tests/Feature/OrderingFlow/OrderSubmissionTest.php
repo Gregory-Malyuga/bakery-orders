@@ -24,14 +24,28 @@ class OrderSubmissionTest extends OrderingFlowCase
         $this->assertSame(6000, $firstQuote['total']);
         $this->assertSame(7000, $secondQuote['total']);
         $key = (string) Str::uuid();
-        $first = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])['order'];
+        $first = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])[
+            'order'
+        ];
         $this->assertNotNull($first);
-        $again = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])['order'];
+        $again = $service->place($firstStore->id, $key, [$product->id => 2], $firstQuote['hash'])[
+            'order'
+        ];
         $this->assertSame($first->id, $again?->id);
-        Price::query()->where('bakery_id', $firstStore->id)->where('product_id', $product->id)->update(['kopecks' => 9900]);
-        $this->assertSame(3000, app(OrderRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks);
-        $this->actingAs($secondUser)->get('/orders/'.$first->id)->assertNotFound();
-        $this->actingAs($firstUser)->get('/orders/'.$first->id)->assertOk();
+        Price::query()
+            ->where('bakery_id', $firstStore->id)
+            ->where('product_id', $product->id)
+            ->update(['kopecks' => 9900]);
+        $this->assertSame(
+            3000,
+            app(OrderRepositoryInterface::class)->order($first->id)?->items->first()?->unit_kopecks,
+        );
+        $this->actingAs($secondUser)
+            ->get('/orders/'.$first->id)
+            ->assertNotFound();
+        $this->actingAs($firstUser)
+            ->get('/orders/'.$first->id)
+            ->assertOk();
     }
 
     public function test_changed_price_requires_fresh_confirmation_and_cutoff_rejects_submission(): void
@@ -40,7 +54,10 @@ class OrderSubmissionTest extends OrderingFlowCase
         [$store, $user, $product] = $this->shop('Четвёртый', 3000);
         $service = app(OrderingService::class);
         $quote = $service->quote($store->id, [$product->id => 2]);
-        Price::query()->where('bakery_id', $store->id)->where('product_id', $product->id)->update(['kopecks' => 4000]);
+        Price::query()
+            ->where('bakery_id', $store->id)
+            ->where('product_id', $product->id)
+            ->update(['kopecks' => 4000]);
         $key = (string) Str::uuid();
         $result = $service->place($store->id, $key, [$product->id => 2], $quote['hash']);
         $this->assertNull($result['order']);

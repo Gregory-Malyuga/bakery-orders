@@ -73,11 +73,6 @@ class BaseDataCollectionTest extends TestCase
     /** @param array<int, array<string, mixed>> $items */
     private function makePaginator(array $items, int $total = 10): LengthAwarePaginator
     {
-        return new LengthAwarePaginator(
-            items: $items,
-            total: $total,
-            perPage: 15,
-            currentPage: 1,
-        );
+        return new LengthAwarePaginator(items: $items, total: $total, perPage: 15, currentPage: 1);
     }
 }

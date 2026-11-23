@@ -17,13 +17,22 @@ class WebAuthController
     public function login(Request $request): RedirectResponse
     {
         /** @var array{email:string,password:string} $credentials */
-        $credentials = $request->validate(['email' => ['required', 'email'], 'password' => ['required', 'string']]);
+        $credentials = $request->validate([
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+        ]);
         if (! Auth::attempt($credentials, false)) {
-            return back()->withErrors(['email' => 'Неверная почта или пароль.'])->onlyInput('email');
+            return back()
+                ->withErrors(['email' => 'Неверная почта или пароль.'])
+                ->onlyInput('email');
         }
         $request->session()->regenerate();
         $user = $request->user();
-        if ($user === null || $user->status->value !== 'verify' || ! in_array($user->role->value, ['admin', 'user'], true)) {
+        if (
+            $user === null ||
+            $user->status->value !== 'verify' ||
+            ! in_array($user->role->value, ['admin', 'user'], true)
+        ) {
             Auth::logout();
 
             return back()->withErrors(['email' => 'Аккаунт не активен.']);

@@ -20,12 +20,23 @@ class OrderCutoffTest extends OrderingFlowCase
         [$store, $user, $product] = $this->shop('Третий', 3200);
         $service = app(OrderingService::class);
         $quote = $service->quote($store->id, [$product->id => 1]);
-        $order = $service->place($store->id, (string) Str::uuid(), [$product->id => 1], $quote['hash'])['order'];
+        $order = $service->place(
+            $store->id,
+            (string) Str::uuid(),
+            [$product->id => 1],
+            $quote['hash'],
+        )['order'];
         $this->assertNotNull($order);
         $service->cancel($store->id, $order->id);
         $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
-        $admin = User::factory()->create(['role' => UserRole::Admin, 'status' => UserStatus::Verify]);
-        $this->actingAs($admin)->get('/admin/print?date='.$quote['date'])->assertOk()->assertDontSee('Третий');
+        $admin = User::factory()->create([
+            'role' => UserRole::Admin,
+            'status' => UserStatus::Verify,
+        ]);
+        $this->actingAs($admin)
+            ->get('/admin/print?date='.$quote['date'])
+            ->assertOk()
+            ->assertDontSee('Третий');
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:30:00', 'Europe/Moscow'));
         $this->assertFalse($service->isOpen());
         $this->actingAs($user)->get('/orders')->assertOk()->assertSee('Приём закрыт');
@@ -40,13 +51,16 @@ class OrderCutoffTest extends OrderingFlowCase
         $quote = $service->quote($store->id, [$product->id => 1]);
 
         Carbon::setTestNow(Carbon::parse('2026-10-06 18:30:00', 'Europe/Moscow'));
-        $this->actingAs($user)->withHeaders(['Date' => 'Tue, 06 Oct 2026 12:00:00 GMT', 'X-Client-Time' => '12:00'])->post('/orders', [
-            'request_key' => (string) Str::uuid(),
-            'quantities' => [$product->id => 1],
-            'quote_hash' => $quote['hash'],
-            'delivery_date' => $quote['date'],
-            'client_time' => '12:00',
-        ])->assertSessionHasErrors('order');
+        $this->actingAs($user)
+            ->withHeaders(['Date' => 'Tue, 06 Oct 2026 12:00:00 GMT', 'X-Client-Time' => '12:00'])
+            ->post('/orders', [
+                'request_key' => (string) Str::uuid(),
+                'quantities' => [$product->id => 1],
+                'quote_hash' => $quote['hash'],
+                'delivery_date' => $quote['date'],
+                'client_time' => '12:00',
+            ])
+            ->assertSessionHasErrors('order');
         $this->assertCount(0, app(OrderRepositoryInterface::class)->orders($quote['date']));
     }
 }

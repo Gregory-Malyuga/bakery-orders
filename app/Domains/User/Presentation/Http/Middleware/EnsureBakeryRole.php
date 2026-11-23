@@ -17,7 +17,10 @@ class EnsureBakeryRole
             abort_unless($user->bakery_id === null && $user->role->value !== 'user', 403);
         } else {
             abort_unless($user->status->value === 'verify', 403);
-            abort_unless($role === 'admin' ? $user->role->value === 'admin' : $user->role->value === 'user', 403);
+            abort_unless(
+                $role === 'admin' ? $user->role->value === 'admin' : $user->role->value === 'user',
+                403,
+            );
         }
 
         return $next($request);

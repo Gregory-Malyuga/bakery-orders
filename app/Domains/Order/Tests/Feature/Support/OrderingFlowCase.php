@@ -25,10 +25,24 @@ abstract class OrderingFlowCase extends TestCase
     /** @return array{0:Store,1:User,2:Product} */
     protected function shop(string $name, int $kopecks): array
     {
-        $store = Store::query()->create(['name' => $name, 'address' => $name.' 1', 'is_active' => true]);
-        $user = User::factory()->create(['role' => UserRole::User, 'status' => UserStatus::Verify, 'bakery_id' => $store->id]);
-        $product = Product::query()->firstOrCreate(['name' => 'Тестовый пирожок'], ['is_active' => true, 'packaging_mode' => 'single']);
-        Price::query()->updateOrCreate(['bakery_id' => $store->id, 'product_id' => $product->id], ['kopecks' => $kopecks]);
+        $store = Store::query()->create([
+            'name' => $name,
+            'address' => $name.' 1',
+            'is_active' => true,
+        ]);
+        $user = User::factory()->create([
+            'role' => UserRole::User,
+            'status' => UserStatus::Verify,
+            'bakery_id' => $store->id,
+        ]);
+        $product = Product::query()->firstOrCreate(
+            ['name' => 'Тестовый пирожок'],
+            ['is_active' => true, 'packaging_mode' => 'single'],
+        );
+        Price::query()->updateOrCreate(
+            ['bakery_id' => $store->id, 'product_id' => $product->id],
+            ['kopecks' => $kopecks],
+        );
 
         return [$store, $user, $product];
     }

@@ -17,6 +17,8 @@ readonly class OrderSettingsController
         $data = $request->validate(['order_cutoff' => ['required', 'date_format:H:i']]);
         $this->handler->handle(new SetOrderCutoffCommand($data['order_cutoff']));
 
-        return redirect()->route('bakery.catalog', ['tab' => 'settings'])->with('success', 'Время последнего заказа сохранено.');
+        return redirect()
+            ->route('bakery.catalog', ['tab' => 'settings'])
+            ->with('success', 'Время последнего заказа сохранено.');
     }
 }

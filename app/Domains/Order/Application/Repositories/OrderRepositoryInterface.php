@@ -15,7 +15,11 @@ interface OrderRepositoryInterface
     public function products(): Collection;
 
     /** @return array<int, int> */
-    public function prices(int $storeId, bool $includeUnavailable = false, bool $applyDiscount = true): array;
+    public function prices(
+        int $storeId,
+        bool $includeUnavailable = false,
+        bool $applyDiscount = true,
+    ): array;
 
     /** @return array<int, int> Store overrides only. */
     public function minimums(int $storeId): array;
@@ -41,7 +45,14 @@ interface OrderRepositoryInterface
     public function lockedStore(int $storeId, callable $operation): Order|array;
 
     /** @param list<array{product_id:int,product_name:string,quantity:int,unit_kopecks:int,total_kopecks:int}> $items */
-    public function createOrder(Store $store, string $date, string $key, array $items, int $total, ?string $comment = null): Order;
+    public function createOrder(
+        Store $store,
+        string $date,
+        string $key,
+        array $items,
+        int $total,
+        ?string $comment = null,
+    ): Order;
 
     public function cancel(Order $order): void;
 }

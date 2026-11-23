@@ -10,8 +10,5 @@ use OpenApi\Attributes as OA;
     description: 'API',
     contact: new OA\Contact(email: 'api@example.com'),
 )]
-#[OA\Server(
-    url: '/',
-    description: 'API сервер',
-)]
+#[OA\Server(url: '/', description: 'API сервер')]
 class ApiInfo {}

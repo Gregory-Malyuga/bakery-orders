@@ -19,9 +19,9 @@ readonly class CreateUserHandler implements CommandHandlerInterface
         assert($message instanceof CreateUserCommand);
 
         if (
-            $message->role === UserRole::Admin
-            && $message->actor !== null
-            && $message->actor->role !== UserRole::Admin
+            $message->role === UserRole::Admin &&
+            $message->actor !== null &&
+            $message->actor->role !== UserRole::Admin
         ) {
             throw UserInsufficientRoleException::cannotAssignRole($message->role->value);
         }

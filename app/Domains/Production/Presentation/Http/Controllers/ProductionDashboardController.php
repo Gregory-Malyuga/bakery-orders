@@ -21,11 +21,15 @@ readonly class ProductionDashboardController
             'page' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        return $this->renderDashboard($this->dashboard->handle(new ProductionDashboardQuery(
-            $input['date'] ?? now('Europe/Moscow')->addDay()->toDateString(),
-            $input['tab'] ?? 'orders',
-            isset($input['page']) ? (int) $input['page'] : 1,
-        )));
+        return $this->renderDashboard(
+            $this->dashboard->handle(
+                new ProductionDashboardQuery(
+                    $input['date'] ?? now('Europe/Moscow')->addDay()->toDateString(),
+                    $input['tab'] ?? 'orders',
+                    isset($input['page']) ? (int) $input['page'] : 1,
+                ),
+            ),
+        );
     }
 
     private function renderDashboard(ProductionDashboardData $data): View

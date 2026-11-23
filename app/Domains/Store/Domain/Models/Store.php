@@ -44,11 +44,23 @@ class Store extends Model
     protected $table = 'bakeries';
 
     /** @var list<string> */
-    protected $fillable = ['name', 'address', 'is_active', 'is_cashless', 'discount_enabled', 'discount_percent'];
+    protected $fillable = [
+        'name',
+        'address',
+        'is_active',
+        'is_cashless',
+        'discount_enabled',
+        'discount_percent',
+    ];
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'is_cashless' => 'boolean', 'discount_enabled' => 'boolean', 'discount_percent' => 'integer'];
+        return [
+            'is_active' => 'boolean',
+            'is_cashless' => 'boolean',
+            'discount_enabled' => 'boolean',
+            'discount_percent' => 'integer',
+        ];
     }
 
     protected static function newFactory(): StoreFactory

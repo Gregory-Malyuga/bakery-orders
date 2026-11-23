@@ -27,7 +27,9 @@ class RegisterHandlerTest extends TestCase
 
     public function test_creates_user_with_user_role(): void
     {
-        $id = $this->handler->handle(new RegisterCommand('Test User', 'register@test.com', 'password123'));
+        $id = $this->handler->handle(
+            new RegisterCommand('Test User', 'register@test.com', 'password123'),
+        );
 
         $this->assertGreaterThan(0, $id);
 

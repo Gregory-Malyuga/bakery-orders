@@ -32,6 +32,18 @@ readonly class StockDashboardReadRepository implements StockDashboardReadReposit
         $discrepancies = $this->stockMovements->discrepancies($date);
         $discrepancyPrices = $this->discrepancyPriceRead->forDiscrepancies($discrepancies);
 
-        return compact('items', 'balances', 'movements', 'discrepancies', 'discrepancyPrices', 'date', 'today', 'tomorrow', 'prices', 'tomorrowPrices', 'priceHistory');
+        return compact(
+            'items',
+            'balances',
+            'movements',
+            'discrepancies',
+            'discrepancyPrices',
+            'date',
+            'today',
+            'tomorrow',
+            'prices',
+            'tomorrowPrices',
+            'priceHistory',
+        );
     }
 }

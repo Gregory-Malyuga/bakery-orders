@@ -7,9 +7,12 @@ use Domains\OrderReturn\Application\OrderReturnSummary;
 use Domains\StoreGroup\Application\Repositories\GroupInvoiceReadRepositoryInterface;
 
 /**
- * @phpstan-type GroupMember array{name:string,address:string,comment:string|null,ordered:bool,quantity:int,gross:int,returns:int,net:int}
+ * @phpstan-type GroupMember array{name:string,address:string,comment:string|null,ordered:bool,
+ *     quantity:int,gross:int,returns:int,net:int}
  * @phpstan-type GroupProduct array{name:string,quantity:int,returned:int,unit_kopecks:int,gross:int,net:int}
- * @phpstan-type GroupInvoice array{id:int,name:string,members:list<GroupMember>,products:list<GroupProduct>,quantity:int,returned_quantity:int,gross:int,returns:int,net:int,has_orders:bool,show_return_columns:bool}
+ * @phpstan-type GroupInvoice array{id:int,name:string,members:list<GroupMember>,
+ *     products:list<GroupProduct>,quantity:int,returned_quantity:int,gross:int,returns:int,net:int,
+ *     has_orders:bool,show_return_columns:bool}
  */
 class GroupInvoiceService
 {
@@ -46,18 +49,29 @@ class GroupInvoiceService
             foreach ($membersByGroup[(int) $group->id] ?? [] as $member) {
                 $order = $ordersByStore[(int) $member->bakery_id] ?? null;
                 $orderGross = $order === null ? 0 : $order->total_kopecks;
-                $orderReturns = $order === null ? 0 : ($returns[(int) $order->id]['amount'] ?? 0);
+                $orderReturns = $order === null ? 0 : $returns[(int) $order->id]['amount'] ?? 0;
                 $orderQuantity = 0;
                 if ($order !== null) {
                     $hasOrders = true;
-                    $return = $returns[(int) $order->id] ?? ['quantities' => [], 'extras' => [], 'amount' => 0];
+                    $return = $returns[(int) $order->id] ?? [
+                        'quantities' => [],
+                        'extras' => [],
+                        'amount' => 0,
+                    ];
                     foreach ($order->items as $item) {
                         $orderQuantity += $item->quantity;
                         $productId = (int) $item->product_id;
                         $unit = (int) $item->unit_kopecks;
                         $returned = $return['quantities'][$productId] ?? 0;
                         $key = $productId.':'.$unit;
-                        $products[$key] ??= ['name' => $item->product_name, 'quantity' => 0, 'returned' => 0, 'unit_kopecks' => $unit, 'gross' => 0, 'net' => 0];
+                        $products[$key] ??= [
+                            'name' => $item->product_name,
+                            'quantity' => 0,
+                            'returned' => 0,
+                            'unit_kopecks' => $unit,
+                            'gross' => 0,
+                            'net' => 0,
+                        ];
                         $products[$key]['quantity'] += $item->quantity;
                         $products[$key]['returned'] += $returned;
                         $products[$key]['gross'] += $item->total_kopecks;
@@ -66,7 +80,14 @@ class GroupInvoiceService
                     }
                     foreach ($return['extras'] as $extra) {
                         $key = $extra['product_id'].':'.$extra['unit_kopecks'];
-                        $products[$key] ??= ['name' => $extra['name'], 'quantity' => 0, 'returned' => 0, 'unit_kopecks' => $extra['unit_kopecks'], 'gross' => 0, 'net' => 0];
+                        $products[$key] ??= [
+                            'name' => $extra['name'],
+                            'quantity' => 0,
+                            'returned' => 0,
+                            'unit_kopecks' => $extra['unit_kopecks'],
+                            'gross' => 0,
+                            'net' => 0,
+                        ];
                         $products[$key]['returned'] += $extra['quantity'];
                         $products[$key]['net'] -= $extra['quantity'] * $extra['unit_kopecks'];
                         $returnedQuantity += $extra['quantity'];
@@ -86,12 +107,20 @@ class GroupInvoiceService
                     'net' => $orderGross - $orderReturns,
                 ];
             }
-            uasort($products, static fn (array $first, array $second): int => strcasecmp($first['name'], $second['name']) ?: ($first['unit_kopecks'] <=> $second['unit_kopecks']));
+            uasort(
+                $products,
+                static fn (array $first, array $second): int => strcasecmp(
+                    $first['name'],
+                    $second['name'],
+                ) ?:
+                $first['unit_kopecks'] <=> $second['unit_kopecks'],
+            );
             $result[] = [
                 'id' => (int) $group->id,
                 'name' => $group->name,
                 // These consolidated printouts use a compact layout without return columns.
-                'show_return_columns' => mb_stripos((string) $group->name, 'Балтийск') === false && mb_stripos((string) $group->name, 'Колпино') === false,
+                'show_return_columns' => mb_stripos((string) $group->name, 'Балтийск') === false &&
+                    mb_stripos((string) $group->name, 'Колпино') === false,
                 'members' => $members,
                 'products' => array_values($products),
                 'quantity' => $quantity,

@@ -30,17 +30,22 @@ class RecipeController
             'section' => ['nullable', 'in:products,dough'],
             'product' => ['nullable', 'integer', 'exists:bakery_products,id'],
         ]);
-        $data = $this->editor->handle(new GetRecipeEditorQuery(
-            $input['section'] ?? 'products',
-            isset($input['product']) ? (int) $input['product'] : null,
-        ));
+        $data = $this->editor->handle(
+            new GetRecipeEditorQuery(
+                $input['section'] ?? 'products',
+                isset($input['product']) ? (int) $input['product'] : null,
+            ),
+        );
 
         return view('bakery.recipes', $data->data);
     }
 
     public function saveProduct(Request $request): RedirectResponse
     {
-        /** @var array{product:int|string,dough_type?:string,dough_grams?:int|float|numeric-string,ingredients?:list<array<string,mixed>>} $data */
+        /**
+         * @var array{product:int|string,dough_type?:string,dough_grams?:int|float|numeric-string,
+         *     ingredients?:list<array<string,mixed>>} $data
+         */
         $data = $request->validate([
             'product' => ['required', 'integer', 'exists:bakery_products,id'],
             'dough_type' => ['nullable', 'in:main,samsa,none'],
@@ -53,7 +58,9 @@ class RecipeController
         ]);
         $this->saveProduct->handle(new SaveProductRecipeCommand($data));
 
-        return redirect()->route('bakery.recipes', ['product' => $data['product']])->with('success', 'Рецептура изделия сохранена.');
+        return redirect()
+            ->route('bakery.recipes', ['product' => $data['product']])
+            ->with('success', 'Рецептура изделия сохранена.');
     }
 
     public function saveDough(Request $request): RedirectResponse
@@ -62,8 +69,8 @@ class RecipeController
         $data = $request->validate([
             'kind' => ['required', 'in:main_dough,samsa_dough'],
             'batch_size' => $request->input('kind') === 'samsa_dough'
-                ? ['required', 'integer', 'min:1', 'max:100000']
-                : ['required', 'numeric', 'gt:0', 'max:100000'],
+                    ? ['required', 'integer', 'min:1', 'max:100000']
+                    : ['required', 'numeric', 'gt:0', 'max:100000'],
             'ingredients' => ['required', 'array', 'min:1', 'max:100'],
             'ingredients.*.ingredient_id' => ['nullable', 'integer'],
             'ingredients.*.name' => ['nullable', 'string', 'max:100'],
@@ -71,18 +78,30 @@ class RecipeController
         ]);
         $this->saveDough->handle(new SaveDoughRecipeCommand($data));
 
-        return redirect()->route('bakery.recipes', ['section' => 'dough'])->with('success', 'Рецептура теста сохранена.');
+        return redirect()
+            ->route('bakery.recipes', ['section' => 'dough'])
+            ->with('success', 'Рецептура теста сохранена.');
     }
 
     public function reset(Request $request): RedirectResponse
     {
         /** @var array{kind:string,product?:int|string} $data */
-        $data = $request->validate(['kind' => ['required', 'in:product,main_dough,samsa_dough'], 'product' => ['required_if:kind,product', 'nullable', 'integer', 'exists:bakery_products,id']]);
+        $data = $request->validate([
+            'kind' => ['required', 'in:product,main_dough,samsa_dough'],
+            'product' => [
+                'required_if:kind,product',
+                'nullable',
+                'integer',
+                'exists:bakery_products,id',
+            ],
+        ]);
         $productId = $data['product'] ?? null;
         $this->resetRecipe->handle(new ResetRecipeCommand($data));
 
         $query = $data['kind'] === 'product' ? ['product' => $productId] : ['section' => 'dough'];
 
-        return redirect()->route('bakery.recipes', $query)->with('success', 'Восстановлены исходные нормы из таблицы.');
+        return redirect()
+            ->route('bakery.recipes', $query)
+            ->with('success', 'Восстановлены исходные нормы из таблицы.');
     }
 }

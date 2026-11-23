@@ -22,6 +22,12 @@ readonly class BatchInvoiceHandler implements QueryHandlerInterface
 
         $orders = $this->orders->orders($message->date);
 
-        return new BatchInvoiceData($orders, $this->returns->forOrders($orders), $this->groups->forOrders($orders), $message->date, now('Europe/Moscow'));
+        return new BatchInvoiceData(
+            $orders,
+            $this->returns->forOrders($orders),
+            $this->groups->forOrders($orders),
+            $message->date,
+            now('Europe/Moscow'),
+        );
     }
 }

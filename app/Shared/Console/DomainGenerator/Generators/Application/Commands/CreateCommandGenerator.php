@@ -13,10 +13,14 @@ class CreateCommandGenerator extends AbstractGenerator
         $required = '';
         $optional = '';
         foreach ($ctx->fields as $fieldName => $def) {
-            $docType = $def['phpType'] === 'array' ? 'array<string, mixed>'.($def['nullable'] ? '|null' : '') : null;
+            $docType =
+                $def['phpType'] === 'array'
+                    ? 'array<string, mixed>'.($def['nullable'] ? '|null' : '')
+                    : null;
             $docLine = $docType !== null ? "        /** @param {$docType} \${$fieldName} */\n" : '';
             if ($def['nullable']) {
-                $optional .= $docLine."        public ?{$def['phpType']} \${$fieldName} = null,\n";
+                $optional .=
+                    $docLine."        public ?{$def['phpType']} \${$fieldName} = null,\n";
             } else {
                 $required .= $docLine."        public {$def['phpType']} \${$fieldName},\n";
             }
@@ -37,6 +41,10 @@ class CreateCommandGenerator extends AbstractGenerator
         }
         PHP;
 
-        $this->writeFile($files, "{$ctx->basePath}/Application/Commands/Create/Create{$ctx->name}Command.php", $content);
+        $this->writeFile(
+            $files,
+            "{$ctx->basePath}/Application/Commands/Create/Create{$ctx->name}Command.php",
+            $content,
+        );
     }
 }

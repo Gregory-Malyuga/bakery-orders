@@ -19,6 +19,9 @@ class OrderServiceProvider extends ServiceProvider
         $this->app->bind(OrderCalendarRepositoryInterface::class, OrderCalendarRepository::class);
         $this->app->bind(OrderRepositoryInterface::class, OrderRepository::class);
         $this->app->bind(OrderCutoffRepositoryInterface::class, OrderCutoffRepository::class);
-        $this->app->bind(OrderAnalyticsReadRepositoryInterface::class, OrderAnalyticsReadRepository::class);
+        $this->app->bind(
+            OrderAnalyticsReadRepositoryInterface::class,
+            OrderAnalyticsReadRepository::class,
+        );
     }
 }

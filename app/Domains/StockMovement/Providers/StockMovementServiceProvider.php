@@ -12,7 +12,10 @@ class StockMovementServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(StockMovementDashboardRepositoryInterface::class, StockMovementDashboardRepository::class);
+        $this->app->bind(
+            StockMovementDashboardRepositoryInterface::class,
+            StockMovementDashboardRepository::class,
+        );
         $this->app->bind(StockMovementRepositoryInterface::class, StockMovementRepository::class);
     }
 }

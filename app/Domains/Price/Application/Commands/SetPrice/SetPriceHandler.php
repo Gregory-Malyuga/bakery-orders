@@ -13,7 +13,12 @@ readonly class SetPriceHandler implements CommandHandlerInterface
     {
         assert($message instanceof SetPriceCommand);
 
-        $this->repository->single($message->productId, $message->storeId, $message->kopecks, $message->actorId);
+        $this->repository->single(
+            $message->productId,
+            $message->storeId,
+            $message->kopecks,
+            $message->actorId,
+        );
 
         return null;
     }

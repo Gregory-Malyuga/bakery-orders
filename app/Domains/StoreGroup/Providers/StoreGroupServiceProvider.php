@@ -15,7 +15,13 @@ class StoreGroupServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(StoreGroupRepositoryInterface::class, StoreGroupRepository::class);
-        $this->app->bind(GroupInvoiceReadRepositoryInterface::class, GroupInvoiceReadRepository::class);
-        $this->app->bind(LabelGroupExclusionRepositoryInterface::class, LabelGroupExclusionRepository::class);
+        $this->app->bind(
+            GroupInvoiceReadRepositoryInterface::class,
+            GroupInvoiceReadRepository::class,
+        );
+        $this->app->bind(
+            LabelGroupExclusionRepositoryInterface::class,
+            LabelGroupExclusionRepository::class,
+        );
     }
 }

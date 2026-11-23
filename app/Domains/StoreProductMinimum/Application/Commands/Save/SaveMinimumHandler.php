@@ -29,7 +29,11 @@ readonly class SaveMinimumHandler implements CommandHandlerInterface
             'pair' => 2,
             default => 1,
         };
-        $this->repository->save($message->storeId, $message->productId, max($message->minimum, $packageMinimum));
+        $this->repository->save(
+            $message->storeId,
+            $message->productId,
+            max($message->minimum, $packageMinimum),
+        );
 
         return null;
     }

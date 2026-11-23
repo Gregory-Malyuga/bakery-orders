@@ -17,7 +17,16 @@ interface OrderReturnRepositoryInterface
     /** @return object{status:string}|null */
     public function lockedReturn(int $orderId, int $returnId): ?object;
 
-    public function record(int $orderId, int $adminId, int $productId, string $name, int $unit, int $quantity, bool $isOrderItem, ?string $reason): void;
+    public function record(
+        int $orderId,
+        int $adminId,
+        int $productId,
+        string $name,
+        int $unit,
+        int $quantity,
+        bool $isOrderItem,
+        ?string $reason,
+    ): void;
 
     public function cancel(int $returnId, int $adminId, string $reason): void;
 }
